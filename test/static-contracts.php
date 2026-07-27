@@ -169,6 +169,25 @@ emergencyhouseContract(
 		&& strpos($descriptor, 'return $this->_remove($sql, $options);') !== false,
 	'Désactivation non destructive'
 );
+$cronBlockStart = strpos($descriptor, '$this->cronjobs = array(');
+$cronBlockEnd = $cronBlockStart === false ? false : strpos($descriptor, "\n\t\t);\n\n\t\t\$r = 0;", $cronBlockStart);
+$cronBlock = $cronBlockStart !== false && $cronBlockEnd !== false
+	? substr($descriptor, $cronBlockStart, $cronBlockEnd - $cronBlockStart)
+	: '';
+emergencyhouseContract(
+	substr_count($cronBlock, "'status' => 1,") === 9
+		&& substr_count($cronBlock, "'status' => 0,") === 0,
+	'Neuf travaux planifiés actifs dès leur création'
+);
+emergencyhouseContract(
+	strpos($descriptor, '$sql[] = $this->buildCronStatusUpdateSql(1, (int) $conf->entity);') !== false
+		&& strpos($descriptor, '$this->buildCronStatusUpdateSql(0, (int) $conf->entity)') !== false
+		&& strpos($descriptor, "UPDATE '.MAIN_DB_PREFIX.'cronjob") !== false
+		&& strpos($descriptor, "WHERE module_name = 'emergencyhouse'") !== false
+		&& strpos($descriptor, "classesname = '/emergencyhouse/class/emergencyhousecron.class.php'") !== false
+		&& strpos($descriptor, "objectname = 'EmergencyHouseCron'") !== false,
+	'Activation et désactivation synchronisées des travaux planifiés natifs'
+);
 
 $setupPath = $root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'setup.php';
 $setup = emergencyhouseReadRequired($setupPath);
@@ -358,6 +377,12 @@ foreach (emergencyhousePhpFiles($root) as $phpFile) {
 		strpos($contentWithoutSqlFilename, 'llx_') === false,
 		'Pas de préfixe SQL llx_ codé en dur dans '.substr($phpFile, strlen($root) + 1)
 	);
+	if (strpos($content, 'dol_time_plus_duree(') !== false) {
+		emergencyhouseContract(
+			strpos($content, "require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';") !== false,
+			'Dépendance date.lib.php déclarée dans '.substr($phpFile, strlen($root) + 1)
+		);
+	}
 }
 
 emergencyhouseContract(

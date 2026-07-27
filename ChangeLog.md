@@ -25,6 +25,9 @@
 - Correction des confirmations publiques manquantes, notamment après la
   création et la vérification d’un compte, qui affichaient à tort une erreur
   interne alors que l’opération avait réussi.
+- Chargement explicite de la bibliothèque de dates Dolibarr dans les services
+  utilisant `dol_time_plus_duree()`, afin que la vérification d’un compte et la
+  création de sa session publique ne provoquent plus d’erreur fatale.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des
@@ -54,6 +57,9 @@
   notifications back-office restent configurées dans le module natif.
 - Ajout de neuf travaux planifiés natifs pour les files, expirations,
   confirmations, séjours, statistiques, rétention et fournisseurs.
+- Synchronisation automatique de ces travaux planifiés avec l’état du module :
+  activation immédiate lors de l’activation ou de la réactivation, puis
+  désactivation conservatrice du seul statut lors de la désactivation.
 - Ajout de l’intégration Multicompany, des permissions granulaires et de
   l’élévation administrateur centralisée.
 - Ajout des traductions françaises et anglaises et de la documentation

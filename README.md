@@ -53,14 +53,17 @@ Après copie ou clonage :
    disponibles ;
 4. renseigner les textes juridiques, les coordonnées officielles et l’URL
    racine qui expose directement le répertoire `public/` ;
-5. activer les travaux planifiés nécessaires depuis le module natif Dolibarr ;
+5. vérifier les travaux planifiés Emergency House, automatiquement activés en
+   même temps que le module ;
 6. configurer les notifications back-office dans la page native
    `/admin/notification.php` ;
 7. réaliser la recette de sécurité, de droits et Multicompany avant
    l’ouverture publique.
 
-La désactivation est non destructive : les données, constantes, modèles,
-réglages Agenda/Notifications/Cron et réglages Multicompany sont conservés.
+La désactivation est non destructive : les travaux planifiés Emergency House
+sont désactivés, mais leurs fréquences, paramètres et historiques ainsi que les
+données, constantes, modèles, réglages Agenda/Notifications et réglages
+Multicompany sont conservés. Ils sont tous réactivés avec le module.
 
 ### URL du portail public
 

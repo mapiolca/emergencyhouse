@@ -32,6 +32,10 @@ Le script vérifie notamment :
 - la protection de l’aperçu privé et l’absence de donnée métier ;
 - les six modèles de numérotation dédiés ;
 - les garde-fous des clés et du connecteur Géoplateforme ;
+- le chargement explicite de la bibliothèque native de dates dans chaque classe
+  utilisant `dol_time_plus_duree()` ;
+- l’activation et la désactivation synchronisées des neuf travaux planifiés,
+  sans suppression de leur configuration ;
 - le contrat d’URL racine du répertoire public et l’absence de liens de
   notification contournant le constructeur commun ;
 - la présence des guides Sécurité et fournisseurs ;
@@ -47,7 +51,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 27 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `460 contrats validés` ;
+- contrats statiques : `470 contrats validés` ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,

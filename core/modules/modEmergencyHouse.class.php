@@ -86,7 +86,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronNotificationsDescription',
 				'frequency' => 5,
 				'unitfrequency' => 60,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 40,
 			),
@@ -100,7 +100,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronMatchingDescription',
 				'frequency' => 5,
 				'unitfrequency' => 60,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 45,
 			),
@@ -114,7 +114,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronExpiryDescription',
 				'frequency' => 1,
 				'unitfrequency' => 3600,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 50,
 			),
@@ -128,7 +128,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronAvailabilityDescription',
 				'frequency' => 1,
 				'unitfrequency' => 86400,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 55,
 			),
@@ -142,7 +142,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronStayRemindersDescription',
 				'frequency' => 1,
 				'unitfrequency' => 3600,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 60,
 			),
@@ -156,7 +156,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronCloseAllocationsDescription',
 				'frequency' => 1,
 				'unitfrequency' => 3600,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 65,
 			),
@@ -170,7 +170,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronStatisticsDescription',
 				'frequency' => 1,
 				'unitfrequency' => 86400,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 70,
 			),
@@ -184,7 +184,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronRetentionDescription',
 				'frequency' => 1,
 				'unitfrequency' => 86400,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 75,
 			),
@@ -198,7 +198,7 @@ class modEmergencyHouse extends DolibarrModules
 				'comment' => 'EmergencyHouseCronProviderHealthDescription',
 				'frequency' => 1,
 				'unitfrequency' => 3600,
-				'status' => 0,
+				'status' => 1,
 				'test' => 'isModEnabled("emergencyhouse")',
 				'priority' => 80,
 			),
@@ -339,6 +339,8 @@ class modEmergencyHouse extends DolibarrModules
 				." WHERE nom = 'emergencyhouse_agreement' AND type = 'emergencyhouse'"
 				." AND entity = ".((int) $conf->entity).")",
 		);
+		$sql[] = $this->buildCronStatusUpdateSql(1, (int) $conf->entity);
+
 		return $this->_init($sql, $options);
 	}
 
@@ -402,8 +404,35 @@ class modEmergencyHouse extends DolibarrModules
 	 */
 	public function remove($options = '')
 	{
-		$sql = array();
+		global $conf;
+
+		$sql = array(
+			$this->buildCronStatusUpdateSql(0, (int) $conf->entity),
+		);
+
 		return $this->_remove($sql, $options);
+	}
+
+	/**
+	 * Build the scoped status update for the native scheduled jobs.
+	 *
+	 * The native rows are kept so their schedule and execution history survive
+	 * module disable/enable cycles.
+	 *
+	 * @param int $status Enabled (1) or disabled (0)
+	 * @param int $entity Entity
+	 * @return string
+	 */
+	private function buildCronStatusUpdateSql($status, $entity)
+	{
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'cronjob';
+		$sql .= ' SET status = '.($status > 0 ? 1 : 0);
+		$sql .= " WHERE module_name = 'emergencyhouse'";
+		$sql .= ' AND entity = '.((int) $entity);
+		$sql .= " AND classesname = '/emergencyhouse/class/emergencyhousecron.class.php'";
+		$sql .= " AND objectname = 'EmergencyHouseCron'";
+
+		return $sql;
 	}
 
 	/**

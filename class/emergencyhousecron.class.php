@@ -1,6 +1,8 @@
 <?php
 /* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
 
+require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+
 dol_include_once('/emergencyhouse/class/allocation.class.php');
 dol_include_once('/emergencyhouse/class/matchingservice.class.php');
 dol_include_once('/emergencyhouse/class/notificationservice.class.php');
