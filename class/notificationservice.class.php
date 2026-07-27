@@ -4,6 +4,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/class/publicaccount.class.php');
+dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
 
 /**
  * Transactional notification queue for public identities.
@@ -143,7 +144,10 @@ class EmergencyHouseNotificationService
 		}
 		$payload = array(
 			'SOLICITATION_REF' => (string) $solicitation->ref,
-			'SOLICITATION_URL' => dol_buildpath('/emergencyhouse/public/solicitation/view.php', 2).'?id='.((int) $solicitation->id),
+			'SOLICITATION_URL' => emergencyhousePublicAbsoluteUrl(
+				'solicitation/view.php',
+				array('id' => (int) $solicitation->id)
+			),
 		);
 		return $this->queueParticipantAccounts(
 			(int) $solicitation->entity,
@@ -183,7 +187,10 @@ class EmergencyHouseNotificationService
 		}
 		$payload = array(
 			'ALLOCATION_REF' => (string) $allocation->ref,
-			'ALLOCATION_URL' => dol_buildpath('/emergencyhouse/public/allocation/view.php', 2).'?id='.((int) $allocation->id),
+			'ALLOCATION_URL' => emergencyhousePublicAbsoluteUrl(
+				'allocation/view.php',
+				array('id' => (int) $allocation->id)
+			),
 		);
 		return $this->queueParticipantAccounts(
 			(int) $allocation->entity,

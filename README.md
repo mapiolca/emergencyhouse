@@ -50,8 +50,8 @@ Après copie ou clonage :
 2. ouvrir les réglages et vérifier les onglets **Compatibilité** et
    **Diagnostic** ;
 3. configurer les secrets de chiffrement dans l’environnement du serveur ;
-4. renseigner les textes juridiques, l’URL publique et les coordonnées
-   officielles ;
+4. renseigner les textes juridiques, les coordonnées officielles et l’URL
+   racine qui expose directement le répertoire `public/` ;
 5. activer les travaux planifiés nécessaires depuis le module natif Dolibarr ;
 6. configurer les notifications back-office dans la page native
    `/admin/notification.php` ;
@@ -60,6 +60,49 @@ Après copie ou clonage :
 
 La désactivation est non destructive : les données, constantes, modèles,
 réglages Agenda/Notifications/Cron et réglages Multicompany sont conservés.
+
+### URL du portail public
+
+`EMERGENCYHOUSE_PUBLIC_BASE_URL` désigne la racine web du répertoire
+`public/`, et non la racine de Dolibarr. Pour une valeur
+`https://emergencyhouse.example.org/`, les liens produits sont par exemple :
+
+- `https://emergencyhouse.example.org/` pour l’accueil ;
+- `https://emergencyhouse.example.org/offer/index.php` pour les offres ;
+- `https://emergencyhouse.example.org/account/index.php` pour l’espace
+  personnel.
+
+Le module n’ajoute jamais `/custom/emergencyhouse/public` à cette valeur. Les
+feuilles de style, le script public et le logo sont également servis sous
+`/assets/` depuis cette même racine. Si la constante est vide, le portail
+conserve son URL interne Dolibarr pour faciliter une recette locale.
+
+## Aperçu privé du portail
+
+Un utilisateur Dolibarr disposant du droit de configuration peut ouvrir
+`/emergencyhouse/admin/public-preview.php` depuis le tableau de bord ou
+l’onglet **Portail**. Cette URL reste protégée par la session et les droits
+Dolibarr. Elle affiche uniquement des exemples traduits : elle ne nécessite ni
+l’activation du portail public, ni campagne configurée, ni compte public.
+
+## Numérotation
+
+Chaque objet dispose de son propre modèle natif et de son propre compteur
+mensuel atomique :
+
+| Objet | Modèle par défaut | Exemple |
+|---|---|---|
+| Campagne | `emergencyhouse_campaign_standard` | `EHC-2607-00001` |
+| Offre | `emergencyhouse_offer_standard` | `EHO-2607-00001` |
+| Demande | `emergencyhouse_request_standard` | `EHR-2607-00001` |
+| Sollicitation | `emergencyhouse_solicitation_standard` | `EHS-2607-00001` |
+| Allocation | `emergencyhouse_allocation_standard` | `EHA-2607-00001` |
+| Signalement | `emergencyhouse_report_standard` | `EHI-2607-00001` |
+
+La réactivation migre uniquement l’ancien choix générique
+`emergencyhouse_standard`. Un modèle personnalisé et les références déjà
+générées sont conservés. Le compteur suit aussi le partage de numérotation
+Multicompany de l’objet.
 
 ## Notifications et messages transactionnels
 
@@ -90,15 +133,33 @@ L’onglet **Sécurité** des réglages permet de générer ces deux valeurs ave
 générateur natif `getRandomPassword()` de Dolibarr. Le module encode chaque
 valeur en base64, les affiche une seule fois dans une réponse non mise en cache
 et ne les enregistre pas. Il faut les copier immédiatement dans la
-configuration d’environnement du serveur.
+configuration d’environnement du serveur, redémarrer le processus PHP, puis
+recharger l’onglet. Celui-ci vérifie sans afficher les secrets : Sodium, la
+présence et la longueur des deux clés, leur différence et la disponibilité du
+service de chiffrement.
 
 ## Cartographie et fournisseurs
 
-Les tuiles OpenStreetMap sont activables avec l’attribution requise. Le
-géocodage exact reste désactivé tant qu’un fournisseur contractuel ou
-auto-hébergé n’est pas configuré. Une adresse exacte ne doit jamais être
-transmise au service Nominatim public. Le fournisseur SMS est également
-désactivé par défaut.
+L’onglet **Fournisseurs** contient une procédure pas-à-pas et les liens vers les
+politiques officielles :
+
+- les tuiles OpenStreetMap utilisent par défaut
+  `https://tile.openstreetmap.org/{z}/{x}/{y}.png` et exigent attribution,
+  cache normal et absence de préchargement massif ;
+- le géocodage exact est désactivé par défaut. Pour les adresses françaises,
+  le connecteur pris en charge utilise l’API Géoplateforme
+  `https://data.geopf.fr/geocodage/search`, selon le même format GeoJSON que le
+  module `lmdbzoning`. Lorsqu’il est activé, les offres reçoivent des
+  coordonnées exactes chiffrées et une cellule approximative ; les demandes
+  conservent uniquement la cellule approximative utilisée par le matching ;
+- le service Nominatim public n’est jamais utilisé pour une adresse exacte ;
+- l’appel Géoplateforme n’utilise pas le helper Dolibarr v20 qui journalise
+  l’URL complète, afin que l’adresse ne soit pas recopiée dans les journaux ;
+- aucun connecteur SMS n’est livré dans cette version. Le réglage reste
+  volontairement non activable jusqu’à l’ajout d’un transport audité ; les
+  notifications transactionnelles disponibles utilisent le courriel. Le guide
+  renvoie vers `/admin/sms.php` pour installer et tester séparément le moteur
+  SMS natif Dolibarr.
 
 ## Développement et validation
 

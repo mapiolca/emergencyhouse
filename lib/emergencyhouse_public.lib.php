@@ -2,7 +2,66 @@
 /* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
 
 /**
+ * Return the configured root URL of the public/ directory.
+ *
+ * An empty return value means that the portal still uses its Dolibarr URL.
+ * Invalid legacy values are ignored defensively; the settings page prevents
+ * saving them.
+ *
+ * @return string Absolute URL ending with a slash, or an empty string
+ */
+function emergencyhousePublicConfiguredBaseUrl()
+{
+	$baseUrl = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_BASE_URL', ''));
+	if ($baseUrl === '' || filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
+		return '';
+	}
+
+	$parts = parse_url($baseUrl);
+	if (
+		!is_array($parts)
+		|| !isset($parts['scheme'], $parts['host'])
+		|| strtolower((string) $parts['scheme']) !== 'https'
+		|| isset($parts['user'])
+		|| isset($parts['pass'])
+		|| isset($parts['query'])
+		|| isset($parts['fragment'])
+	) {
+		return '';
+	}
+
+	return rtrim($baseUrl, '/').'/';
+}
+
+/**
+ * Normalize a path relative to public/.
+ *
+ * @param string $path Candidate
+ * @return string
+ */
+function emergencyhousePublicNormalizePath($path)
+{
+	$path = ltrim(str_replace('\\', '/', trim($path)), '/');
+	if ($path === '' || $path === 'index.php') {
+		return 'index.php';
+	}
+	if (
+		strpos($path, "\0") !== false
+		|| preg_match('~(?:^|/)\.\.(?:/|$)~', rawurldecode($path))
+		|| !preg_match('~^[A-Za-z0-9_./-]+$~', $path)
+	) {
+		return 'index.php';
+	}
+
+	return $path;
+}
+
+/**
  * Build a public module URL.
+ *
+ * When EMERGENCYHOUSE_PUBLIC_BASE_URL is configured, it is the URL of the
+ * public/ directory itself. No Dolibarr or /custom/emergencyhouse segment is
+ * added to it.
  *
  * @param string $path Path relative to public/
  * @param array<string, int|string> $parameters Query parameters
@@ -10,7 +69,14 @@
  */
 function emergencyhousePublicUrl($path = 'index.php', array $parameters = array())
 {
-	$url = dol_buildpath('/emergencyhouse/public/'.ltrim($path, '/'), 1);
+	$relativePath = emergencyhousePublicNormalizePath($path);
+	$configuredBaseUrl = emergencyhousePublicConfiguredBaseUrl();
+	if ($configuredBaseUrl === '') {
+		$baseUrl = rtrim(dol_buildpath('/emergencyhouse/public/', 1), '/').'/';
+		$url = $baseUrl.$relativePath;
+	} else {
+		$url = $configuredBaseUrl.($relativePath === 'index.php' ? '' : $relativePath);
+	}
 	if (!empty($parameters)) {
 		$url .= '?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
 	}
@@ -26,7 +92,13 @@ function emergencyhousePublicUrl($path = 'index.php', array $parameters = array(
  */
 function emergencyhousePublicAbsoluteUrl($path = 'index.php', array $parameters = array())
 {
-	$url = dol_buildpath('/emergencyhouse/public/'.ltrim($path, '/'), 2);
+	$baseUrl = emergencyhousePublicConfiguredBaseUrl();
+	if ($baseUrl !== '') {
+		$relativePath = emergencyhousePublicNormalizePath($path);
+		$url = $baseUrl.($relativePath === 'index.php' ? '' : $relativePath);
+	} else {
+		$url = rtrim(dol_buildpath('/emergencyhouse/public/', 2), '/').'/'.emergencyhousePublicNormalizePath($path);
+	}
 	if (!empty($parameters)) {
 		$url .= '?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
 	}
@@ -103,46 +175,57 @@ function emergencyhousePublicUserAgent()
  * @param EmergencyHousePublicAccount|null $account Authenticated account
  * @param string $active Active navigation code
  * @param bool $allowIndex Permit search indexing for an explicitly public campaign
+ * @param bool $preview Render private preview links without public actions
  * @return void
  */
-function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false)
+function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false)
 {
 	global $langs;
 
 	$language = preg_match('/^[a-z]{2}_[A-Z]{2}$/', $langs->defaultlang) ? str_replace('_', '-', $langs->defaultlang) : 'fr';
-	$cssUrl = dol_buildpath('/emergencyhouse/css/public.css.php', 1);
-	$jsUrl = dol_buildpath('/emergencyhouse/js/public.js.php', 1);
-	$jqueryUrl = DOL_URL_ROOT.'/includes/jquery/js/jquery.min.js';
-	$select2CssUrl = DOL_URL_ROOT.'/includes/jquery/plugins/select2/dist/css/select2.min.css';
-	$select2JsUrl = DOL_URL_ROOT.'/includes/jquery/plugins/select2/dist/js/select2.full.min.js';
+	$cssUrl = $preview
+		? dol_buildpath('/emergencyhouse/css/public.css.php', 1)
+		: emergencyhousePublicUrl('assets/public.css.php');
+	$jsUrl = $preview
+		? dol_buildpath('/emergencyhouse/js/public.js.php', 1)
+		: emergencyhousePublicUrl('assets/public.js.php');
+	$logoUrl = $preview
+		? dol_buildpath('/emergencyhouse/img/emergencyhouse.svg', 1)
+		: emergencyhousePublicUrl('assets/emergencyhouse.svg.php');
+	$loadDolibarrFrontendLibraries = $preview || emergencyhousePublicConfiguredBaseUrl() === '';
 	print '<!doctype html>';
 	print '<html lang="'.dol_escape_htmltag($language).'"><head>';
 	print '<meta charset="utf-8">';
 	print '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
 	print '<meta name="robots" content="'.($allowIndex ? 'index,follow' : 'noindex,nofollow').'">';
 	print '<title>'.dol_escape_htmltag($title).' — '.$langs->trans('EmergencyHouse').'</title>';
-	print '<link rel="stylesheet" href="'.dol_escape_htmltag($select2CssUrl).'">';
+	if ($loadDolibarrFrontendLibraries) {
+		print '<link rel="stylesheet" href="'.DOL_URL_ROOT.'/includes/jquery/plugins/select2/dist/css/select2.min.css">';
+	}
 	print '<link rel="stylesheet" href="'.dol_escape_htmltag($cssUrl).'">';
-	print '<script defer src="'.dol_escape_htmltag($jqueryUrl).'"></script>';
-	print '<script defer src="'.dol_escape_htmltag($select2JsUrl).'"></script>';
+	if ($loadDolibarrFrontendLibraries) {
+		print '<script defer src="'.DOL_URL_ROOT.'/includes/jquery/js/jquery.min.js"></script>';
+		print '<script defer src="'.DOL_URL_ROOT.'/includes/jquery/plugins/select2/dist/js/select2.full.min.js"></script>';
+	}
 	print '<script defer src="'.dol_escape_htmltag($jsUrl).'"></script>';
 	print '</head><body class="eh-public">';
 	print '<a class="eh-skip-link" href="#main">'.$langs->trans('SkipToContent').'</a>';
 	print '<header class="eh-site-header"><div class="eh-shell eh-header-inner">';
-	print '<a class="eh-brand" href="'.dol_escape_htmltag(emergencyhousePublicUrl()).'">';
-	print '<img src="'.dol_escape_htmltag(dol_buildpath('/emergencyhouse/img/emergencyhouse.svg', 1)).'" alt="" width="38" height="38">';
+	$homeUrl = $preview ? '#main' : emergencyhousePublicUrl();
+	print '<a class="eh-brand" href="'.dol_escape_htmltag($homeUrl).'">';
+	print '<img src="'.dol_escape_htmltag($logoUrl).'" alt="" width="38" height="38">';
 	print '<span><strong>'.$langs->trans('EmergencyHouse').'</strong><small>'.$langs->trans('PublicServiceTagline').'</small></span>';
 	print '</a>';
 	print '<nav aria-label="'.$langs->trans('PrimaryNavigation').'"><ul>';
-	print emergencyhousePublicNavItem('campaigns', $active, emergencyhousePublicUrl(), $langs->trans('Campaigns'));
-	print emergencyhousePublicNavItem('offers', $active, emergencyhousePublicUrl('offer/index.php'), $langs->trans('Offers'));
-	print emergencyhousePublicNavItem('requests', $active, emergencyhousePublicUrl('request/index.php'), $langs->trans('Requests'));
+	print emergencyhousePublicNavItem('campaigns', $active, $preview ? '#preview-campaigns' : emergencyhousePublicUrl(), $langs->trans('Campaigns'));
+	print emergencyhousePublicNavItem('offers', $active, $preview ? '#preview-offers' : emergencyhousePublicUrl('offer/index.php'), $langs->trans('Offers'));
+	print emergencyhousePublicNavItem('requests', $active, $preview ? '#preview-requests' : emergencyhousePublicUrl('request/index.php'), $langs->trans('Requests'));
 	if ($account instanceof EmergencyHousePublicAccount) {
 		print emergencyhousePublicNavItem('account', $active, emergencyhousePublicUrl('account/index.php'), $langs->trans('MySpace'));
 		print emergencyhousePublicNavItem('logout', $active, emergencyhousePublicUrl('auth/logout.php'), $langs->trans('Logout'));
 	} else {
-		print emergencyhousePublicNavItem('login', $active, emergencyhousePublicUrl('auth/login.php'), $langs->trans('Login'));
-		print emergencyhousePublicNavItem('register', $active, emergencyhousePublicUrl('auth/register.php'), $langs->trans('CreateAccount'), 'eh-nav-cta');
+		print emergencyhousePublicNavItem('login', $active, $preview ? '#preview-account' : emergencyhousePublicUrl('auth/login.php'), $langs->trans('Login'));
+		print emergencyhousePublicNavItem('register', $active, $preview ? '#preview-account' : emergencyhousePublicUrl('auth/register.php'), $langs->trans('CreateAccount'), 'eh-nav-cta');
 	}
 	print '</ul></nav>';
 	print '</div></header>';
@@ -170,9 +253,10 @@ function emergencyhousePublicNavItem($code, $active, $url, $label, $class = '')
 /**
  * Render public footer.
  *
+ * @param bool $preview Render private preview footer links
  * @return void
  */
-function emergencyhousePublicRenderFooter()
+function emergencyhousePublicRenderFooter($preview = false)
 {
 	global $langs;
 
@@ -182,13 +266,16 @@ function emergencyhousePublicRenderFooter()
 	print '<nav aria-label="'.$langs->trans('LegalNavigation').'"><ul>';
 	$privacyUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_URL', '');
 	$termsUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_URL', '');
-	if ($privacyUrl !== '') {
+	if ($preview) {
+		print '<li><a href="#main">'.$langs->trans('PrivacyPolicy').'</a></li>';
+		print '<li><a href="#main">'.$langs->trans('TermsOfUse').'</a></li>';
+	} elseif ($privacyUrl !== '') {
 		print '<li><a href="'.dol_escape_htmltag($privacyUrl).'">'.$langs->trans('PrivacyPolicy').'</a></li>';
 	}
-	if ($termsUrl !== '') {
+	if (!$preview && $termsUrl !== '') {
 		print '<li><a href="'.dol_escape_htmltag($termsUrl).'">'.$langs->trans('TermsOfUse').'</a></li>';
 	}
-	print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('accessibility.php')).'">'.$langs->trans('Accessibility').'</a></li>';
+	print '<li><a href="'.dol_escape_htmltag($preview ? '#main' : emergencyhousePublicUrl('accessibility.php')).'">'.$langs->trans('Accessibility').'</a></li>';
 	print '</ul></nav></div></footer>';
 	print '</body></html>';
 }
@@ -223,7 +310,7 @@ function emergencyhousePublicRequireAccount($account)
 {
 	if (!$account instanceof EmergencyHousePublicAccount) {
 		$next = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])
-			? emergencyhousePublicSafeRelativePath($_SERVER['REQUEST_URI'])
+			? emergencyhousePublicSafeReturnUrl($_SERVER['REQUEST_URI'])
 			: '';
 		$url = emergencyhousePublicUrl('auth/login.php', $next === '' ? array() : array('next' => $next));
 		header('Location: '.$url);
@@ -233,22 +320,78 @@ function emergencyhousePublicRequireAccount($account)
 }
 
 /**
- * Accept only a local relative return target.
+ * Accept only a known page below the configured public root.
  *
  * @param string $value Candidate
  * @return string
  */
-function emergencyhousePublicSafeRelativePath($value)
+function emergencyhousePublicSafeReturnUrl($value)
 {
-	if ($value === '' || strpos($value, "\r") !== false || strpos($value, "\n") !== false || strpos($value, '//') === 0) {
+	if (
+		$value === ''
+		|| strpos($value, "\r") !== false
+		|| strpos($value, "\n") !== false
+		|| strpos($value, '\\') !== false
+		|| strpos($value, '//') === 0
+	) {
 		return '';
 	}
-	$path = parse_url($value, PHP_URL_PATH);
-	$query = parse_url($value, PHP_URL_QUERY);
-	if (!is_string($path) || strpos($path, '/emergencyhouse/public/') === false) {
+
+	$parts = parse_url($value);
+	if (!is_array($parts) || isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
 		return '';
 	}
-	return $path.(is_string($query) && $query !== '' ? '?'.$query : '');
+	$path = isset($parts['path']) && is_string($parts['path']) ? $parts['path'] : '';
+	$query = isset($parts['query']) && is_string($parts['query']) ? $parts['query'] : '';
+
+	$configuredBaseUrl = emergencyhousePublicConfiguredBaseUrl();
+	$comparisonBaseUrl = $configuredBaseUrl !== ''
+		? $configuredBaseUrl
+		: rtrim(dol_buildpath('/emergencyhouse/public/', 2), '/').'/';
+	$baseParts = parse_url($comparisonBaseUrl);
+	if (!is_array($baseParts)) {
+		return '';
+	}
+
+	if (isset($parts['scheme']) || isset($parts['host'])) {
+		$candidateScheme = isset($parts['scheme']) ? strtolower((string) $parts['scheme']) : '';
+		$candidateHost = isset($parts['host']) ? strtolower((string) $parts['host']) : '';
+		$candidatePort = isset($parts['port']) ? (int) $parts['port'] : 443;
+		$baseScheme = isset($baseParts['scheme']) ? strtolower((string) $baseParts['scheme']) : '';
+		$baseHost = isset($baseParts['host']) ? strtolower((string) $baseParts['host']) : '';
+		$basePort = isset($baseParts['port']) ? (int) $baseParts['port'] : 443;
+		if ($candidateScheme !== $baseScheme || $candidateHost !== $baseHost || $candidatePort !== $basePort) {
+			return '';
+		}
+	}
+
+	$basePath = isset($baseParts['path']) && is_string($baseParts['path']) ? $baseParts['path'] : '/';
+	$basePath = '/'.trim($basePath, '/').'/';
+	if ($basePath === '//') {
+		$basePath = '/';
+	}
+	if ($path === $basePath || $path === rtrim($basePath, '/')) {
+		$relativePath = 'index.php';
+	} elseif (strpos($path, $basePath) === 0) {
+		$relativePath = substr($path, strlen($basePath));
+	} else {
+		return '';
+	}
+
+	$decodedRelativePath = rawurldecode($relativePath);
+	if (
+		strpos($decodedRelativePath, "\0") !== false
+		|| preg_match('~(?:^|/)\.\.(?:/|$)~', $decodedRelativePath)
+		|| !preg_match(
+			'~^(?:index\.php|campaign\.php|accessibility\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
+			$decodedRelativePath
+		)
+	) {
+		return '';
+	}
+
+	$url = emergencyhousePublicUrl($relativePath);
+	return $url.($query !== '' ? '?'.$query : '');
 }
 
 /**

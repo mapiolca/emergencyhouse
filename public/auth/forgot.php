@@ -44,7 +44,7 @@ emergencyhousePublicRenderHeader($langs->trans('ForgotPassword'), null, 'login')
 print '<section class="eh-shell eh-section"><div class="eh-page-title"><h1>'.$langs->trans('ForgotPassword').'</h1><p>'.$langs->trans('ForgotPasswordHelp').'</p></div>';
 if ($sent) emergencyhousePublicAlert('PasswordResetGenericConfirmation', 'success');
 if ($errorKey !== '') emergencyhousePublicAlert($errorKey, 'error');
-print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" data-disable-on-submit>';
+print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/forgot.php')).'" data-disable-on-submit>';
 print emergencyhousePublicCsrfFields().'<input type="hidden" name="action" value="request">';
 print '<div class="eh-field"><label for="email">'.$langs->trans('Email').'</label><input id="email" type="email" name="email" required autocomplete="email"></div>';
 print '<div class="eh-form-actions"><button class="eh-button" type="submit">'.$langs->trans('SendResetLink').'</button></div></form>';

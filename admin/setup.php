@@ -19,8 +19,8 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
-dol_include_once('/emergencyhouse/core/modules/emergencyhouse/mod_emergencyhouse_standard.php');
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/doc/pdf_emergencyhouse_agreement.modules.php');
+dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 
@@ -39,13 +39,16 @@ if (empty($tab)) {
 	$tab = 'general';
 }
 
+/**
+ * @var array<string, array{label:string,model:string}>
+ */
 $numberingConstants = array(
-	'EMERGENCYHOUSE_CAMPAIGN_ADDON' => 'Campaign',
-	'EMERGENCYHOUSE_OFFER_ADDON' => 'Offer',
-	'EMERGENCYHOUSE_REQUEST_ADDON' => 'Request',
-	'EMERGENCYHOUSE_SOLICITATION_ADDON' => 'Solicitation',
-	'EMERGENCYHOUSE_ALLOCATION_ADDON' => 'Allocation',
-	'EMERGENCYHOUSE_REPORT_ADDON' => 'Report',
+	'EMERGENCYHOUSE_CAMPAIGN_ADDON' => array('label' => 'Campaign', 'model' => 'emergencyhouse_campaign_standard'),
+	'EMERGENCYHOUSE_OFFER_ADDON' => array('label' => 'Offer', 'model' => 'emergencyhouse_offer_standard'),
+	'EMERGENCYHOUSE_REQUEST_ADDON' => array('label' => 'Request', 'model' => 'emergencyhouse_request_standard'),
+	'EMERGENCYHOUSE_SOLICITATION_ADDON' => array('label' => 'Solicitation', 'model' => 'emergencyhouse_solicitation_standard'),
+	'EMERGENCYHOUSE_ALLOCATION_ADDON' => array('label' => 'Allocation', 'model' => 'emergencyhouse_allocation_standard'),
+	'EMERGENCYHOUSE_REPORT_ADDON' => array('label' => 'Report', 'model' => 'emergencyhouse_report_standard'),
 );
 
 /**
@@ -96,9 +99,8 @@ $settingsByTab = array(
 	'providers' => array(
 		'EMERGENCYHOUSE_OSM_TILE_URL' => array('type' => 'string', 'default' => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
 		'EMERGENCYHOUSE_GEOCODING_PROVIDER' => array('type' => 'string', 'default' => 'disabled'),
-		'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => array('type' => 'string', 'default' => ''),
+		'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => array('type' => 'string', 'default' => 'https://data.geopf.fr/geocodage/search'),
 		'EMERGENCYHOUSE_SMS_PROVIDER' => array('type' => 'string', 'default' => 'disabled'),
-		'EMERGENCYHOUSE_SMS_ENDPOINT' => array('type' => 'string', 'default' => ''),
 	),
 	'security' => array(
 		'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV' => array('type' => 'string', 'default' => 'EMERGENCYHOUSE_ENCRYPTION_KEY'),
@@ -131,10 +133,28 @@ $settingsByTab = array(
 	),
 );
 
+/**
+ * Contextual help shown below advanced settings.
+ *
+ * @var array<string, string>
+ */
+$settingHelpKeys = array(
+	'EMERGENCYHOUSE_PUBLIC_BASE_URL' => 'HelpPublicBaseUrl',
+	'EMERGENCYHOUSE_OSM_TILE_URL' => 'HelpOsmTileUrl',
+	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
+	'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => 'HelpGeocodingEndpoint',
+	'EMERGENCYHOUSE_SMS_PROVIDER' => 'HelpSmsProvider',
+	'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV' => 'HelpEncryptionKeyEnvironmentVariable',
+	'EMERGENCYHOUSE_HMAC_KEY_ENV' => 'HelpHmacKeyEnvironmentVariable',
+	'EMERGENCYHOUSE_RATE_LIMIT_HOUR' => 'HelpRateLimitHour',
+	'EMERGENCYHOUSE_RATE_LIMIT_DAY' => 'HelpRateLimitDay',
+	'EMERGENCYHOUSE_CSP_EXTRA_CONNECT_SRC' => 'HelpCspExtraConnectSrc',
+);
+
 if ($action === 'set_numbering_model') {
 	$constant = GETPOST('constant', 'aZ09');
 	$value = GETPOST('value', 'aZ09');
-	if (!isset($numberingConstants[$constant]) || $value !== 'emergencyhouse_standard') {
+	if (!isset($numberingConstants[$constant]) || $value !== $numberingConstants[$constant]['model']) {
 		setEventMessages($langs->trans('ErrorInvalidNumberingModel'), null, 'errors');
 	} elseif (dolibarr_set_const($db, $constant, $value, 'chaine', 0, '', (int) $conf->entity) > 0) {
 		setEventMessages($langs->trans('SetupSaved'), null, 'mesgs');
@@ -220,6 +240,77 @@ if ($action === 'set_numbering_model') {
 			setEventMessages($langs->trans('MatchingWeightsMustEqual100'), null, 'errors');
 		}
 	}
+	if ($tab === 'portal') {
+		$publicBaseUrl = trim($values['EMERGENCYHOUSE_PUBLIC_BASE_URL']);
+		if ($publicBaseUrl !== '') {
+			$publicBaseUrlParts = parse_url($publicBaseUrl);
+			if (
+				filter_var($publicBaseUrl, FILTER_VALIDATE_URL) === false
+				|| !is_array($publicBaseUrlParts)
+				|| !isset($publicBaseUrlParts['scheme'], $publicBaseUrlParts['host'])
+				|| strtolower((string) $publicBaseUrlParts['scheme']) !== 'https'
+				|| isset($publicBaseUrlParts['user'])
+				|| isset($publicBaseUrlParts['pass'])
+				|| isset($publicBaseUrlParts['query'])
+				|| isset($publicBaseUrlParts['fragment'])
+			) {
+				$error++;
+				setEventMessages($langs->trans('ErrorPublicBaseUrlInvalid'), null, 'errors');
+			} else {
+				$values['EMERGENCYHOUSE_PUBLIC_BASE_URL'] = rtrim($publicBaseUrl, '/').'/';
+			}
+		}
+	}
+	if ($tab === 'providers') {
+		$geocodingProvider = $values['EMERGENCYHOUSE_GEOCODING_PROVIDER'];
+		$geocodingEndpoint = $values['EMERGENCYHOUSE_GEOCODING_ENDPOINT'];
+		$tileUrl = $values['EMERGENCYHOUSE_OSM_TILE_URL'];
+		if (
+			stripos($tileUrl, 'https://') !== 0
+			|| strpos($tileUrl, '{z}') === false
+			|| strpos($tileUrl, '{x}') === false
+			|| strpos($tileUrl, '{y}') === false
+		) {
+			$error++;
+			setEventMessages($langs->trans('ErrorOsmTileUrlInvalid'), null, 'errors');
+		}
+		if (!in_array($geocodingProvider, array('disabled', 'geoplateforme'), true)) {
+			$error++;
+			setEventMessages($langs->trans('ErrorGeocodingProviderNotImplemented'), null, 'errors');
+		} elseif ($geocodingProvider !== 'disabled') {
+			$endpointParts = parse_url($geocodingEndpoint);
+			if (
+				filter_var($geocodingEndpoint, FILTER_VALIDATE_URL) === false
+				|| !is_array($endpointParts)
+				|| !isset($endpointParts['scheme'], $endpointParts['host'])
+				|| strtolower($endpointParts['scheme']) !== 'https'
+			) {
+				$error++;
+				setEventMessages($langs->trans('ErrorGeocodingEndpointInvalid'), null, 'errors');
+			} elseif ($geocodingProvider === 'geoplateforme' && strtolower($endpointParts['host']) !== 'data.geopf.fr') {
+				$error++;
+				setEventMessages($langs->trans('ErrorGeocodingEndpointInvalid'), null, 'errors');
+			}
+		}
+		if ($values['EMERGENCYHOUSE_SMS_PROVIDER'] !== 'disabled') {
+			$error++;
+			setEventMessages($langs->trans('ErrorSmsProviderNotImplemented'), null, 'errors');
+		}
+	}
+	if ($tab === 'security') {
+		$environmentNamePattern = '/^[A-Za-z_][A-Za-z0-9_]*$/';
+		if (
+			!preg_match($environmentNamePattern, $values['EMERGENCYHOUSE_ENCRYPTION_KEY_ENV'])
+			|| !preg_match($environmentNamePattern, $values['EMERGENCYHOUSE_HMAC_KEY_ENV'])
+		) {
+			$error++;
+			setEventMessages($langs->trans('ErrorEnvironmentVariableNameInvalid'), null, 'errors');
+		}
+		if ($values['EMERGENCYHOUSE_ENCRYPTION_KEY_ENV'] === $values['EMERGENCYHOUSE_HMAC_KEY_ENV']) {
+			$error++;
+			setEventMessages($langs->trans('ErrorEnvironmentVariableNamesMustDiffer'), null, 'errors');
+		}
+	}
 
 	if (!$error) {
 		foreach ($values as $name => $value) {
@@ -254,12 +345,84 @@ if ($tab === 'multicompany') {
 }
 if ($tab === 'providers') {
 	print '<div class="warning">'.$langs->trans('ProviderSecretsNotStoredInfo').'</div>';
+	print '<br>'.load_fiche_titre($langs->trans('ProviderConfigurationGuide'), '', 'map-marker-alt');
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('Service').'</th><th>'.$langs->trans('Status').'</th>';
+	print '<th>'.$langs->trans('ConfigurationSteps').'</th><th>'.$langs->trans('Documentation').'</th></tr>';
+
+	$osmEnabled = getDolGlobalInt('EMERGENCYHOUSE_OSM_TILES_ENABLED', 1) === 1;
+	print '<tr class="oddeven"><td>'.$langs->trans('OpenStreetMapTiles').'</td>';
+	print '<td>'.img_picto($langs->trans($osmEnabled ? 'Enabled' : 'Disabled'), $osmEnabled ? 'switch_on' : 'switch_off');
+	print ' '.$langs->trans($osmEnabled ? 'Enabled' : 'Disabled').'</td>';
+	print '<td>'.$langs->trans('OpenStreetMapConfigurationSteps').'</td>';
+	print '<td><a target="_blank" rel="noopener noreferrer" href="https://operations.osmfoundation.org/policies/tiles/">';
+	print $langs->trans('OpenStreetMapTilePolicy').'</a></td></tr>';
+
+	$geocodingProvider = getDolGlobalString('EMERGENCYHOUSE_GEOCODING_PROVIDER', 'disabled');
+	$geocodingEnabled = $geocodingProvider === 'geoplateforme';
+	print '<tr class="oddeven"><td>'.$langs->trans('ExactGeocoding').'</td>';
+	print '<td>'.img_picto($langs->trans($geocodingEnabled ? 'Enabled' : 'Disabled'), $geocodingEnabled ? 'switch_on' : 'switch_off');
+	print ' '.$langs->trans($geocodingEnabled ? 'Enabled' : 'Disabled').'</td>';
+	print '<td>'.$langs->trans('GeocodingConfigurationSteps').'</td>';
+	print '<td><a target="_blank" rel="noopener noreferrer" href="https://cartes.gouv.fr/aide/fr/guides-utilisateur/utiliser-les-services-de-la-geoplateforme/geocodage/">';
+	print $langs->trans('GeoplateformeDocumentation').'</a></td></tr>';
+
+	print '<tr class="oddeven"><td>'.$langs->trans('SmsDelivery').'</td>';
+	print '<td>'.img_picto($langs->trans('Unavailable'), 'switch_off').' '.$langs->trans('Unavailable').'</td>';
+	print '<td>'.$langs->trans('SmsConfigurationSteps').'</td><td>';
+	print '<a href="'.DOL_URL_ROOT.'/admin/sms.php">'.$langs->trans('ConfigureNativeSms').'</a><br>';
+	print '<a target="_blank" rel="noopener noreferrer" href="https://wiki.dolibarr.org/index.php/Setup_SMS">';
+	print $langs->trans('DolibarrSmsDocumentation').'</a></td></tr>';
+	print '</table>';
+	print '<div class="info">'.$langs->trans('GeocodingPrivacyHelp').'</div>';
 }
 if ($tab === 'authentication') {
 	print '<div class="info">'.$langs->trans('OfferPublicationSecurityPolicyInfo').'</div>';
 }
+if ($tab === 'portal') {
+	$previewUrl = dol_buildpath('/emergencyhouse/admin/public-preview.php', 1);
+	print '<div class="info">'.$langs->trans('PublicPreviewHelp').'</div>';
+	print '<p><a class="button" target="_blank" rel="noopener noreferrer" href="'.dol_escape_htmltag($previewUrl).'">';
+	print $langs->trans('OpenPublicPreview').'</a></p>';
+	print '<div class="info">'.$langs->trans('PublicBaseUrlConfigurationHelp').'</div>';
+}
 if ($tab === 'security') {
 	print '<div class="warning">'.$langs->trans('EnvironmentKeysNotStoredInfo').'</div>';
+	$encryptionService = new EmergencyHouseEncryptionService();
+	$encryptionStatus = $encryptionService->getConfigurationStatus();
+	$encryptionEnvironmentName = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY');
+	$hmacEnvironmentName = getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY');
+
+	print '<br>'.load_fiche_titre($langs->trans('SecurityConfigurationGuide'), '', 'shield-alt');
+	print '<div class="info">'.$langs->trans('SecurityConfigurationIntroduction').'</div>';
+	print '<ol>';
+	print '<li>'.$langs->trans('SecurityStepGenerate').'</li>';
+	print '<li>'.$langs->trans('SecurityStepInstall').'</li>';
+	print '<li>'.$langs->trans('SecurityStepRestart').'</li>';
+	print '<li>'.$langs->trans('SecurityStepVerify').'</li>';
+	print '</ol>';
+	print '<pre class="small">export '.dol_escape_htmltag($encryptionEnvironmentName).'=&quot;'.$langs->trans('PasteEncryptionKeyHere').'&quot;'."\n";
+	print 'export '.dol_escape_htmltag($hmacEnvironmentName).'=&quot;'.$langs->trans('PasteHmacKeyHere').'&quot;</pre>';
+	print '<div class="opacitymedium">'.$langs->trans('EnvironmentConfigurationExampleHelp').'</div>';
+
+	print '<br><table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('SecurityCheck').'</th><th>'.$langs->trans('Status').'</th></tr>';
+	$securityChecks = array(
+		'SodiumExtension' => $encryptionStatus['sodium'],
+		'EncryptionEnvironmentKey' => $encryptionStatus['encryption_key'],
+		'HmacEnvironmentKey' => $encryptionStatus['hmac_key'],
+		'EnvironmentKeysAreDistinct' => $encryptionStatus['distinct'],
+		'EncryptionServiceReady' => $encryptionStatus['available'],
+	);
+	foreach ($securityChecks as $label => $checkPassed) {
+		print '<tr class="oddeven"><td>'.$langs->trans($label).'</td><td>';
+		print img_picto($langs->trans($checkPassed ? 'Available' : 'Unavailable'), $checkPassed ? 'tick' : 'error');
+		print ' '.$langs->trans($checkPassed ? 'Available' : 'Unavailable').'</td></tr>';
+	}
+	print '</table>';
+	if (!$encryptionStatus['available'] && $encryptionStatus['error'] !== '') {
+		print '<div class="warning">'.$langs->trans($encryptionStatus['error']).'</div>';
+	}
 	if (!empty($generatedEnvironmentKeys)) {
 		print '<br>'.load_fiche_titre($langs->trans('GeneratedEnvironmentKeys'), '', 'key');
 		print '<div class="warning">'.$langs->trans('GeneratedEnvironmentKeysOneTimeWarning').'</div>';
@@ -290,6 +453,9 @@ if (isset($settingsByTab[$tab])) {
 
 	foreach ($settingsByTab[$tab] as $name => $definition) {
 		$value = getDolGlobalString($name, $definition['default']);
+		if ($name === 'EMERGENCYHOUSE_GEOCODING_ENDPOINT' && trim($value) === '') {
+			$value = $definition['default'];
+		}
 		print '<tr class="oddeven"><td>'.$langs->trans($name).'</td><td>';
 
 		$options = array();
@@ -301,12 +467,13 @@ if (isset($settingsByTab[$tab])) {
 			$options = array('fr_FR' => $langs->trans('LanguageFrench'), 'en_US' => $langs->trans('LanguageEnglish'));
 		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY') {
 			$options = array('private' => $langs->trans('VisibilityPrivate'), 'public' => $langs->trans('VisibilityPublic'));
-		} elseif (in_array($name, array('EMERGENCYHOUSE_GEOCODING_PROVIDER', 'EMERGENCYHOUSE_SMS_PROVIDER'), true)) {
+		} elseif ($name === 'EMERGENCYHOUSE_GEOCODING_PROVIDER') {
 			$options = array(
 				'disabled' => $langs->trans('Disabled'),
-				'self_hosted' => $langs->trans('ProviderSelfHosted'),
-				'test' => $langs->trans('ProviderTest'),
+				'geoplateforme' => $langs->trans('ProviderGeoplateforme'),
 			);
+		} elseif ($name === 'EMERGENCYHOUSE_SMS_PROVIDER') {
+			$options = array('disabled' => $langs->trans('Disabled'));
 		} elseif (substr($name, -5) === '_MODE') {
 			$options = array('disabled' => $langs->trans('Disabled'), 'enabled' => $langs->trans('Enabled'));
 		} elseif ($name === 'EMERGENCYHOUSE_LOG_LEVEL') {
@@ -324,8 +491,14 @@ if (isset($settingsByTab[$tab])) {
 			print ajax_combobox($name);
 		} elseif ($definition['type'] === 'int') {
 			print '<input class="flat minwidth100" type="number" min="0" name="'.dol_escape_htmltag($name).'" value="'.((int) $value).'">';
+		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_BASE_URL') {
+			print '<input class="flat minwidth500" type="url" inputmode="url" placeholder="https://emergencyhouse.example.org/"';
+			print ' name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';
 		} else {
 			print '<input class="flat minwidth500" type="text" name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';
+		}
+		if (isset($settingHelpKeys[$name])) {
+			print '<div class="opacitymedium small">'.$langs->trans($settingHelpKeys[$name]).'</div>';
 		}
 		print '</td></tr>';
 	}
@@ -335,14 +508,21 @@ if (isset($settingsByTab[$tab])) {
 }
 
 if ($tab === 'general') {
-	$numberingModel = new mod_emergencyhouse_standard();
 	print '<br>'.load_fiche_titre($langs->trans('NumberingModels'), '', 'hashtag');
 	print '<table class="noborder centpercent">';
 	print '<tr class="liste_titre"><th>'.$langs->trans('Object').'</th><th>'.$langs->trans('Name').'</th>';
 	print '<th>'.$langs->trans('Description').'</th><th>'.$langs->trans('Example').'</th><th class="center">'.$langs->trans('Status').'</th></tr>';
-	foreach ($numberingConstants as $constant => $objectLabel) {
-		$active = getDolGlobalString($constant, 'emergencyhouse_standard') === 'emergencyhouse_standard';
-		print '<tr class="oddeven"><td>'.$langs->trans($objectLabel).'</td>';
+	foreach ($numberingConstants as $constant => $numberingDefinition) {
+		$modelName = $numberingDefinition['model'];
+		dol_include_once('/emergencyhouse/core/modules/emergencyhouse/mod_'.$modelName.'.php');
+		$className = 'mod_'.$modelName;
+		if (!class_exists($className)) {
+			continue;
+		}
+		/** @var ModeleNumRefEmergencyHouse $numberingModel */
+		$numberingModel = new $className();
+		$active = getDolGlobalString($constant, $modelName) === $modelName;
+		print '<tr class="oddeven"><td>'.$langs->trans($numberingDefinition['label']).'</td>';
 		print '<td>'.dol_escape_htmltag($numberingModel->name).'</td>';
 		print '<td>'.$numberingModel->info($langs).'</td>';
 		print '<td>'.dol_escape_htmltag($numberingModel->getExample()).'</td><td class="center">';
@@ -350,7 +530,7 @@ if ($tab === 'general') {
 			print img_picto($langs->trans('Activated'), 'switch_on');
 		} else {
 			$url = $_SERVER['PHP_SELF'].'?tab=general&action=set_numbering_model&token='.newToken();
-			$url .= '&constant='.urlencode($constant).'&value=emergencyhouse_standard';
+			$url .= '&constant='.urlencode($constant).'&value='.urlencode($modelName);
 			print '<a class="reposition" href="'.dol_escape_htmltag($url).'">'.img_picto($langs->trans('Disabled'), 'switch_off').'</a>';
 		}
 		print '</td></tr>';

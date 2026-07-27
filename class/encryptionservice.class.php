@@ -15,6 +15,14 @@ class EmergencyHouseEncryptionService
 	private $key;
 	/** @var string|null */
 	private $lookupKey;
+	/** @var bool */
+	private $sodiumAvailable = false;
+	/** @var bool */
+	private $encryptionKeyConfigured = false;
+	/** @var bool */
+	private $hmacKeyConfigured = false;
+	/** @var bool */
+	private $keysDistinct = false;
 	/** @var string */
 	public $error = '';
 
@@ -25,41 +33,64 @@ class EmergencyHouseEncryptionService
 	 */
 	public function __construct($environmentVariable = null)
 	{
-		if (!extension_loaded('sodium')) {
-			$this->key = null;
-			$this->lookupKey = null;
+		$this->key = null;
+		$this->lookupKey = null;
+		$this->sodiumAvailable = extension_loaded('sodium');
+		if (!$this->sodiumAvailable) {
 			$this->error = 'ErrorSodiumUnavailable';
 			return;
 		}
+
 		$variable = $environmentVariable;
 		if (empty($variable)) {
 			$variable = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY');
 		}
+		$material = null;
 		$value = getenv($variable);
 		if (!is_string($value) || $value === '') {
-			$this->key = null;
-			$this->lookupKey = null;
 			$this->error = 'ErrorEncryptionKeyUnavailable';
-			return;
+		} else {
+			$material = $this->decodeKeyMaterial($value);
+		}
+		if (is_string($material) && strlen($material) < 32) {
+			$this->error = 'ErrorEncryptionKeyTooShort';
+			$material = null;
+		} elseif (is_string($material)) {
+			$this->encryptionKeyConfigured = true;
 		}
 
-		$decoded = base64_decode($value, true);
-		$material = is_string($decoded) && strlen($decoded) >= SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES ? $decoded : $value;
+		$lookupVariable = getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY');
+		$lookupMaterial = null;
+		$lookupValue = getenv($lookupVariable);
+		if (!is_string($lookupValue) || $lookupValue === '') {
+			if ($this->error === '') {
+				$this->error = 'ErrorHmacKeyUnavailable';
+			}
+		} else {
+			$lookupMaterial = $this->decodeKeyMaterial($lookupValue);
+		}
+		if (is_string($lookupMaterial) && strlen($lookupMaterial) < 32) {
+			if ($this->error === '') {
+				$this->error = 'ErrorHmacKeyTooShort';
+			}
+			$lookupMaterial = null;
+		} elseif (is_string($lookupMaterial)) {
+			$this->hmacKeyConfigured = true;
+		}
+		if (!is_string($material) || !is_string($lookupMaterial)) {
+			return;
+		}
+		if (hash_equals($material, $lookupMaterial)) {
+			$this->error = 'ErrorEncryptionAndHmacKeysMustDiffer';
+			return;
+		}
+		$this->keysDistinct = true;
+
 		$this->key = sodium_crypto_generichash(
 			$material,
 			'',
 			SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES
 		);
-
-		$lookupVariable = getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY');
-		$lookupValue = getenv($lookupVariable);
-		if (!is_string($lookupValue) || $lookupValue === '') {
-			$this->lookupKey = null;
-			$this->error = 'ErrorHmacKeyUnavailable';
-			return;
-		}
-		$lookupDecoded = base64_decode($lookupValue, true);
-		$lookupMaterial = is_string($lookupDecoded) && strlen($lookupDecoded) >= 32 ? $lookupDecoded : $lookupValue;
 		$this->lookupKey = sodium_crypto_generichash($lookupMaterial, '', 32);
 	}
 
@@ -70,11 +101,28 @@ class EmergencyHouseEncryptionService
 	 */
 	public function isAvailable()
 	{
-		return extension_loaded('sodium')
+		return $this->sodiumAvailable
 			&& is_string($this->key)
 			&& strlen($this->key) === SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES
 			&& is_string($this->lookupKey)
 			&& strlen($this->lookupKey) === 32;
+	}
+
+	/**
+	 * Return a non-sensitive configuration diagnostic for the setup page.
+	 *
+	 * @return array{sodium:bool,encryption_key:bool,hmac_key:bool,distinct:bool,available:bool,error:string}
+	 */
+	public function getConfigurationStatus()
+	{
+		return array(
+			'sodium' => $this->sodiumAvailable,
+			'encryption_key' => $this->encryptionKeyConfigured,
+			'hmac_key' => $this->hmacKeyConfigured,
+			'distinct' => $this->keysDistinct,
+			'available' => $this->isAvailable(),
+			'error' => $this->error,
+		);
 	}
 
 	/**
@@ -87,7 +135,9 @@ class EmergencyHouseEncryptionService
 	public function encrypt($plaintext, $context)
 	{
 		if (!$this->isAvailable()) {
-			$this->error = 'ErrorEncryptionKeyUnavailable';
+			if ($this->error === '') {
+				$this->error = 'ErrorEncryptionKeyUnavailable';
+			}
 			return false;
 		}
 		$nonce = random_bytes(SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES);
@@ -110,7 +160,9 @@ class EmergencyHouseEncryptionService
 	public function decrypt($payload, $context)
 	{
 		if (!$this->isAvailable()) {
-			$this->error = 'ErrorEncryptionKeyUnavailable';
+			if ($this->error === '') {
+				$this->error = 'ErrorEncryptionKeyUnavailable';
+			}
 			return false;
 		}
 		$parts = explode('.', $payload, 2);
@@ -148,10 +200,29 @@ class EmergencyHouseEncryptionService
 	public function hashLookup($normalizedValue, $purpose)
 	{
 		if (!$this->isAvailable()) {
-			$this->error = 'ErrorEncryptionKeyUnavailable';
+			if ($this->error === '') {
+				$this->error = 'ErrorEncryptionKeyUnavailable';
+			}
 			return false;
 		}
 		return sodium_bin2hex(sodium_crypto_generichash($purpose."\0".$normalizedValue, $this->lookupKey, 32));
+	}
+
+	/**
+	 * Decode canonical base64 values and otherwise keep the raw key material.
+	 *
+	 * @param string $value Environment value
+	 * @return string
+	 */
+	private function decodeKeyMaterial($value)
+	{
+		$decoded = base64_decode($value, true);
+		if (!is_string($decoded)) {
+			return $value;
+		}
+		$canonicalInput = rtrim($value, '=');
+		$canonicalDecoded = rtrim(base64_encode($decoded), '=');
+		return hash_equals($canonicalInput, $canonicalDecoded) ? $decoded : $value;
 	}
 
 	/**

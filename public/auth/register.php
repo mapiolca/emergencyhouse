@@ -88,7 +88,7 @@ if ($registered) {
 if ($errorKey !== '') {
 	emergencyhousePublicAlert($errorKey, 'error');
 }
-print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" data-disable-on-submit>';
+print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/register.php')).'" data-disable-on-submit>';
 print emergencyhousePublicCsrfFields();
 print '<input type="hidden" name="action" value="register">';
 print '<div class="eh-form-section"><h2>'.$langs->trans('YourIdentity').'</h2><p>'.$langs->trans('AdultIdentityOnlyHelp').'</p>';

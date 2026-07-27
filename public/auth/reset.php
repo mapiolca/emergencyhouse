@@ -32,7 +32,7 @@ if ($success) {
 	print '<a class="eh-button" href="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/login.php')).'">'.$langs->trans('Login').'</a>';
 } else {
 	if ($errorKey !== '') emergencyhousePublicAlert($errorKey, 'error');
-	print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" data-disable-on-submit>';
+	print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/reset.php')).'" data-disable-on-submit>';
 	print emergencyhousePublicCsrfFields().'<input type="hidden" name="action" value="reset">';
 	print '<input type="hidden" name="reset_token" value="'.dol_escape_htmltag($token).'">';
 	print '<div class="eh-field-grid">';
@@ -42,4 +42,3 @@ if ($success) {
 }
 print '</section>';
 emergencyhousePublicRenderFooter();
-

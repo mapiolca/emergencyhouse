@@ -7,7 +7,8 @@
 | Descripteur, droits, menus et réglages | Implémenté | À valider dans Dolibarr |
 | Schéma, dictionnaires et données initiales | Implémenté | À valider sur MySQL/MariaDB |
 | Campagnes et back-office opérateur | Implémenté | À valider dans le navigateur |
-| Portail public et comptes autonomes | Implémenté | À valider en HTTPS |
+| Portail public et comptes autonomes | Implémenté, URL racine et ressources autonomes | À valider sur le domaine HTTPS dédié |
+| Aperçu privé du portail | Implémenté | Rendu à valider dans Dolibarr |
 | Consentements, chiffrement et audit | Implémenté | Revue de sécurité externe requise |
 | Offres, demandes et critères | Implémenté | Parcours fonctionnels à valider |
 | Correspondances et file asynchrone | Implémenté | Charge et concurrence à mesurer |
@@ -16,7 +17,9 @@
 | Vérification, modération et incidents | Implémenté | Matrice de droits à valider |
 | Notifications publiques et natives | Implémenté | Envoi réel à valider |
 | Travaux planifiés | Implémenté | Exécution native à valider |
-| Cartographie et fournisseurs optionnels | Implémenté, désactivé par défaut | Fournisseurs à homologuer |
+| OpenStreetMap et géocodage Géoplateforme | Implémenté, géocodage désactivé par défaut | Fournisseur et confidentialité à homologuer |
+| SMS Emergency House | Non implémenté, activation bloquée | Utiliser la page native Dolibarr pour préparer/tester un moteur |
+| Numérotation propre aux six objets | Implémenté | Migration et concurrence à valider sur MySQL/MariaDB |
 | Statistiques, API et document PDF | Implémenté | Sorties et droits à valider |
 | Multicompany | Implémenté | Recette à deux entités requise |
 | Traductions et documentation | Implémenté | Relecture métier recommandée |

@@ -30,8 +30,9 @@ de son périmètre opérationnel autonome.
 ## ADR-006 — Fournisseurs externes
 
 Les tuiles OpenStreetMap constituent le réglage cartographique initial.
-Le géocodage exact et le SMS restent désactivés tant qu'un fournisseur
-approprié n'est pas configuré. Aucun secret n'est livré.
+Le géocodage exact reste désactivé par défaut ; le connecteur disponible cible
+Géoplateforme en HTTPS et refuse Nominatim public. Le SMS reste indisponible
+tant qu’un connecteur audité n’est pas implémenté. Aucun secret n’est livré.
 
 ## ADR-007 — Politique de publication
 
@@ -39,3 +40,22 @@ Les demandes sont privées par défaut. Une offre nécessite un e-mail vérifié
 une validation opérateur avant publication, avec surcharge possible par
 campagne.
 
+## ADR-008 — Aperçu privé du portail
+
+La prévisualisation utilise une page d’administration protégée par Dolibarr et
+des données entièrement fictives. Elle ne contourne pas le garde-fou
+d’activation du portail public.
+
+## ADR-009 — Numérotation propre à chaque objet
+
+Chaque objet expose son modèle Dolibarr spécifique et conserve un compteur
+atomique distinct. Le partage de numérotation Multicompany détermine l’entité
+canonique du compteur.
+
+## ADR-010 — URL racine du portail
+
+La constante `EMERGENCYHOUSE_PUBLIC_BASE_URL` désigne le répertoire `public/`
+déjà exposé par le serveur web. Les chemins du dépôt Dolibarr, notamment
+`/custom/emergencyhouse/public`, ne sont jamais concaténés à cette valeur. Les
+pages, formulaires, ressources autonomes et notifications utilisent le même
+constructeur d’URL.

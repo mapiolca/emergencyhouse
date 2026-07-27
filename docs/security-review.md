@@ -10,6 +10,8 @@
 - limitation de débit pour l’authentification et les actions sensibles ;
 - chiffrement authentifié XChaCha20-Poly1305 via Sodium ;
 - clés de chiffrement et HMAC distinctes, chargées depuis l’environnement ;
+- refus des clés décodées de moins de 32 octets et refus d’une valeur commune
+  aux deux usages ;
 - adresses, coordonnées, positions, messages et notes sensibles chiffrés ;
 - révélation des coordonnées soumise aux droits, au consentement ou à une
   justification contrôlée, avec trace d’audit ;
@@ -19,6 +21,10 @@
 - file de messagerie publique séparée des Notifications natives, limitée aux
   comptes publics qui ne sont ni des utilisateurs ni des contacts Dolibarr ;
 - fournisseurs externes désactivés par défaut et secrets non stockés en base.
+- géocodage limité au domaine HTTPS de Géoplateforme, sans redirection et sans
+  passage de l’adresse exacte dans le journal du helper HTTP Dolibarr v20 ;
+- aperçu du portail protégé par l’authentification et le droit de configuration
+  Dolibarr, sans lecture de donnée métier.
 
 ## Points à vérifier avant production
 

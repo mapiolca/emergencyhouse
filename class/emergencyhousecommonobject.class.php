@@ -319,7 +319,8 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 	public function getNextNumRef()
 	{
 		$constant = 'EMERGENCYHOUSE_'.strtoupper($this->element).'_ADDON';
-		$modelName = getDolGlobalString($constant, 'emergencyhouse_standard');
+		$defaultModel = 'emergencyhouse_'.$this->element.'_standard';
+		$modelName = getDolGlobalString($constant, $defaultModel);
 		if (!preg_match('/^[a-zA-Z0-9_]+$/', $modelName)) {
 			$this->error = 'ErrorNumberingModel';
 			return -1;

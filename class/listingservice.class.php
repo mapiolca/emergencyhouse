@@ -3,6 +3,7 @@
 
 dol_include_once('/emergencyhouse/class/campaign.class.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/geocodingservice.class.php');
 dol_include_once('/emergencyhouse/class/offer.class.php');
 dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
@@ -19,6 +20,8 @@ class EmergencyHouseListingService
 	private $db;
 	/** @var EmergencyHouseEncryptionService */
 	private $encryption;
+	/** @var EmergencyHouseGeocodingService */
+	private $geocoding;
 	/** @var string */
 	public $error = '';
 	/** @var array<int, string> */
@@ -33,6 +36,7 @@ class EmergencyHouseListingService
 	{
 		$this->db = $db;
 		$this->encryption = new EmergencyHouseEncryptionService();
+		$this->geocoding = new EmergencyHouseGeocodingService();
 	}
 
 	/**
@@ -105,6 +109,9 @@ class EmergencyHouseListingService
 			return false;
 		}
 		$offer->address_encrypted = $encryptedAddress;
+		if (!$this->geocodeOffer($offer, $address)) {
+			return false;
+		}
 		$privateInstructions = trim((string) ($data['private_instructions'] ?? ''));
 		if ($privateInstructions !== '') {
 			$encryptedInstructions = $this->encryption->encrypt($privateInstructions, $context.'|private_instructions');
@@ -191,6 +198,9 @@ class EmergencyHouseListingService
 		$request->context['trigger_reason'] = $submit ? 'public_submission' : 'public_draft';
 
 		$context = $this->requestContext($request);
+		if (!$this->geocodeRequest($request)) {
+			return false;
+		}
 		$pickup = trim((string) ($data['pickup_location'] ?? ''));
 		if ($pickup !== '') {
 			$encryptedPickup = $this->encryption->encrypt($pickup, $context.'|pickup_location');
@@ -547,6 +557,9 @@ class EmergencyHouseListingService
 				return false;
 			}
 			$offer->address_encrypted = $encryptedAddress;
+			if (!$this->geocodeOffer($offer, $address)) {
+				return false;
+			}
 		}
 		$privateInstructions = trim((string) ($data['private_instructions'] ?? ''));
 		if ($privateInstructions !== '') {
@@ -619,6 +632,9 @@ class EmergencyHouseListingService
 		$request->context['changed_fields'] = array('content', 'group', 'criteria');
 
 		$context = $this->requestContext($request);
+		if (!$this->geocodeRequest($request)) {
+			return false;
+		}
 		$pickup = trim((string) ($data['pickup_location'] ?? ''));
 		if ($pickup !== '') {
 			$encryptedPickup = $this->encryption->encrypt($pickup, $context.'|pickup_location');
@@ -1054,6 +1070,80 @@ class EmergencyHouseListingService
 	private function requestContext($request)
 	{
 		return 'emergencyhouse|request|'.$request->entity.'|'.$request->public_uuid;
+	}
+
+	/**
+	 * Geocode and protect an offer's exact coordinates when enabled.
+	 *
+	 * @param EmergencyHouseOffer $offer Offer
+	 * @param string $address Exact street address
+	 * @return bool
+	 */
+	private function geocodeOffer($offer, $address)
+	{
+		if (getDolGlobalString('EMERGENCYHOUSE_GEOCODING_PROVIDER', 'disabled') === 'disabled') {
+			return true;
+		}
+		$queryParts = array_filter(
+			array($address, trim((string) $offer->zip.' '.(string) $offer->town)),
+			static function ($value) {
+				return is_string($value) && $value !== '';
+			}
+		);
+		$coordinates = $this->geocoding->geocodeExact(implode(', ', $queryParts));
+		if (!is_array($coordinates)) {
+			$this->error = $this->geocoding->error;
+			return false;
+		}
+		$encrypted = $this->geocoding->encryptCoordinates(
+			(int) $offer->entity,
+			(string) $offer->public_uuid,
+			(float) $coordinates['latitude'],
+			(float) $coordinates['longitude']
+		);
+		if (!is_array($encrypted)) {
+			$this->error = $this->geocoding->error;
+			return false;
+		}
+		$offer->latitude_encrypted = $encrypted['latitude'];
+		$offer->longitude_encrypted = $encrypted['longitude'];
+		$offer->geo_cell = $this->geocoding->buildCoarseCell(
+			(float) $coordinates['latitude'],
+			(float) $coordinates['longitude']
+		);
+		return true;
+	}
+
+	/**
+	 * Build a coarse request location when geocoding is enabled.
+	 *
+	 * @param EmergencyHouseRequest $request Request
+	 * @return bool
+	 */
+	private function geocodeRequest($request)
+	{
+		if (getDolGlobalString('EMERGENCYHOUSE_GEOCODING_PROVIDER', 'disabled') === 'disabled') {
+			return true;
+		}
+		$queryParts = array_filter(
+			array($request->desired_zone, $request->desired_zip, $request->desired_town),
+			static function ($value) {
+				return is_string($value) && trim($value) !== '';
+			}
+		);
+		if (empty($queryParts)) {
+			return true;
+		}
+		$coordinates = $this->geocoding->geocodeExact(implode(', ', $queryParts));
+		if (!is_array($coordinates)) {
+			$this->error = $this->geocoding->error;
+			return false;
+		}
+		$request->geo_cell = $this->geocoding->buildCoarseCell(
+			(float) $coordinates['latitude'],
+			(float) $coordinates['longitude']
+		);
+		return true;
 	}
 
 	/**

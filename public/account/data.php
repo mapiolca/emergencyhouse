@@ -46,10 +46,10 @@ if ($errorKey !== '') emergencyhousePublicAlert($errorKey, 'error');
 if ($successKey !== '') emergencyhousePublicAlert($successKey, 'success');
 print '<div class="eh-card-grid">';
 print '<article class="eh-card"><h2>'.$langs->trans('DownloadMyData').'</h2><p>'.$langs->trans('DownloadMyDataHelp').'</p>';
-print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">'.emergencyhousePublicCsrfFields($emergencyhousePublicAuth, 'account_export');
+print '<form method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('account/data.php')).'">'.emergencyhousePublicCsrfFields($emergencyhousePublicAuth, 'account_export');
 print '<input type="hidden" name="action" value="export"><button class="eh-button" type="submit">'.$langs->trans('DownloadJson').'</button></form></article>';
 print '<article class="eh-card"><h2>'.$langs->trans('DeleteMyAccount').'</h2><p>'.$langs->trans('DeleteMyAccountHelp').'</p>';
-print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">'.emergencyhousePublicCsrfFields($emergencyhousePublicAuth, 'account_delete_request');
+print '<form method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('account/data.php')).'">'.emergencyhousePublicCsrfFields($emergencyhousePublicAuth, 'account_delete_request');
 print '<input type="hidden" name="action" value="delete_request"><button class="eh-button eh-button-danger" type="submit">'.$langs->trans('RequestAccountDeletion').'</button></form></article>';
 print '</div></section>';
 emergencyhousePublicRenderFooter();
@@ -90,4 +90,3 @@ function emergencyhouseAccountExportRows($db, $type, $entity, $accountId)
 	}
 	return $rows;
 }
-

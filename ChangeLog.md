@@ -13,6 +13,20 @@
   des règles de conservation.
 - Ajout dans l’onglet Sécurité d’un générateur natif Dolibarr pour produire,
   sans persistance, les deux clés d’environnement distinctes encodées en base64.
+- Ajout d’un guide Sécurité en quatre étapes et d’un diagnostic non sensible
+  contrôlant Sodium, la longueur minimale et la séparation des deux clés.
+- Ajout d’un aperçu privé du portail, protégé par la session et le droit de
+  configuration Dolibarr, utilisable avant toute configuration publique.
+- Définition de l’URL publique comme racine web directe du répertoire
+  `public/` : navigation, formulaires, ressources et liens de notification
+  n’ajoutent plus le chemin `/custom/emergencyhouse/public`.
+- Remplacement du modèle de numérotation générique par six modèles propres aux
+  campagnes, offres, demandes, sollicitations, allocations et signalements,
+  avec migration conservatrice du choix historique.
+- Ajout du connecteur de géocodage Géoplateforme inspiré de `lmdbzoning`, sans
+  journalisation de l’adresse exacte, et d’un guide OpenStreetMap/géocodage.
+- Ajout d’une aide SMS indiquant explicitement l’indisponibilité du transport
+  dans cette version et empêchant toute activation trompeuse.
 - Ajout des triggers CRUD, des événements Agenda/Notifications, des
   substitutions, des modèles de numérotation et du document PDF de convention.
 - Ajout d’une file transactionnelle distincte pour les comptes du portail

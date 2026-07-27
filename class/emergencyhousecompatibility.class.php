@@ -45,6 +45,7 @@ class EmergencyHouseCompatibility
 	public static function getCompatibilityFeatures()
 	{
 		$sodium = extension_loaded('sodium');
+		$curl = function_exists('curl_init');
 		$cron = function_exists('isModEnabled');
 
 		return array(
@@ -63,6 +64,14 @@ class EmergencyHouseCompatibility
 				'min_php' => '8.0.0',
 				'available' => $sodium,
 				'reason' => 'CompatibilityRequiresSodium',
+			),
+			'geoplateforme_geocoding' => array(
+				'label' => 'CompatibilityGeoplateformeGeocoding',
+				'description' => 'CompatibilityGeoplateformeGeocodingDescription',
+				'min_dolibarr' => '20.0.0',
+				'min_php' => '8.0.0',
+				'available' => $curl,
+				'reason' => 'CompatibilityRequiresCurl',
 			),
 			'native_cron' => array(
 				'label' => 'CompatibilityNativeCron',
@@ -126,4 +135,3 @@ class EmergencyHouseCompatibility
 		);
 	}
 }
-

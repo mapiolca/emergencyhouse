@@ -4,12 +4,22 @@
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/modules_emergencyhouse.php');
 
 /**
- * Atomic standard numbering model shared by Emergency House objects.
+ * Atomic standard numbering engine.
+ *
+ * Object-specific models extend this class and declare their own supported
+ * object, prefix and example. The generic class remains loadable only to
+ * migrate installations configured before object-specific models existed.
  */
 class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 {
 	/** @var string */
 	public $name = 'emergencyhouse_standard';
+	/** @var string */
+	protected $supportedObject = '';
+	/** @var string */
+	protected $prefix = '';
+	/** @var string */
+	protected $example = 'EHO-2607-00001';
 
 	/**
 	 * Description.
@@ -29,7 +39,7 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 	 */
 	public function getExample()
 	{
-		return 'EHO-2607-00001';
+		return $this->example;
 	}
 
 	/**
@@ -40,9 +50,14 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 	 */
 	public function canBeActivated($object)
 	{
-		return is_object($object)
-			&& !empty($object->element)
-			&& isset($this->prefixes()[(string) $object->element]);
+		if (!is_object($object) || empty($object->element)) {
+			return false;
+		}
+		$objectType = (string) $object->element;
+		if ($this->supportedObject !== '') {
+			return $objectType === $this->supportedObject && $this->prefix !== '';
+		}
+		return isset($this->legacyPrefixes()[$objectType]);
 	}
 
 	/**
@@ -63,11 +78,13 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 		$date = !empty($object->date_creation) ? (int) $object->date_creation : dol_now();
 		$period = dol_print_date($date, '%y%m');
 		$objectType = (string) $object->element;
+		$sequenceEntity = $this->getSequenceEntity($object, $entity);
+		$prefix = $this->supportedObject === '' ? $this->legacyPrefixes()[$objectType] : $this->prefix;
 
 		$db->begin();
 		$sqlInsert = 'INSERT IGNORE INTO '.MAIN_DB_PREFIX.'emergencyhouse_sequence';
 		$sqlInsert .= ' (entity, object_type, period_code, next_value)';
-		$sqlInsert .= ' VALUES ('.$entity.", '".$db->escape($objectType)."', '".$db->escape($period)."', 0)";
+		$sqlInsert .= ' VALUES ('.$sequenceEntity.", '".$db->escape($objectType)."', '".$db->escape($period)."', 0)";
 		if (!$db->query($sqlInsert)) {
 			$this->error = $db->lasterror();
 			$db->rollback();
@@ -75,7 +92,7 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 		}
 		$sqlUpdate = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_sequence';
 		$sqlUpdate .= ' SET next_value = LAST_INSERT_ID(next_value + 1)';
-		$sqlUpdate .= ' WHERE entity = '.$entity;
+		$sqlUpdate .= ' WHERE entity = '.$sequenceEntity;
 		$sqlUpdate .= " AND object_type = '".$db->escape($objectType)."'";
 		$sqlUpdate .= " AND period_code = '".$db->escape($period)."'";
 		if (!$db->query($sqlUpdate)) {
@@ -99,15 +116,44 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 
 		$number = (int) $obj->next_value;
 		$formatted = $number > 99999 ? (string) $number : sprintf('%05d', $number);
-		return $this->prefixes()[$objectType].'-'.$period.'-'.$formatted;
+		return $prefix.'-'.$period.'-'.$formatted;
 	}
 
 	/**
-	 * Object prefixes.
+	 * Resolve the canonical sequence entity from object and numbering sharing.
+	 *
+	 * @param object $object Object
+	 * @param int    $fallbackEntity Object entity
+	 * @return int
+	 */
+	protected function getSequenceEntity($object, $fallbackEntity)
+	{
+		$entities = array($fallbackEntity);
+		if (function_exists('getEntity') && !empty($object->element)) {
+			$scopes = array(
+				getEntity((string) $object->element),
+				getEntity((string) $object->element.'number', 1, $object),
+			);
+			foreach ($scopes as $scope) {
+				foreach (explode(',', (string) $scope) as $entityId) {
+					$entityId = (int) trim($entityId);
+					if ($entityId > 0) {
+						$entities[] = $entityId;
+					}
+				}
+			}
+		}
+		$entities = array_values(array_unique($entities));
+		sort($entities, SORT_NUMERIC);
+		return (int) $entities[0];
+	}
+
+	/**
+	 * Prefixes kept for migration compatibility with the former generic model.
 	 *
 	 * @return array<string, string>
 	 */
-	private function prefixes()
+	private function legacyPrefixes()
 	{
 		return array(
 			'campaign' => 'EHC',
@@ -119,4 +165,3 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 		);
 	}
 }
-

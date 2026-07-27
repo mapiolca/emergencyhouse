@@ -12,20 +12,23 @@ if (!$res) {
 
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
+dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 
 $langs->loadLangs(array('admin', 'emergencyhouse@emergencyhouse'));
 if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'configuration', 'write')) {
 	accessforbidden();
 }
 
-$encryptionEnv = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY');
-$hmacEnv = getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY');
+$encryptionService = new EmergencyHouseEncryptionService();
+$encryptionStatus = $encryptionService->getConfigurationStatus();
 $checks = array(
 	'DiagnosticDolibarrVersion' => version_compare(DOL_VERSION, '20.0.0', '>='),
 	'DiagnosticPhpVersion' => version_compare(PHP_VERSION, '8.0.0', '>='),
-	'DiagnosticSodium' => extension_loaded('sodium'),
-	'DiagnosticEncryptionKey' => getenv($encryptionEnv) !== false && getenv($encryptionEnv) !== '',
-	'DiagnosticHmacKey' => getenv($hmacEnv) !== false && getenv($hmacEnv) !== '',
+	'DiagnosticSodium' => $encryptionStatus['sodium'],
+	'DiagnosticEncryptionKey' => $encryptionStatus['encryption_key'],
+	'DiagnosticHmacKey' => $encryptionStatus['hmac_key'],
+	'EnvironmentKeysAreDistinct' => $encryptionStatus['distinct'],
+	'EncryptionServiceReady' => $encryptionStatus['available'],
 	'DiagnosticHttps' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
 	'DiagnosticCronModule' => isModEnabled('cron'),
 	'DiagnosticNotificationsModule' => isModEnabled('notification'),

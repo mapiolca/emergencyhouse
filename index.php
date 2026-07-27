@@ -15,6 +15,7 @@ if (!$res) {
 
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
+dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 
 $langs->loadLangs(array('emergencyhouse@emergencyhouse'));
 if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'campaign', 'read')) {
@@ -52,6 +53,11 @@ $recentReports = emergencyhouseCanDo($user, 'report', 'write') ? $db->query($sql
 
 llxHeader('', $langs->trans('EmergencyHouseDashboard'));
 print load_fiche_titre($langs->trans('EmergencyHouseDashboard'), '', 'emergencyhouse@emergencyhouse');
+if (emergencyhouseCanDo($user, 'configuration', 'write')) {
+	$previewUrl = dol_buildpath('/emergencyhouse/admin/public-preview.php', 1);
+	print '<div class="tabsAction"><a class="butAction" target="_blank" rel="noopener noreferrer" href="'.dol_escape_htmltag($previewUrl).'">';
+	print $langs->trans('OpenPublicPreview').'</a></div>';
+}
 print '<div class="fichecenter"><div class="fichehalfleft">';
 print '<div class="box flexcontainer flexwrap">';
 foreach ($counts as $code => $count) {
@@ -66,13 +72,13 @@ print '</div>';
 print '</div><div class="fichehalfright">';
 print load_fiche_titre($langs->trans('OperationalReadiness'));
 print '<table class="noborder centpercent">';
-$encryptionEnvironmentValue = getenv(getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY'));
+$encryptionService = new EmergencyHouseEncryptionService();
 $readiness = array(
 	'PublicPortal' => getDolGlobalInt('EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED') === 1,
 	'Agenda' => isModEnabled('agenda'),
 	'Notifications' => isModEnabled('notification'),
 	'ScheduledJobs' => isModEnabled('cron'),
-	'Encryption' => is_string($encryptionEnvironmentValue) && $encryptionEnvironmentValue !== '',
+	'Encryption' => $encryptionService->isAvailable(),
 );
 foreach ($readiness as $label => $ready) {
 	print '<tr class="oddeven"><td>'.$langs->trans($label).'</td><td class="right">';

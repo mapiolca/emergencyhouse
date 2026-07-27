@@ -288,6 +288,22 @@ class EmergencyHouseCron
 			$this->error = 'ErrorPublicNominatimForbiddenForExactAddress';
 			return -1;
 		}
+		if (!in_array($provider, array('disabled', 'geoplateforme'), true)) {
+			$this->error = 'ErrorGeocodingProviderNotImplemented';
+			return -1;
+		}
+		if ($provider !== 'disabled') {
+			$defaultEndpoint = $provider === 'geoplateforme' ? 'https://data.geopf.fr/geocodage/search' : '';
+			$endpoint = getDolGlobalString('EMERGENCYHOUSE_GEOCODING_ENDPOINT', $defaultEndpoint);
+			if (filter_var($endpoint, FILTER_VALIDATE_URL) === false || stripos($endpoint, 'https://') !== 0) {
+				$this->error = 'ErrorGeocodingEndpointInvalid';
+				return -1;
+			}
+		}
+		if (getDolGlobalString('EMERGENCYHOUSE_SMS_PROVIDER', 'disabled') !== 'disabled') {
+			$this->error = 'ErrorSmsProviderNotImplemented';
+			return -1;
+		}
 		return 1;
 	}
 

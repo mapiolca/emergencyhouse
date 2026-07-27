@@ -11,6 +11,12 @@ Les contrôleurs restent minces. Les règles métier sont portées par les objet
 et services du module. Les données opérationnelles sont isolées par entité et
 les partages inter-entités sont explicites.
 
+Lorsque `EMERGENCYHOUSE_PUBLIC_BASE_URL` est renseignée, elle représente
+directement la racine web du répertoire `public/`. Le routeur de liens ajoute
+uniquement le chemin relatif de la page ou de la ressource publique ; il
+n’ajoute aucun chemin d’installation Dolibarr. Sans valeur configurée, le
+chemin interne Dolibarr reste le fallback de recette.
+
 ## Frontières de sécurité
 
 - Une session publique dédiée authentifie les particuliers.
@@ -60,5 +66,22 @@ traités comme tels par le module Notifications.
 
 Les tuiles OpenStreetMap peuvent être utilisées avec attribution et cache
 conformes. Le service Nominatim public ne reçoit jamais une adresse exacte.
-Le géocodage exact nécessite un fournisseur contractuel ou auto-hébergé.
+Le connecteur de géocodage exact pris en charge cible exclusivement
+`data.geopf.fr` en HTTPS, refuse les redirections et traite la réponse GeoJSON
+de Géoplateforme. Il utilise un appel cURL borné au lieu de
+`getURLContent()` : dans Dolibarr v20, ce helper journalise l’URL complète et
+donc le paramètre d’adresse.
 
+## Aperçu privé
+
+`admin/public-preview.php` réutilise le rendu du portail avec des liens
+internes et des exemples traduits. La page reste derrière l’authentification
+Dolibarr et le droit de configuration. Elle ne lit ni campagne, ni compte
+public, ni donnée sensible.
+
+## Numérotation
+
+Les six objets métier ont chacun un modèle natif dédié. Le moteur commun
+réserve atomiquement le compteur par type, période et entité canonique de
+partage. Les classes spécifiques limitent chaque modèle à son propre objet et
+déclarent son préfixe.

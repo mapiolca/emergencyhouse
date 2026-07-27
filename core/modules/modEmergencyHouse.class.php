@@ -319,6 +319,9 @@ class modEmergencyHouse extends DolibarrModules
 		}
 
 		$this->ensureDefaultConstants((int) $conf->entity);
+		if (!$this->migrateLegacyNumberingModels((int) $conf->entity)) {
+			return -1;
+		}
 		if (!$this->ensureEntityDefaults((int) $conf->entity)) {
 			return -1;
 		}
@@ -357,10 +360,12 @@ class modEmergencyHouse extends DolibarrModules
 		$defaults = array(
 			'EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY' => array('private', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_BASE_URL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_OFFER_PUBLICATION_POLICY' => array('operator_validation', 'chaine'),
 			'EMERGENCYHOUSE_OSM_TILES_ENABLED' => array('1', 'yesno'),
 			'EMERGENCYHOUSE_OSM_TILE_URL' => array('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'chaine'),
 			'EMERGENCYHOUSE_GEOCODING_PROVIDER' => array('disabled', 'chaine'),
+			'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => array('https://data.geopf.fr/geocodage/search', 'chaine'),
 			'EMERGENCYHOUSE_SMS_PROVIDER' => array('disabled', 'chaine'),
 			'EMERGENCYHOUSE_API_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PHOTOS_ENABLED' => array('0', 'yesno'),
@@ -390,12 +395,12 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_MATCH_DATES_WEIGHT' => array('20', 'chaine'),
 			'EMERGENCYHOUSE_MATCH_TYPE_WEIGHT' => array('15', 'chaine'),
 			'EMERGENCYHOUSE_MATCH_FEATURES_WEIGHT' => array('10', 'chaine'),
-			'EMERGENCYHOUSE_CAMPAIGN_ADDON' => array('emergencyhouse_standard', 'chaine'),
-			'EMERGENCYHOUSE_OFFER_ADDON' => array('emergencyhouse_standard', 'chaine'),
-			'EMERGENCYHOUSE_REQUEST_ADDON' => array('emergencyhouse_standard', 'chaine'),
-			'EMERGENCYHOUSE_SOLICITATION_ADDON' => array('emergencyhouse_standard', 'chaine'),
-			'EMERGENCYHOUSE_ALLOCATION_ADDON' => array('emergencyhouse_standard', 'chaine'),
-			'EMERGENCYHOUSE_REPORT_ADDON' => array('emergencyhouse_standard', 'chaine'),
+			'EMERGENCYHOUSE_CAMPAIGN_ADDON' => array('emergencyhouse_campaign_standard', 'chaine'),
+			'EMERGENCYHOUSE_OFFER_ADDON' => array('emergencyhouse_offer_standard', 'chaine'),
+			'EMERGENCYHOUSE_REQUEST_ADDON' => array('emergencyhouse_request_standard', 'chaine'),
+			'EMERGENCYHOUSE_SOLICITATION_ADDON' => array('emergencyhouse_solicitation_standard', 'chaine'),
+			'EMERGENCYHOUSE_ALLOCATION_ADDON' => array('emergencyhouse_allocation_standard', 'chaine'),
+			'EMERGENCYHOUSE_REPORT_ADDON' => array('emergencyhouse_report_standard', 'chaine'),
 			'EMERGENCYHOUSE_ALLOCATION_DEFAULT_MODEL' => array('emergencyhouse_agreement', 'chaine'),
 		);
 
@@ -404,6 +409,38 @@ class modEmergencyHouse extends DolibarrModules
 				dolibarr_set_const($this->db, $name, $definition[0], $definition[1], 0, '', $entity);
 			}
 		}
+	}
+
+	/**
+	 * Replace the former generic model only when it is still selected.
+	 *
+	 * Existing custom models and generated references are left untouched.
+	 *
+	 * @param int $entity Entity
+	 * @return bool
+	 */
+	private function migrateLegacyNumberingModels($entity)
+	{
+		$models = array(
+			'EMERGENCYHOUSE_CAMPAIGN_ADDON' => 'emergencyhouse_campaign_standard',
+			'EMERGENCYHOUSE_OFFER_ADDON' => 'emergencyhouse_offer_standard',
+			'EMERGENCYHOUSE_REQUEST_ADDON' => 'emergencyhouse_request_standard',
+			'EMERGENCYHOUSE_SOLICITATION_ADDON' => 'emergencyhouse_solicitation_standard',
+			'EMERGENCYHOUSE_ALLOCATION_ADDON' => 'emergencyhouse_allocation_standard',
+			'EMERGENCYHOUSE_REPORT_ADDON' => 'emergencyhouse_report_standard',
+		);
+		foreach ($models as $constant => $model) {
+			$sql = 'UPDATE '.MAIN_DB_PREFIX.'const';
+			$sql .= " SET value = '".$this->db->escape($model)."'";
+			$sql .= " WHERE name = '".$this->db->escape($constant)."'";
+			$sql .= " AND value = 'emergencyhouse_standard'";
+			$sql .= ' AND entity = '.((int) $entity);
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**

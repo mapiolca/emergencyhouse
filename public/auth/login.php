@@ -14,7 +14,7 @@ if ($emergencyhousePublicAccount instanceof EmergencyHousePublicAccount) {
 $action = GETPOST('action', 'aZ09');
 $errorKey = '';
 $noticeKey = '';
-$next = emergencyhousePublicSafeRelativePath(GETPOST('next', 'restricthtml'));
+$next = emergencyhousePublicSafeReturnUrl(GETPOST('next', 'restricthtml'));
 
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, array('login', 'magic'), true)) {
 	$email = trim(GETPOST('email', 'restricthtml'));
@@ -62,7 +62,7 @@ print '<div class="eh-page-title"><p class="eh-eyebrow">'.$langs->trans('PublicA
 print '<p>'.$langs->trans('LoginIntroduction').'</p></div>';
 if ($errorKey !== '') emergencyhousePublicAlert($errorKey, 'error');
 if ($noticeKey !== '') emergencyhousePublicAlert($noticeKey, 'success');
-print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" data-disable-on-submit>';
+print '<form class="eh-form" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/login.php')).'" data-disable-on-submit>';
 print emergencyhousePublicCsrfFields();
 print '<input type="hidden" name="action" value="login">';
 print '<input type="hidden" name="next" value="'.dol_escape_htmltag($next).'">';
@@ -74,7 +74,7 @@ print '<div class="eh-form-actions"><button class="eh-button" type="submit">'.$l
 print '</form>';
 print '<div class="eh-actions"><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/forgot.php')).'">'.$langs->trans('ForgotPassword').'</a>';
 print '<a href="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/resend.php')).'">'.$langs->trans('ResendVerificationEmail').'</a></div>';
-print '<form class="eh-form eh-section-tight" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" data-disable-on-submit>';
+print '<form class="eh-form eh-section-tight" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/login.php')).'" data-disable-on-submit>';
 print emergencyhousePublicCsrfFields();
 print '<input type="hidden" name="action" value="magic">';
 print '<h2>'.$langs->trans('PasswordlessLogin').'</h2><p>'.$langs->trans('PasswordlessLoginHelp').'</p>';

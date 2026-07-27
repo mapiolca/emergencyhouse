@@ -171,6 +171,92 @@ emergencyhouseContract(
 	),
 	'Aucune clé secrète persistée dans une constante Dolibarr'
 );
+emergencyhouseContract(
+	strpos($setup, 'SecurityConfigurationGuide') !== false
+		&& strpos($setup, 'getConfigurationStatus()') !== false
+		&& strpos($setup, 'ProviderConfigurationGuide') !== false,
+	'Guides intégrés pour la sécurité et les fournisseurs'
+);
+emergencyhouseContract(
+	strpos($setup, "'EMERGENCYHOUSE_SMS_PROVIDER' => array('type' => 'string', 'default' => 'disabled')") !== false
+		&& strpos($setup, "\$options = array('disabled' => \$langs->trans('Disabled'));") !== false,
+	'SMS non activable sans connecteur implémenté'
+);
+
+$preview = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'public-preview.php');
+emergencyhouseContract(
+	strpos($preview, 'NOLOGIN') === false
+		&& strpos($preview, "emergencyhouseCanDo(\$user, 'configuration', 'write')") !== false
+		&& strpos($preview, 'PublicPreviewSampleDataHelp') !== false,
+	'Aperçu public privé, authentifié et alimenté uniquement par des exemples'
+);
+
+$publicLibrary = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR.'emergencyhouse_public.lib.php');
+$notificationService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php');
+emergencyhouseContract(
+	strpos($publicLibrary, "getDolGlobalString('EMERGENCYHOUSE_PUBLIC_BASE_URL', '')") !== false
+		&& strpos($publicLibrary, "\$relativePath === 'index.php' ? '' : \$relativePath") !== false
+		&& strpos($publicLibrary, "dol_buildpath('/emergencyhouse/public/'.ltrim") === false,
+	'L’URL configurée est la racine directe du répertoire public'
+);
+emergencyhouseContract(
+	substr_count($notificationService, 'emergencyhousePublicAbsoluteUrl(') === 2
+		&& strpos($notificationService, "dol_buildpath('/emergencyhouse/public/") === false,
+	'Les notifications réutilisent le constructeur canonique d’URL publique'
+);
+foreach (array('public.css.php', 'public.js.php', 'emergencyhouse.svg.php') as $publicAsset) {
+	emergencyhouseContract(
+		is_file($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'assets'.DIRECTORY_SEPARATOR.$publicAsset),
+		'Ressource autonome du portail : '.$publicAsset
+	);
+}
+emergencyhouseContract(
+	strpos($setup, 'ErrorPublicBaseUrlInvalid') !== false
+		&& strpos($setup, "rtrim(\$publicBaseUrl, '/').'/'") !== false
+		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_BASE_URL' => 'HelpPublicBaseUrl'") !== false,
+	'Validation et aide de l’URL racine publique'
+);
+$publicControllers = '';
+foreach (emergencyhousePhpFiles($root.DIRECTORY_SEPARATOR.'public') as $publicPhpFile) {
+	$publicControllers .= "\n".emergencyhouseReadRequired($publicPhpFile);
+}
+emergencyhouseContract(
+	strpos($publicControllers, "\$_SERVER['PHP_SELF']") === false
+		&& substr_count($publicControllers, 'emergencyhousePublicUrl(') > 40,
+	'Les actions et liens du portail utilisent le constructeur d’URL publique'
+);
+
+$numberingObjects = array('campaign', 'offer', 'request', 'solicitation', 'allocation', 'report');
+foreach ($numberingObjects as $numberingObject) {
+	$modelName = 'emergencyhouse_'.$numberingObject.'_standard';
+	$modelPath = $root.DIRECTORY_SEPARATOR.'core'.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'emergencyhouse';
+	$modelPath .= DIRECTORY_SEPARATOR.'mod_'.$modelName.'.php';
+	$model = emergencyhouseReadRequired($modelPath);
+	emergencyhouseContract(
+		strpos($model, "public \$name = '".$modelName."';") !== false
+			&& strpos($descriptor, "'EMERGENCYHOUSE_".strtoupper($numberingObject)."_ADDON' => array('".$modelName."'") !== false,
+		'Modèle de numérotation dédié pour '.$numberingObject
+	);
+}
+
+$encryptionService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'encryptionservice.class.php');
+emergencyhouseContract(
+	strpos($encryptionService, 'strlen($material) < 32') !== false
+		&& strpos($encryptionService, 'strlen($lookupMaterial) < 32') !== false
+		&& strpos($encryptionService, 'ErrorEncryptionAndHmacKeysMustDiffer') !== false,
+	'Clés de sécurité distinctes et longues d’au moins 32 octets'
+);
+
+$geocodingService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'geocodingservice.class.php');
+$listingService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'listingservice.class.php');
+emergencyhouseContract(
+	strpos($geocodingService, "strtolower(\$parts['host']) !== 'data.geopf.fr'") !== false
+		&& strpos($geocodingService, 'CURLOPT_FOLLOWLOCATION => false') !== false
+		&& strpos($geocodingService, '$response = getURLContent(') === false
+		&& substr_count($listingService, '$this->geocodeOffer(') >= 2
+		&& substr_count($listingService, '$this->geocodeRequest(') >= 2,
+	'Géocodage Géoplateforme épinglé sans journalisation native de l’adresse exacte'
+);
 
 $allPhp = '';
 foreach (emergencyhousePhpFiles($root) as $phpFile) {
