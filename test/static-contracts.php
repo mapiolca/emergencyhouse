@@ -460,6 +460,35 @@ emergencyhouseContract(empty($missingInFrench), 'Toutes les clés anglaises exis
 emergencyhouseContract(count($frTranslations) >= 1000, 'Catalogue français complet');
 emergencyhouseContract(count($enTranslations) >= 1000, 'Catalogue anglais complet');
 
+$publicUserInterfacePhp = $publicControllers."\n".$publicLibrary;
+preg_match_all(
+	"/(?:trans|transnoentitiesnoconv)\\(\\s*['\"]([A-Za-z][A-Za-z0-9_]*)['\"]/",
+	$publicUserInterfacePhp,
+	$publicTranslationMatches
+);
+$publicTranslationKeys = isset($publicTranslationMatches[1])
+	? array_values(array_unique($publicTranslationMatches[1]))
+	: array();
+$publicDolibarrMentions = array();
+foreach ($publicTranslationKeys as $publicTranslationKey) {
+	if (
+		isset($frTranslations[$publicTranslationKey])
+		&& stripos($frTranslations[$publicTranslationKey], 'Dolibarr') !== false
+	) {
+		$publicDolibarrMentions[] = 'fr_FR:'.$publicTranslationKey;
+	}
+	if (
+		isset($enTranslations[$publicTranslationKey])
+		&& stripos($enTranslations[$publicTranslationKey], 'Dolibarr') !== false
+	) {
+		$publicDolibarrMentions[] = 'en_US:'.$publicTranslationKey;
+	}
+}
+emergencyhouseContract(
+	empty($publicDolibarrMentions) && stripos($publicControllers, 'Dolibarr') === false,
+	'Aucune mention de Dolibarr dans l’interface publique'
+);
+
 preg_match_all(
 	"/emergencyhousePublicAlert\\(\\s*'([A-Za-z][A-Za-z0-9_]*)'/",
 	$publicControllers,

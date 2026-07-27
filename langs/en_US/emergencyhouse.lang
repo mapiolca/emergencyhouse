@@ -507,7 +507,7 @@ PublicPageNotFound=This page is not available.
 
 # Authentication and public account
 CreateYourAccount=Create your account
-AccountCreationIntroduction=Create a secure public account, separate from any Dolibarr user account.
+AccountCreationIntroduction=Create a secure personal account to access Emergency House services.
 YourIdentity=Your identity
 Firstname=First name
 Lastname=Last name

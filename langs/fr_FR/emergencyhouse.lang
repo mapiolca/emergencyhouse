@@ -507,7 +507,7 @@ PublicPageNotFound=Cette page n'est pas disponible.
 
 # Authentication and public account
 CreateYourAccount=Créer votre compte
-AccountCreationIntroduction=Créez un compte public distinct de tout compte utilisateur Dolibarr.
+AccountCreationIntroduction=Créez un compte personnel sécurisé pour accéder aux services Emergency House.
 YourIdentity=Votre identité
 Firstname=Prénom
 Lastname=Nom

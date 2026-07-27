@@ -28,6 +28,9 @@
 - Chargement explicite de la bibliothèque de dates Dolibarr dans les services
   utilisant `dol_time_plus_duree()`, afin que la vérification d’un compte et la
   création de sa session publique ne provoquent plus d’erreur fatale.
+- Suppression de toute mention de Dolibarr dans les textes destinés aux
+  utilisateurs du portail public, qui n’accèdent qu’aux services Emergency
+  House.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des
