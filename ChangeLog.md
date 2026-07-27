@@ -16,6 +16,13 @@
   sensibles chiffrées par la clé unique de l’instance.
 - Simplification de l’onglet Sécurité : aucun secret à copier ou saisir,
   diagnostic non sensible et bouton de récupération uniquement si nécessaire.
+- Masquage de la politique de confidentialité dans l’inscription et le pied de
+  page publics lorsque le module natif Data Policy/RGPD est désactivé, sans
+  exiger ni enregistrer le consentement correspondant.
+- Remplacement des helpers de permissions dans les déclarations de menus par
+  `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
+  visibilité, avec rattachement du tableau de bord au droit de lecture des
+  campagnes.
 - Fixation des noms `EMERGENCYHOUSE_ENCRYPTION_KEY` et
   `EMERGENCYHOUSE_HMAC_KEY`, avec compatibilité conservée pour les anciennes
   installations qui les fournissent par l’environnement du serveur.

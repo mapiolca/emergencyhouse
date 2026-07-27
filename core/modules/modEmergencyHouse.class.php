@@ -240,11 +240,11 @@ class modEmergencyHouse extends DolibarrModules
 			'langs' => 'emergencyhouse@emergencyhouse',
 			'position' => 1000,
 			'enabled' => 'isModEnabled("emergencyhouse")',
-			'perms' => 'emergencyhouseCanDo($user, "campaign", "read")',
+			'perms' => '$user->hasRight(\'emergencyhouse\', \'campaign\', \'read\')',
 			'target' => '',
 			'user' => 2,
 		);
-		$this->addLeftMenu($r, 'EmergencyHouseDashboard', '/emergencyhouse/index.php', 'home', 'read', 10);
+		$this->addLeftMenu($r, 'EmergencyHouseDashboard', '/emergencyhouse/index.php', 'campaign', 'read', 10);
 		$this->addLeftMenu($r, 'Campaigns', '/emergencyhouse/campaign/list.php', 'campaign', 'read', 20);
 		$this->addLeftMenu($r, 'Offers', '/emergencyhouse/offer/list.php', 'listing', 'read', 30);
 		$this->addLeftMenu($r, 'Requests', '/emergencyhouse/request/list.php', 'listing', 'read', 40);
@@ -299,7 +299,7 @@ class modEmergencyHouse extends DolibarrModules
 			'langs' => 'emergencyhouse@emergencyhouse',
 			'position' => $position,
 			'enabled' => 'isModEnabled("emergencyhouse")',
-			'perms' => 'emergencyhouseCanDo($user, "'.$object.'", "'.$action.'")',
+			'perms' => '$user->hasRight(\'emergencyhouse\', \''.$object.'\', \''.$action.'\')',
 			'target' => '',
 			'user' => 2,
 		);

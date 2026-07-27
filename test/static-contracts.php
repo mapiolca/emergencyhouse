@@ -156,6 +156,15 @@ emergencyhouseContract(
 	'Hooks Multicompany déclarés pour toutes les entités'
 );
 emergencyhouseContract(
+	substr_count($descriptor, "'perms' => '\$user->hasRight(") === 2
+		&& strpos($descriptor, "'perms' => 'emergencyhouseCanDo(") === false
+		&& strpos(
+			$descriptor,
+			"\$this->addLeftMenu(\$r, 'EmergencyHouseDashboard', '/emergencyhouse/index.php', 'campaign', 'read', 10);"
+		) !== false,
+	'Permissions déclaratives des menus basées sur User::hasRight()'
+);
+emergencyhouseContract(
 	strpos($descriptor, 'public function remove(') !== false
 		&& strpos($descriptor, 'return $this->_remove($sql, $options);') !== false,
 	'Désactivation non destructive'
@@ -197,12 +206,24 @@ emergencyhouseContract(
 );
 
 $publicLibrary = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR.'emergencyhouse_public.lib.php');
+$registerController = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
+);
 $notificationService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php');
 emergencyhouseContract(
 	strpos($publicLibrary, "getDolGlobalString('EMERGENCYHOUSE_PUBLIC_BASE_URL', '')") !== false
 		&& strpos($publicLibrary, "\$relativePath === 'index.php' ? '' : \$relativePath") !== false
 		&& strpos($publicLibrary, "dol_buildpath('/emergencyhouse/public/'.ltrim") === false,
 	'L’URL configurée est la racine directe du répertoire public'
+);
+emergencyhouseContract(
+	strpos($registerController, "\$dataPolicyEnabled = isModEnabled('datapolicy');") !== false
+		&& strpos($registerController, "\$privacyAccepted = !\$dataPolicyEnabled || GETPOSTINT('privacy_accepted') > 0;") !== false
+		&& strpos($registerController, 'if ($dataPolicyEnabled) {') !== false
+		&& strpos($registerController, '$consentResult < $requiredConsentCount') !== false
+		&& strpos($publicLibrary, "\$dataPolicyEnabled = isModEnabled('datapolicy');") !== false
+		&& strpos($publicLibrary, '$dataPolicyEnabled && $privacyUrl !==') !== false,
+	'Politique de confidentialité masquée et non exigée lorsque Data Policy est désactivé'
 );
 emergencyhouseContract(
 	substr_count($notificationService, 'emergencyhousePublicAbsoluteUrl(') === 2

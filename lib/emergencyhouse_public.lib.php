@@ -266,10 +266,13 @@ function emergencyhousePublicRenderFooter($preview = false)
 	print '<nav aria-label="'.$langs->trans('LegalNavigation').'"><ul>';
 	$privacyUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_URL', '');
 	$termsUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_URL', '');
+	$dataPolicyEnabled = isModEnabled('datapolicy');
 	if ($preview) {
-		print '<li><a href="#main">'.$langs->trans('PrivacyPolicy').'</a></li>';
+		if ($dataPolicyEnabled) {
+			print '<li><a href="#main">'.$langs->trans('PrivacyPolicy').'</a></li>';
+		}
 		print '<li><a href="#main">'.$langs->trans('TermsOfUse').'</a></li>';
-	} elseif ($privacyUrl !== '') {
+	} elseif ($dataPolicyEnabled && $privacyUrl !== '') {
 		print '<li><a href="'.dol_escape_htmltag($privacyUrl).'">'.$langs->trans('PrivacyPolicy').'</a></li>';
 	}
 	if (!$preview && $termsUrl !== '') {

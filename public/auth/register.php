@@ -15,6 +15,7 @@ if ($emergencyhousePublicAccount instanceof EmergencyHousePublicAccount) {
 $action = GETPOST('action', 'aZ09');
 $errorKey = '';
 $registered = GETPOSTINT('registered') > 0;
+$dataPolicyEnabled = isModEnabled('datapolicy');
 
 if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 	$firstname = trim(GETPOST('firstname', 'restricthtml'));
@@ -24,7 +25,7 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 	$password = GETPOST('password', 'none');
 	$adultConfirmed = GETPOSTINT('adult_confirmed') > 0;
 	$termsAccepted = GETPOSTINT('terms_accepted') > 0;
-	$privacyAccepted = GETPOSTINT('privacy_accepted') > 0;
+	$privacyAccepted = !$dataPolicyEnabled || GETPOSTINT('privacy_accepted') > 0;
 
 	$identity = $emergencyhousePublicIp.'|'.EmergencyHouseEncryptionService::normalizeEmail($email);
 	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'register', $identity, 5, 3600)) {
@@ -43,13 +44,17 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 			$consentVersion = getDolGlobalString('EMERGENCYHOUSE_GLOBAL_CONSENT_VERSION', '1.0');
 			$proof = hash('sha256', $account->public_uuid.'|'.$consentVersion.'|'.dol_now());
 			$consentResult = $consent->setConsent((int) $account->entity, (int) $account->id, null, 'terms', $consentVersion, true, $proof);
-			$consentResult += $consent->setConsent((int) $account->entity, (int) $account->id, null, 'privacy', $consentVersion, true, $proof);
+			$requiredConsentCount = 1;
+			if ($dataPolicyEnabled) {
+				$consentResult += $consent->setConsent((int) $account->entity, (int) $account->id, null, 'privacy', $consentVersion, true, $proof);
+				$requiredConsentCount++;
+			}
 			$verificationToken = $emergencyhousePublicAuth->issueToken(
 				$account,
 				'email_verification',
 				max(15, getDolGlobalInt('EMERGENCYHOUSE_TOKEN_TTL_MINUTES', 30)) * 60
 			);
-			if ($consentResult < 2 || !is_string($verificationToken)) {
+			if ($consentResult < $requiredConsentCount || !is_string($verificationToken)) {
 				$errorKey = 'ErrorAccountVerificationPreparation';
 			} else {
 				$notification = new EmergencyHouseNotificationService($db);
@@ -102,7 +107,9 @@ print '</div></div>';
 print '<div class="eh-form-section"><h2>'.$langs->trans('YourCommitments').'</h2>';
 print '<label class="eh-switch"><span>'.$langs->trans('ConfirmAdultAge').'</span><input type="checkbox" role="switch" name="adult_confirmed" value="1" required></label>';
 print '<label class="eh-switch"><span>'.$langs->trans('AcceptTermsOfUse').'</span><input type="checkbox" role="switch" name="terms_accepted" value="1" required></label>';
-print '<label class="eh-switch"><span>'.$langs->trans('AcceptPrivacyPolicy').'</span><input type="checkbox" role="switch" name="privacy_accepted" value="1" required></label>';
+if ($dataPolicyEnabled) {
+	print '<label class="eh-switch"><span>'.$langs->trans('AcceptPrivacyPolicy').'</span><input type="checkbox" role="switch" name="privacy_accepted" value="1" required></label>';
+}
 print '</div>';
 print '<div class="eh-form-actions"><button class="eh-button" type="submit">'.$langs->trans('CreateAccount').'</button></div>';
 print '</form>';
