@@ -435,6 +435,20 @@ emergencyhouseContract(empty($missingInFrench), 'Toutes les clés anglaises exis
 emergencyhouseContract(count($frTranslations) >= 1000, 'Catalogue français complet');
 emergencyhouseContract(count($enTranslations) >= 1000, 'Catalogue anglais complet');
 
+preg_match_all(
+	"/emergencyhousePublicAlert\\(\\s*'([A-Za-z][A-Za-z0-9_]*)'/",
+	$publicControllers,
+	$publicAlertMatches
+);
+$publicAlertKeys = isset($publicAlertMatches[1]) ? array_values(array_unique($publicAlertMatches[1])) : array();
+sort($publicAlertKeys);
+foreach ($publicAlertKeys as $publicAlertKey) {
+	emergencyhouseContract(
+		isset($frTranslations[$publicAlertKey]) && isset($enTranslations[$publicAlertKey]),
+		'Message public littéral traduit : '.$publicAlertKey
+	);
+}
+
 $requiredTranslations = array(
 	'EmergencyHouseModuleDescription',
 	'EmergencyHouseModuleDescriptionLong',

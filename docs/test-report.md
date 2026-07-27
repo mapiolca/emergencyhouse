@@ -37,6 +37,8 @@ Le script vérifie notamment :
 - la présence des guides Sécurité et fournisseurs ;
 - la publication conditionnelle des CGU et l’utilisation de l’éditeur WYSIWYG
   natif ;
+- la traduction bilingue de chaque message littéral affiché par les alertes
+  publiques ;
 - l’unicité et la parité des traductions `fr_FR` et `en_US`.
 
 Une passe de lint PHP doit également être exécutée sur tous les fichiers
@@ -45,7 +47,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 27 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `452 contrats validés` ;
+- contrats statiques : `460 contrats validés` ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,

@@ -22,6 +22,9 @@
 - Ajout des conditions générales d’utilisation administrables en HTML avec
   l’éditeur WYSIWYG natif, page publique dédiée et masquage complet du lien et
   du consentement lorsque le contenu est vide.
+- Correction des confirmations publiques manquantes, notamment après la
+  création et la vérification d’un compte, qui affichaient à tort une erreur
+  interne alors que l’opération avait réussi.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des
