@@ -14,8 +14,10 @@
  */
 
 include_once DOL_DOCUMENT_ROOT.'/core/modules/DolibarrModules.class.php';
+include_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
 
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
+dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 
 /**
  * Module descriptor.
@@ -318,6 +320,9 @@ class modEmergencyHouse extends DolibarrModules
 			return -1;
 		}
 
+		if (!$this->ensureSecurityKeys()) {
+			return -1;
+		}
 		$this->ensureDefaultConstants((int) $conf->entity);
 		if (!$this->migrateLegacyNumberingModels((int) $conf->entity)) {
 			return -1;
@@ -335,6 +340,58 @@ class modEmergencyHouse extends DolibarrModules
 				." AND entity = ".((int) $conf->entity).")",
 		);
 		return $this->_init($sql, $options);
+	}
+
+	/**
+	 * Create the two global security keys once.
+	 *
+	 * dolibarr_set_const() encrypts values whose names end in "_KEY" with the
+	 * Dolibarr instance key. Existing values and legacy environment-based
+	 * deployments are preserved.
+	 *
+	 * @return bool
+	 */
+	private function ensureSecurityKeys()
+	{
+		$encryptionName = EmergencyHouseEncryptionService::ENCRYPTION_KEY_NAME;
+		$hmacName = EmergencyHouseEncryptionService::HMAC_KEY_NAME;
+		$encryptionExists = $this->constantExists($encryptionName, 0);
+		$hmacExists = $this->constantExists($hmacName, 0);
+
+		if ($encryptionExists && $hmacExists) {
+			return true;
+		}
+		if (!$encryptionExists && !$hmacExists) {
+			$environmentEncryption = getenv($encryptionName);
+			$environmentHmac = getenv($hmacName);
+			if (
+				is_string($environmentEncryption) && $environmentEncryption !== ''
+				&& is_string($environmentHmac) && $environmentHmac !== ''
+			) {
+				return true;
+			}
+		}
+
+		$encryptionValue = $encryptionExists ? dolibarr_get_const($this->db, $encryptionName, 0) : '';
+		$hmacValue = $hmacExists ? dolibarr_get_const($this->db, $hmacName, 0) : '';
+		if (!$encryptionExists) {
+			$encryptionValue = base64_encode(getRandomPassword(true, null, 48));
+			if (dolibarr_set_const($this->db, $encryptionName, $encryptionValue, 'chaine', 0, '', 0) <= 0) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+		if (!$hmacExists) {
+			do {
+				$hmacValue = base64_encode(getRandomPassword(true, null, 48));
+			} while (hash_equals($encryptionValue, $hmacValue));
+			if (dolibarr_set_const($this->db, $hmacName, $hmacValue, 'chaine', 0, '', 0) <= 0) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -369,8 +426,6 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_SMS_PROVIDER' => array('disabled', 'chaine'),
 			'EMERGENCYHOUSE_API_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PHOTOS_ENABLED' => array('0', 'yesno'),
-			'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV' => array('EMERGENCYHOUSE_ENCRYPTION_KEY', 'chaine'),
-			'EMERGENCYHOUSE_HMAC_KEY_ENV' => array('EMERGENCYHOUSE_HMAC_KEY', 'chaine'),
 			'EMERGENCYHOUSE_SESSION_IDLE_MINUTES' => array('120', 'chaine'),
 			'EMERGENCYHOUSE_TOKEN_TTL_MINUTES' => array('30', 'chaine'),
 			'EMERGENCYHOUSE_MAX_LOGIN_ATTEMPTS' => array('5', 'chaine'),

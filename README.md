@@ -49,7 +49,8 @@ Après copie ou clonage :
 1. activer Emergency House dans la liste des modules ;
 2. ouvrir les réglages et vérifier les onglets **Compatibilité** et
    **Diagnostic** ;
-3. configurer les secrets de chiffrement dans l’environnement du serveur ;
+3. vérifier dans l’onglet **Sécurité** que les clés gérées automatiquement sont
+   disponibles ;
 4. renseigner les textes juridiques, les coordonnées officielles et l’URL
    racine qui expose directement le répertoire `public/` ;
 5. activer les travaux planifiés nécessaires depuis le module natif Dolibarr ;
@@ -119,24 +120,28 @@ configuration native des notifications back-office.
 
 ## Secrets
 
-Deux variables d’environnement distinctes sont attendues par défaut :
+Deux clés techniques distinctes sont gérées sous les noms fixes :
 
 - `EMERGENCYHOUSE_ENCRYPTION_KEY` pour le chiffrement authentifié ;
 - `EMERGENCYHOUSE_HMAC_KEY` pour les empreintes de recherche.
 
-Utiliser deux valeurs aléatoires différentes d’au moins 32 octets, idéalement
-encodées en base64. Elles ne doivent être enregistrées ni dans Git, ni dans la
-base de données, ni dans une constante Dolibarr. Leur nom peut être adapté dans
-les réglages du module.
+À la première activation, le module produit automatiquement deux valeurs
+aléatoires différentes de 48 octets avec le générateur natif
+`getRandomPassword()` de Dolibarr, puis les encode en base64. Elles sont
+enregistrées dans l’entité globale sous forme de constantes sensibles.
 
-L’onglet **Sécurité** des réglages permet de générer ces deux valeurs avec le
-générateur natif `getRandomPassword()` de Dolibarr. Le module encode chaque
-valeur en base64, les affiche une seule fois dans une réponse non mise en cache
-et ne les enregistre pas. Il faut les copier immédiatement dans la
-configuration d’environnement du serveur, redémarrer le processus PHP, puis
-recharger l’onglet. Celui-ci vérifie sans afficher les secrets : Sodium, la
-présence et la longueur des deux clés, leur différence et la disponibilité du
-service de chiffrement.
+Comme leurs noms se terminent par `_KEY`, `dolibarr_set_const()` chiffre
+automatiquement les valeurs avec la clé unique de l’instance avant leur écriture
+en base. Le secret en clair n’est jamais affiché, n’entre jamais dans Git et ne
+figure pas tel quel dans un export SQL. L’onglet **Sécurité** se limite donc à
+un diagnostic lisible et, si nécessaire, à un bouton de récupération
+« Générer et enregistrer les clés ».
+
+La sauvegarde de la base doit être accompagnée du fichier `conf.php` de la même
+instance : la clé d’instance qu’il contient est nécessaire pour relire les
+constantes sensibles après restauration. Les installations historiques qui
+fournissent déjà les deux valeurs par variables d’environnement restent prises
+en charge sans migration forcée.
 
 ## Cartographie et fournisseurs
 

@@ -4,12 +4,16 @@
 /**
  * Authenticated encryption and deterministic lookup hashes.
  *
- * The master key is read from an environment variable. It is never persisted
- * by the module.
+ * Dolibarr stores the two fixed keys as sensitive constants. The core encrypts
+ * constants ending in "_KEY" with the instance key before writing them to the
+ * database. Environment variables remain a compatibility fallback for
+ * deployments configured before this native storage was enabled.
  */
 class EmergencyHouseEncryptionService
 {
 	private const PAYLOAD_VERSION = 'v1';
+	public const ENCRYPTION_KEY_NAME = 'EMERGENCYHOUSE_ENCRYPTION_KEY';
+	public const HMAC_KEY_NAME = 'EMERGENCYHOUSE_HMAC_KEY';
 
 	/** @var string|null */
 	private $key;
@@ -24,14 +28,14 @@ class EmergencyHouseEncryptionService
 	/** @var bool */
 	private $keysDistinct = false;
 	/** @var string */
+	private $configurationSource = 'none';
+	/** @var string */
 	public $error = '';
 
 	/**
 	 * Constructor.
-	 *
-	 * @param string|null $environmentVariable Environment variable containing the key
 	 */
-	public function __construct($environmentVariable = null)
+	public function __construct()
 	{
 		$this->key = null;
 		$this->lookupKey = null;
@@ -41,12 +45,26 @@ class EmergencyHouseEncryptionService
 			return;
 		}
 
-		$variable = $environmentVariable;
-		if (empty($variable)) {
-			$variable = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY');
+		$value = '';
+		$lookupValue = '';
+		if (function_exists('getDolGlobalString')) {
+			$value = getDolGlobalString(self::ENCRYPTION_KEY_NAME);
+			$lookupValue = getDolGlobalString(self::HMAC_KEY_NAME);
+			if ($value !== '' || $lookupValue !== '') {
+				$this->configurationSource = 'dolibarr';
+			}
 		}
+		if ($this->configurationSource === 'none') {
+			$environmentValue = getenv(self::ENCRYPTION_KEY_NAME);
+			$environmentLookupValue = getenv(self::HMAC_KEY_NAME);
+			$value = is_string($environmentValue) ? $environmentValue : '';
+			$lookupValue = is_string($environmentLookupValue) ? $environmentLookupValue : '';
+			if ($value !== '' || $lookupValue !== '') {
+				$this->configurationSource = 'environment';
+			}
+		}
+
 		$material = null;
-		$value = getenv($variable);
 		if (!is_string($value) || $value === '') {
 			$this->error = 'ErrorEncryptionKeyUnavailable';
 		} else {
@@ -59,9 +77,7 @@ class EmergencyHouseEncryptionService
 			$this->encryptionKeyConfigured = true;
 		}
 
-		$lookupVariable = getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY');
 		$lookupMaterial = null;
-		$lookupValue = getenv($lookupVariable);
 		if (!is_string($lookupValue) || $lookupValue === '') {
 			if ($this->error === '') {
 				$this->error = 'ErrorHmacKeyUnavailable';
@@ -111,7 +127,7 @@ class EmergencyHouseEncryptionService
 	/**
 	 * Return a non-sensitive configuration diagnostic for the setup page.
 	 *
-	 * @return array{sodium:bool,encryption_key:bool,hmac_key:bool,distinct:bool,available:bool,error:string}
+	 * @return array{sodium:bool,encryption_key:bool,hmac_key:bool,distinct:bool,available:bool,source:string,error:string}
 	 */
 	public function getConfigurationStatus()
 	{
@@ -121,6 +137,7 @@ class EmergencyHouseEncryptionService
 			'hmac_key' => $this->hmacKeyConfigured,
 			'distinct' => $this->keysDistinct,
 			'available' => $this->isAvailable(),
+			'source' => $this->configurationSource,
 			'error' => $this->error,
 		);
 	}
@@ -211,7 +228,7 @@ class EmergencyHouseEncryptionService
 	/**
 	 * Decode canonical base64 values and otherwise keep the raw key material.
 	 *
-	 * @param string $value Environment value
+	 * @param string $value Configured value
 	 * @return string
 	 */
 	private function decodeKeyMaterial($value)

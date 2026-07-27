@@ -27,7 +27,7 @@ $checks = array(
 	'DiagnosticSodium' => $encryptionStatus['sodium'],
 	'DiagnosticEncryptionKey' => $encryptionStatus['encryption_key'],
 	'DiagnosticHmacKey' => $encryptionStatus['hmac_key'],
-	'EnvironmentKeysAreDistinct' => $encryptionStatus['distinct'],
+	'ManagedKeysAreDistinct' => $encryptionStatus['distinct'],
 	'EncryptionServiceReady' => $encryptionStatus['available'],
 	'DiagnosticHttps' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
 	'DiagnosticCronModule' => isModEnabled('cron'),

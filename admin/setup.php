@@ -52,13 +52,6 @@ $numberingConstants = array(
 );
 
 /**
- * Keys generated for the current response only. They are never persisted.
- *
- * @var list<array{name:string,value:string}>
- */
-$generatedEnvironmentKeys = array();
-
-/**
  * @var array<string, array<string, array{type:string,default:string}>> $settingsByTab
  */
 $settingsByTab = array(
@@ -103,8 +96,6 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_SMS_PROVIDER' => array('type' => 'string', 'default' => 'disabled'),
 	),
 	'security' => array(
-		'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV' => array('type' => 'string', 'default' => 'EMERGENCYHOUSE_ENCRYPTION_KEY'),
-		'EMERGENCYHOUSE_HMAC_KEY_ENV' => array('type' => 'string', 'default' => 'EMERGENCYHOUSE_HMAC_KEY'),
 		'EMERGENCYHOUSE_RATE_LIMIT_HOUR' => array('type' => 'int', 'default' => '20'),
 		'EMERGENCYHOUSE_RATE_LIMIT_DAY' => array('type' => 'int', 'default' => '100'),
 		'EMERGENCYHOUSE_CSP_EXTRA_CONNECT_SRC' => array('type' => 'string', 'default' => ''),
@@ -144,8 +135,6 @@ $settingHelpKeys = array(
 	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
 	'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => 'HelpGeocodingEndpoint',
 	'EMERGENCYHOUSE_SMS_PROVIDER' => 'HelpSmsProvider',
-	'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV' => 'HelpEncryptionKeyEnvironmentVariable',
-	'EMERGENCYHOUSE_HMAC_KEY_ENV' => 'HelpHmacKeyEnvironmentVariable',
 	'EMERGENCYHOUSE_RATE_LIMIT_HOUR' => 'HelpRateLimitHour',
 	'EMERGENCYHOUSE_RATE_LIMIT_DAY' => 'HelpRateLimitDay',
 	'EMERGENCYHOUSE_CSP_EXTRA_CONNECT_SRC' => 'HelpCspExtraConnectSrc',
@@ -194,25 +183,37 @@ if ($action === 'set_numbering_model') {
 	);
 	header('Location: '.$_SERVER['PHP_SELF'].'?tab=general');
 	exit;
-} elseif ($action === 'generate_environment_keys' && $tab === 'security') {
-	$encryptionKey = base64_encode(getRandomPassword(true, null, 48));
-	do {
-		$hmacKey = base64_encode(getRandomPassword(true, null, 48));
-	} while (hash_equals($encryptionKey, $hmacKey));
+} elseif ($action === 'generate_security_keys' && $tab === 'security') {
+	$encryptionService = new EmergencyHouseEncryptionService();
+	$encryptionStatus = $encryptionService->getConfigurationStatus();
+	if (!$encryptionStatus['sodium']) {
+		setEventMessages($langs->trans('ErrorSodiumUnavailable'), null, 'errors');
+	} elseif ($encryptionStatus['available']) {
+		setEventMessages($langs->trans('SecurityKeysAlreadyConfigured'), null, 'warnings');
+	} else {
+		$encryptionName = EmergencyHouseEncryptionService::ENCRYPTION_KEY_NAME;
+		$hmacName = EmergencyHouseEncryptionService::HMAC_KEY_NAME;
+		$previousEncryptionKey = dolibarr_get_const($db, $encryptionName, 0);
+		$previousHmacKey = dolibarr_get_const($db, $hmacName, 0);
+		$encryptionKey = base64_encode(getRandomPassword(true, null, 48));
+		do {
+			$hmacKey = base64_encode(getRandomPassword(true, null, 48));
+		} while (hash_equals($encryptionKey, $hmacKey));
 
-	$generatedEnvironmentKeys = array(
-		array(
-			'name' => getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY'),
-			'value' => $encryptionKey,
-		),
-		array(
-			'name' => getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY'),
-			'value' => $hmacKey,
-		),
-	);
-
-	header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-	header('Pragma: no-cache');
+		$encryptionResult = dolibarr_set_const($db, $encryptionName, $encryptionKey, 'chaine', 0, '', 0);
+		$hmacResult = $encryptionResult > 0
+			? dolibarr_set_const($db, $hmacName, $hmacKey, 'chaine', 0, '', 0)
+			: -1;
+		if ($encryptionResult > 0 && $hmacResult > 0) {
+			setEventMessages($langs->trans('SecurityKeysInstalled'), null, 'mesgs');
+		} else {
+			dolibarr_set_const($db, $encryptionName, $previousEncryptionKey, 'chaine', 0, '', 0);
+			dolibarr_set_const($db, $hmacName, $previousHmacKey, 'chaine', 0, '', 0);
+			setEventMessages($langs->trans('ErrorSecurityKeysNotInstalled'), null, 'errors');
+		}
+	}
+	header('Location: '.$_SERVER['PHP_SELF'].'?tab=security');
+	exit;
 } elseif ($action === 'save' && isset($settingsByTab[$tab])) {
 	$error = 0;
 	$values = array();
@@ -297,21 +298,6 @@ if ($action === 'set_numbering_model') {
 			setEventMessages($langs->trans('ErrorSmsProviderNotImplemented'), null, 'errors');
 		}
 	}
-	if ($tab === 'security') {
-		$environmentNamePattern = '/^[A-Za-z_][A-Za-z0-9_]*$/';
-		if (
-			!preg_match($environmentNamePattern, $values['EMERGENCYHOUSE_ENCRYPTION_KEY_ENV'])
-			|| !preg_match($environmentNamePattern, $values['EMERGENCYHOUSE_HMAC_KEY_ENV'])
-		) {
-			$error++;
-			setEventMessages($langs->trans('ErrorEnvironmentVariableNameInvalid'), null, 'errors');
-		}
-		if ($values['EMERGENCYHOUSE_ENCRYPTION_KEY_ENV'] === $values['EMERGENCYHOUSE_HMAC_KEY_ENV']) {
-			$error++;
-			setEventMessages($langs->trans('ErrorEnvironmentVariableNamesMustDiffer'), null, 'errors');
-		}
-	}
-
 	if (!$error) {
 		foreach ($values as $name => $value) {
 			$result = dolibarr_set_const($db, $name, $value, 'chaine', 0, '', (int) $conf->entity);
@@ -387,31 +373,29 @@ if ($tab === 'portal') {
 	print '<div class="info">'.$langs->trans('PublicBaseUrlConfigurationHelp').'</div>';
 }
 if ($tab === 'security') {
-	print '<div class="warning">'.$langs->trans('EnvironmentKeysNotStoredInfo').'</div>';
 	$encryptionService = new EmergencyHouseEncryptionService();
 	$encryptionStatus = $encryptionService->getConfigurationStatus();
-	$encryptionEnvironmentName = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY');
-	$hmacEnvironmentName = getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY');
+	$encryptionKeyName = EmergencyHouseEncryptionService::ENCRYPTION_KEY_NAME;
+	$hmacKeyName = EmergencyHouseEncryptionService::HMAC_KEY_NAME;
 
 	print '<br>'.load_fiche_titre($langs->trans('SecurityConfigurationGuide'), '', 'shield-alt');
 	print '<div class="info">'.$langs->trans('SecurityConfigurationIntroduction').'</div>';
-	print '<ol>';
-	print '<li>'.$langs->trans('SecurityStepGenerate').'</li>';
-	print '<li>'.$langs->trans('SecurityStepInstall').'</li>';
-	print '<li>'.$langs->trans('SecurityStepRestart').'</li>';
-	print '<li>'.$langs->trans('SecurityStepVerify').'</li>';
-	print '</ol>';
-	print '<pre class="small">export '.dol_escape_htmltag($encryptionEnvironmentName).'=&quot;'.$langs->trans('PasteEncryptionKeyHere').'&quot;'."\n";
-	print 'export '.dol_escape_htmltag($hmacEnvironmentName).'=&quot;'.$langs->trans('PasteHmacKeyHere').'&quot;</pre>';
-	print '<div class="opacitymedium">'.$langs->trans('EnvironmentConfigurationExampleHelp').'</div>';
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('TechnicalKey').'</th><th>'.$langs->trans('Description').'</th></tr>';
+	print '<tr class="oddeven"><td><code>'.dol_escape_htmltag($encryptionKeyName).'</code></td>';
+	print '<td>'.$langs->trans('EncryptionKeyPurpose').'</td></tr>';
+	print '<tr class="oddeven"><td><code>'.dol_escape_htmltag($hmacKeyName).'</code></td>';
+	print '<td>'.$langs->trans('HmacKeyPurpose').'</td></tr>';
+	print '</table>';
+	print '<div class="opacitymedium">'.$langs->trans('SecurityKeysStorageInfo').'</div>';
 
 	print '<br><table class="noborder centpercent">';
 	print '<tr class="liste_titre"><th>'.$langs->trans('SecurityCheck').'</th><th>'.$langs->trans('Status').'</th></tr>';
 	$securityChecks = array(
 		'SodiumExtension' => $encryptionStatus['sodium'],
-		'EncryptionEnvironmentKey' => $encryptionStatus['encryption_key'],
-		'HmacEnvironmentKey' => $encryptionStatus['hmac_key'],
-		'EnvironmentKeysAreDistinct' => $encryptionStatus['distinct'],
+		'EncryptionManagedKey' => $encryptionStatus['encryption_key'],
+		'HmacManagedKey' => $encryptionStatus['hmac_key'],
+		'ManagedKeysAreDistinct' => $encryptionStatus['distinct'],
 		'EncryptionServiceReady' => $encryptionStatus['available'],
 	);
 	foreach ($securityChecks as $label => $checkPassed) {
@@ -419,28 +403,29 @@ if ($tab === 'security') {
 		print img_picto($langs->trans($checkPassed ? 'Available' : 'Unavailable'), $checkPassed ? 'tick' : 'error');
 		print ' '.$langs->trans($checkPassed ? 'Available' : 'Unavailable').'</td></tr>';
 	}
+	$sourceTranslationKey = 'SecurityKeySourceNone';
+	if ($encryptionStatus['source'] === 'dolibarr') {
+		$sourceTranslationKey = 'SecurityKeySourceDolibarr';
+	} elseif ($encryptionStatus['source'] === 'environment') {
+		$sourceTranslationKey = 'SecurityKeySourceEnvironment';
+	}
+	print '<tr class="oddeven"><td>'.$langs->trans('SecurityKeySource').'</td>';
+	print '<td>'.$langs->trans($sourceTranslationKey).'</td></tr>';
 	print '</table>';
 	if (!$encryptionStatus['available'] && $encryptionStatus['error'] !== '') {
 		print '<div class="warning">'.$langs->trans($encryptionStatus['error']).'</div>';
 	}
-	if (!empty($generatedEnvironmentKeys)) {
-		print '<br>'.load_fiche_titre($langs->trans('GeneratedEnvironmentKeys'), '', 'key');
-		print '<div class="warning">'.$langs->trans('GeneratedEnvironmentKeysOneTimeWarning').'</div>';
-		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre"><th>'.$langs->trans('EnvironmentVariable').'</th><th>'.$langs->trans('GeneratedValue').'</th></tr>';
-		foreach ($generatedEnvironmentKeys as $generatedEnvironmentKey) {
-			print '<tr class="oddeven"><td><code>'.dol_escape_htmltag($generatedEnvironmentKey['name']).'</code></td>';
-			print '<td><input class="flat centpercent" type="text" readonly autocomplete="off" spellcheck="false"';
-			print ' value="'.dol_escape_htmltag($generatedEnvironmentKey['value']).'"></td></tr>';
-		}
-		print '</table>';
+	if ($encryptionStatus['available']) {
+		print '<div class="info">'.$langs->trans('SecurityKeysManagedAutomatically').'</div>';
+	} elseif ($encryptionStatus['sodium']) {
+		print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+		print '<input type="hidden" name="action" value="generate_security_keys">';
+		print '<input type="hidden" name="tab" value="security">';
+		print '<p class="center"><button class="button button-save" type="submit">';
+		print $langs->trans('GenerateAndInstallSecurityKeys').'</button></p>';
+		print '</form>';
 	}
-	print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
-	print '<input type="hidden" name="token" value="'.newToken().'">';
-	print '<input type="hidden" name="action" value="generate_environment_keys">';
-	print '<input type="hidden" name="tab" value="security">';
-	print '<p class="center"><button class="button" type="submit">'.$langs->trans('GenerateEnvironmentKeys').'</button></p>';
-	print '</form>';
 }
 
 if (isset($settingsByTab[$tab])) {

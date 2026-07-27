@@ -165,15 +165,16 @@ $setupPath = $root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'setup.php';
 $setup = emergencyhouseReadRequired($setupPath);
 emergencyhouseContract(
 	strpos($setup, "require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';") !== false
-		&& substr_count($setup, 'base64_encode(getRandomPassword(true, null, 48))') === 2,
-	'Génération native Dolibarr de deux clés encodées en base64'
+		&& substr_count($setup, 'base64_encode(getRandomPassword(true, null, 48))') === 2
+		&& substr_count($descriptor, 'base64_encode(getRandomPassword(true, null, 48))') === 2,
+	'Initialisation et récupération natives de deux clés encodées en base64'
 );
 emergencyhouseContract(
-	!preg_match(
-		"/dolibarr_set_const\\s*\\([^;]*'EMERGENCYHOUSE_(?:ENCRYPTION|HMAC)_KEY'/s",
-		$setup
-	),
-	'Aucune clé secrète persistée dans une constante Dolibarr'
+	strpos($setup, 'GeneratedEnvironmentKeys') === false
+		&& strpos($setup, 'GeneratedValue') === false
+		&& strpos($setup, '<pre class="small">export ') === false
+		&& strpos($setup, 'autocomplete="off" spellcheck="false"') === false,
+	'Aucune valeur de clé affichée ou demandée dans les réglages'
 );
 emergencyhouseContract(
 	strpos($setup, 'SecurityConfigurationGuide') !== false
@@ -262,6 +263,23 @@ emergencyhouseContract(
 		&& strpos($encryptionService, 'strlen($lookupMaterial) < 32') !== false
 		&& strpos($encryptionService, 'ErrorEncryptionAndHmacKeysMustDiffer') !== false,
 	'Clés de sécurité distinctes et longues d’au moins 32 octets'
+);
+emergencyhouseContract(
+	strpos($encryptionService, "public const ENCRYPTION_KEY_NAME = 'EMERGENCYHOUSE_ENCRYPTION_KEY';") !== false
+		&& strpos($encryptionService, "public const HMAC_KEY_NAME = 'EMERGENCYHOUSE_HMAC_KEY';") !== false
+		&& strpos($encryptionService, 'getDolGlobalString(self::ENCRYPTION_KEY_NAME)') !== false
+		&& strpos($encryptionService, 'getDolGlobalString(self::HMAC_KEY_NAME)') !== false
+		&& strpos($encryptionService, 'getenv(self::ENCRYPTION_KEY_NAME)') !== false
+		&& strpos($encryptionService, 'getenv(self::HMAC_KEY_NAME)') !== false
+		&& strpos($descriptor, 'private function ensureSecurityKeys()') !== false
+		&& strpos($descriptor, "dolibarr_set_const(\$this->db, \$encryptionName, \$encryptionValue, 'chaine', 0, '', 0)") !== false
+		&& strpos($descriptor, "dolibarr_set_const(\$this->db, \$hmacName, \$hmacValue, 'chaine', 0, '', 0)") !== false
+		&& strpos($setup, "name=\"action\" value=\"generate_security_keys\"") !== false
+		&& strpos($setup, 'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV') === false
+		&& strpos($setup, 'EMERGENCYHOUSE_HMAC_KEY_ENV') === false
+		&& strpos($descriptor, 'EMERGENCYHOUSE_ENCRYPTION_KEY_ENV') === false
+		&& strpos($descriptor, 'EMERGENCYHOUSE_HMAC_KEY_ENV') === false,
+	'Clés fixes générées et enregistrées comme constantes sensibles globales Dolibarr'
 );
 
 $geocodingService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'geocodingservice.class.php');

@@ -16,6 +16,7 @@ Les contrôles suivants sont exécutables depuis la racine du module :
 ```bash
 php test/static-contracts.php
 php test/numbering-model-contract.php
+php test/security-key-contract.php
 php test/public-url-contract.php
 ```
 
@@ -42,7 +43,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 27 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `441 contrats validés` ;
+- contrats statiques : `445 contrats validés` ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,
@@ -51,7 +52,9 @@ Résultats de la passe finale du 27 juillet 2026 :
   aux sources canoniques du module ;
 - catalogues `fr_FR` et `en_US` : parité et unicité validées ;
 - clés : deux valeurs de 32 octets acceptées, valeurs identiques et valeur
-  courte refusées ;
+  courte refusées ; chargement prioritaire par les constantes sensibles
+  Dolibarr, repli historique sur l’environnement, chiffrement authentifié et
+  empreinte déterministe validés ;
 - Géoplateforme : requête non personnelle `Paris`, réponse GeoJSON et
   coordonnées validées ;
 - PHPStan : non exécuté, outil et bootstrap Dolibarr absents de

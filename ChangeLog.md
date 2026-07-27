@@ -11,10 +11,14 @@
   et sans suppression cascade métier.
 - Ajout du chiffrement Sodium, des empreintes HMAC, des limitations de débit et
   des règles de conservation.
-- Ajout dans l’onglet Sécurité d’un générateur natif Dolibarr pour produire,
-  sans persistance, les deux clés d’environnement distinctes encodées en base64.
-- Ajout d’un guide Sécurité en quatre étapes et d’un diagnostic non sensible
-  contrôlant Sodium, la longueur minimale et la séparation des deux clés.
+- Génération automatique à l’activation de deux clés globales distinctes avec
+  le générateur natif Dolibarr, puis stockage sous forme de constantes
+  sensibles chiffrées par la clé unique de l’instance.
+- Simplification de l’onglet Sécurité : aucun secret à copier ou saisir,
+  diagnostic non sensible et bouton de récupération uniquement si nécessaire.
+- Fixation des noms `EMERGENCYHOUSE_ENCRYPTION_KEY` et
+  `EMERGENCYHOUSE_HMAC_KEY`, avec compatibilité conservée pour les anciennes
+  installations qui les fournissent par l’environnement du serveur.
 - Ajout d’un aperçu privé du portail, protégé par la session et le droit de
   configuration Dolibarr, utilisable avant toute configuration publique.
 - Utilisation du pictogramme natif Dolibarr `fontawesome_house-user` pour

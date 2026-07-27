@@ -9,7 +9,12 @@
 - contrôles d’appartenance sur les objets accessibles publiquement ;
 - limitation de débit pour l’authentification et les actions sensibles ;
 - chiffrement authentifié XChaCha20-Poly1305 via Sodium ;
-- clés de chiffrement et HMAC distinctes, chargées depuis l’environnement ;
+- clés de chiffrement et HMAC distinctes, créées automatiquement avec le
+  générateur natif Dolibarr et enregistrées comme constantes sensibles globales ;
+- chiffrement automatique de ces constantes par `dolibarr_set_const()` avec la
+  clé unique de l’instance conservée hors base dans `conf.php` ;
+- compatibilité de lecture conservée pour les installations historiques
+  utilisant les deux noms fixes comme variables d’environnement ;
 - refus des clés décodées de moins de 32 octets et refus d’une valeur commune
   aux deux usages ;
 - adresses, coordonnées, positions, messages et notes sensibles chiffrés ;
@@ -29,8 +34,8 @@
 ## Points à vérifier avant production
 
 1. HTTPS forcé sur toutes les routes publiques.
-2. Deux secrets aléatoires distincts d’au moins 32 octets.
-3. Sauvegarde et procédure de rotation des clés avec test de restauration.
+2. Diagnostic vert pour les deux secrets distincts d’au moins 32 octets.
+3. Sauvegarde conjointe de la base et de `conf.php`, avec test de restauration.
 4. Politique CSP adaptée aux seuls domaines effectivement utilisés.
 5. Configuration SMTP, antispam et délivrabilité des messages.
 6. Tests IDOR avec deux comptes publics et deux entités.
