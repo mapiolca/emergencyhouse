@@ -154,8 +154,10 @@ print '<tr><td>'.$langs->trans('RetentionDays').'</td><td><input class="flat max
 print '<tr><td class="fieldrequired">'.$langs->trans('ConsentVersion').'</td><td><input class="flat maxwidth150" name="consent_version" required value="'.dol_escape_htmltag((string) $object->consent_version).'"></td></tr>';
 print '<tr><td>'.$langs->trans('BannerText').'</td><td><textarea class="flat centpercent" name="banner_text" rows="3">'.dol_escape_htmltag((string) $object->banner_text).'</textarea></td></tr>';
 print '<tr><td>'.$langs->trans('EligibilityText').'</td><td><textarea class="flat centpercent" name="eligibility_text" rows="3">'.dol_escape_htmltag((string) $object->eligibility_text).'</textarea></td></tr>';
-print '<tr><td class="fieldrequired">'.$langs->trans('PrivacyUrl').'</td><td><input class="flat centpercent" name="privacy_url" required value="'.dol_escape_htmltag((string) $object->privacy_url).'"></td></tr>';
-print '<tr><td class="fieldrequired">'.$langs->trans('TermsUrl').'</td><td><input class="flat centpercent" name="terms_url" required value="'.dol_escape_htmltag((string) $object->terms_url).'"></td></tr>';
+print '<tr><td>'.$langs->trans('PrivacyUrl').'</td><td><input class="flat centpercent" name="privacy_url" value="'.dol_escape_htmltag((string) $object->privacy_url).'">';
+print '<div class="opacitymedium">'.$langs->trans('CampaignPrivacyUrlFallbackHelp').'</div></td></tr>';
+print '<tr><td>'.$langs->trans('TermsUrl').'</td><td><input class="flat centpercent" name="terms_url" value="'.dol_escape_htmltag((string) $object->terms_url).'">';
+print '<div class="opacitymedium">'.$langs->trans('CampaignTermsUrlFallbackHelp').'</div></td></tr>';
 print '<tr><td>'.$langs->trans('RobotsIndex').'</td><td>'.$form->selectarray('robots_index', $yesNoOptions, (int) $object->robots_index, 0, 0, 0, '', 0, 0, 0, '', 'minwidth150').'</td></tr>';
 print '</table>';
 print '<div class="center"><button class="button button-save" type="submit">'.$langs->trans('Save').'</button> ';
@@ -191,12 +193,12 @@ function emergencyhouseCampaignReadDate($prefix, $required)
 }
 
 /**
- * Accept absolute HTTP(S) URLs or a local absolute path.
+ * Accept an empty inherited value, an absolute HTTP(S) URL or a local path.
  *
  * @param string $url URL
  * @return bool
  */
 function emergencyhouseCampaignUrlIsAllowed($url)
 {
-	return $url !== '' && (filter_var($url, FILTER_VALIDATE_URL) !== false || strpos($url, '/') === 0);
+	return $url === '' || filter_var($url, FILTER_VALIDATE_URL) !== false || strpos($url, '/') === 0;
 }

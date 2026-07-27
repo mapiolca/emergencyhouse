@@ -31,6 +31,9 @@
 - Suppression de toute mention de Dolibarr dans les textes destinés aux
   utilisateurs du portail public, qui n’accèdent qu’aux services Emergency
   House.
+- Les URL de confidentialité et de conditions d’utilisation d’une campagne
+  deviennent facultatives : une valeur vide hérite des documents juridiques de
+  la plateforme et ne bloque plus la publication.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des

@@ -199,8 +199,6 @@ class EmergencyHouseCampaign extends EmergencyHouseCommonObject
 		return !empty($this->label)
 			&& !empty($this->coordinator_name)
 			&& !empty($this->official_phone)
-			&& !empty($this->privacy_url)
-			&& !empty($this->terms_url)
 			&& !empty($this->consent_version)
 			&& !empty($this->date_start);
 	}

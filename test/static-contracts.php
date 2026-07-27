@@ -317,6 +317,21 @@ emergencyhouseContract(
 		&& strpos($commonObject, '$modelName = $defaultModel;') !== false,
 	'Routage des anciennes constantes vers le modèle propre à chaque objet'
 );
+$campaignEditor = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'campaign'.DIRECTORY_SEPARATOR.'edit.php');
+$campaignClass = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'campaign.class.php');
+emergencyhouseContract(
+	strpos($campaignEditor, 'name="privacy_url" required') === false
+		&& strpos($campaignEditor, 'name="terms_url" required') === false
+		&& strpos($campaignEditor, "return \$url === '' ||") !== false
+		&& strpos($campaignEditor, 'CampaignPrivacyUrlFallbackHelp') !== false
+		&& strpos($campaignEditor, 'CampaignTermsUrlFallbackHelp') !== false,
+	'URL juridiques de campagne facultatives avec héritage explicite'
+);
+emergencyhouseContract(
+	strpos($campaignClass, "&& !empty(\$this->privacy_url)") === false
+		&& strpos($campaignClass, "&& !empty(\$this->terms_url)") === false,
+	'Publication de campagne indépendante des URL juridiques spécifiques'
+);
 
 $encryptionService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'encryptionservice.class.php');
 emergencyhouseContract(
