@@ -21,8 +21,8 @@ if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'configuratio
 
 llxHeader('', $langs->trans('About'));
 $head = emergencyhouseAdminPrepareHead();
-print dol_get_fiche_head($head, 'about', $langs->trans('EmergencyHouseSetup'), -1, 'emergencyhouse@emergencyhouse');
-print load_fiche_titre($langs->trans('About'), emergencyhouseAdminLinkBack(), 'emergencyhouse@emergencyhouse');
+print dol_get_fiche_head($head, 'about', $langs->trans('EmergencyHouseSetup'), -1, 'fontawesome_house-user');
+print load_fiche_titre($langs->trans('About'), emergencyhouseAdminLinkBack(), 'fontawesome_house-user');
 
 $moduleDescriptor = new modEmergencyHouse($db);
 print '<table class="noborder centpercent">';

@@ -131,7 +131,7 @@ llxHeader('', $langs->trans($id > 0 ? 'EditCampaign' : 'NewCampaign'));
 print load_fiche_titre(
 	$langs->trans($id > 0 ? 'EditCampaign' : 'NewCampaign'),
 	'<a href="'.dol_buildpath('/emergencyhouse/campaign/list.php', 1).'">'.$langs->trans('BackToList').'</a>',
-	'emergencyhouse@emergencyhouse'
+	'fontawesome_house-user'
 );
 print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).($id > 0 ? '?id='.((int) $id) : '').'">';
 print '<input type="hidden" name="token" value="'.newToken().'">';

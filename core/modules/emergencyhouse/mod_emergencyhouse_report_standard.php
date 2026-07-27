@@ -16,4 +16,6 @@ class mod_emergencyhouse_report_standard extends mod_emergencyhouse_standard
 	protected $prefix = 'EHI';
 	/** @var string */
 	protected $example = 'EHI-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseReportNumberingModelDescription';
 }

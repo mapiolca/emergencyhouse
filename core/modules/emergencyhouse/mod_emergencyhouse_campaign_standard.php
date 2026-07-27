@@ -16,4 +16,6 @@ class mod_emergencyhouse_campaign_standard extends mod_emergencyhouse_standard
 	protected $prefix = 'EHC';
 	/** @var string */
 	protected $example = 'EHC-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseCampaignNumberingModelDescription';
 }

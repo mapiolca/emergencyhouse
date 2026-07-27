@@ -321,6 +321,9 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 		$constant = 'EMERGENCYHOUSE_'.strtoupper($this->element).'_ADDON';
 		$defaultModel = 'emergencyhouse_'.$this->element.'_standard';
 		$modelName = getDolGlobalString($constant, $defaultModel);
+		if ($modelName === 'emergencyhouse_standard') {
+			$modelName = $defaultModel;
+		}
 		if (!preg_match('/^[a-zA-Z0-9_]+$/', $modelName)) {
 			$this->error = 'ErrorNumberingModel';
 			return -1;

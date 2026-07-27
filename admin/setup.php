@@ -333,7 +333,7 @@ $form = new Form($db);
 llxHeader('', $langs->trans('EmergencyHouseSetup'), '', '', 0, 0, array(), array(), '', 'mod-emergencyhouse page-admin');
 
 $head = emergencyhouseAdminPrepareHead();
-print dol_get_fiche_head($head, $tab, $langs->trans('EmergencyHouseSetup'), -1, 'emergencyhouse@emergencyhouse');
+print dol_get_fiche_head($head, $tab, $langs->trans('EmergencyHouseSetup'), -1, 'fontawesome_house-user');
 print load_fiche_titre($langs->trans('EmergencyHouseSetup'), emergencyhouseAdminLinkBack(), 'title_setup');
 
 if ($tab === 'notifications') {
@@ -521,7 +521,8 @@ if ($tab === 'general') {
 		}
 		/** @var ModeleNumRefEmergencyHouse $numberingModel */
 		$numberingModel = new $className();
-		$active = getDolGlobalString($constant, $modelName) === $modelName;
+		$configuredModel = getDolGlobalString($constant, $modelName);
+		$active = $configuredModel === $modelName || $configuredModel === 'emergencyhouse_standard';
 		print '<tr class="oddeven"><td>'.$langs->trans($numberingDefinition['label']).'</td>';
 		print '<td>'.dol_escape_htmltag($numberingModel->name).'</td>';
 		print '<td>'.$numberingModel->info($langs).'</td>';

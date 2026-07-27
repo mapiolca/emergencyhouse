@@ -20,6 +20,8 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 	protected $prefix = '';
 	/** @var string */
 	protected $example = 'EHO-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseNumberingModelDescription';
 
 	/**
 	 * Description.
@@ -29,7 +31,7 @@ class mod_emergencyhouse_standard extends ModeleNumRefEmergencyHouse
 	 */
 	public function info($langs)
 	{
-		return $langs->trans('EmergencyHouseNumberingModelDescription');
+		return $langs->trans($this->descriptionKey);
 	}
 
 	/**

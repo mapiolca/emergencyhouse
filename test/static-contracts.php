@@ -132,6 +132,10 @@ emergencyhouseContract(
 	'Famille Les Métiers du Bâtiment'
 );
 emergencyhouseContract(
+	strpos($descriptor, "\$this->picto = 'fontawesome_house-user';") !== false,
+	'Pictogramme natif house-user déclaré pour le module'
+);
+emergencyhouseContract(
 	strpos($descriptor, "\$this->version = '1.0.0';") !== false,
 	'Version du descripteur 1.0.0'
 );
@@ -238,6 +242,19 @@ foreach ($numberingObjects as $numberingObject) {
 		'Modèle de numérotation dédié pour '.$numberingObject
 	);
 }
+emergencyhouseContract(
+	strpos($setup, "\$configuredModel === 'emergencyhouse_standard'") !== false
+		&& strpos($descriptor, "AND value = 'emergencyhouse_standard'") !== false,
+	'Reprise immédiate et migration persistante du modèle de numérotation historique'
+);
+$commonObject = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'emergencyhousecommonobject.class.php'
+);
+emergencyhouseContract(
+	strpos($commonObject, "if (\$modelName === 'emergencyhouse_standard')") !== false
+		&& strpos($commonObject, '$modelName = $defaultModel;') !== false,
+	'Routage des anciennes constantes vers le modèle propre à chaque objet'
+);
 
 $encryptionService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'encryptionservice.class.php');
 emergencyhouseContract(
@@ -340,6 +357,10 @@ foreach ($tableMatches as $tableMatch) {
 		);
 	}
 }
+emergencyhouseContract(
+	strpos($schemaSql, 'UNIQUE KEY uk_emergencyhouse_sequence (entity, object_type, period_code)') !== false,
+	'Compteurs de numérotation isolés par entité, objet et période'
+);
 emergencyhouseContract(stripos($schemaSql, 'ON DELETE CASCADE') === false, 'Pas de cascade SQL métier');
 emergencyhouseContract(!preg_match('/\bCREATE\s+TRIGGER\b/i', $schemaSql), 'Pas de trigger SQL');
 

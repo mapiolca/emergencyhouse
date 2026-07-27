@@ -41,7 +41,7 @@ class modEmergencyHouse extends DolibarrModules
 		$this->descriptionlong = 'EmergencyHouseModuleDescriptionLong';
 		$this->version = '1.0.0';
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
-		$this->picto = 'emergencyhouse@emergencyhouse';
+		$this->picto = 'fontawesome_house-user';
 		$this->editor_name = 'Les Métiers du Bâtiment';
 		$this->editor_url = 'https://lesmetiersdubatiment.fr';
 		$this->phpmin = array(8, 0);

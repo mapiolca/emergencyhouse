@@ -99,10 +99,10 @@ mensuel atomique :
 | Allocation | `emergencyhouse_allocation_standard` | `EHA-2607-00001` |
 | Signalement | `emergencyhouse_report_standard` | `EHI-2607-00001` |
 
-La réactivation migre uniquement l’ancien choix générique
-`emergencyhouse_standard`. Un modèle personnalisé et les références déjà
-générées sont conservés. Le compteur suit aussi le partage de numérotation
-Multicompany de l’objet.
+Une ancienne constante `emergencyhouse_standard` est immédiatement routée vers
+le modèle propre à l’objet, puis migrée lors de la réactivation du module. Un
+modèle personnalisé et les références déjà générées sont conservés. Le compteur
+suit aussi le partage de numérotation Multicompany de l’objet.
 
 ## Notifications et messages transactionnels
 

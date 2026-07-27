@@ -21,7 +21,7 @@ if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'configuratio
 
 llxHeader('', $langs->trans('Compatibility'));
 $head = emergencyhouseAdminPrepareHead();
-print dol_get_fiche_head($head, 'compatibility', $langs->trans('EmergencyHouseSetup'), -1, 'emergencyhouse@emergencyhouse');
+print dol_get_fiche_head($head, 'compatibility', $langs->trans('EmergencyHouseSetup'), -1, 'fontawesome_house-user');
 print load_fiche_titre($langs->trans('Compatibility'), emergencyhouseAdminLinkBack(), 'technic');
 
 print '<table class="noborder centpercent">';

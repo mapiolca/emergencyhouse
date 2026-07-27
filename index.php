@@ -23,7 +23,7 @@ if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'campaign', '
 }
 
 $definitions = array(
-	'campaign' => array('table' => 'emergencyhouse_campaign', 'condition' => 'status IN (0, 1, 2)', 'label' => 'Campaigns', 'url' => '/emergencyhouse/campaign/list.php', 'right' => array('campaign', 'read'), 'picto' => 'emergencyhouse@emergencyhouse'),
+	'campaign' => array('table' => 'emergencyhouse_campaign', 'condition' => 'status IN (0, 1, 2)', 'label' => 'Campaigns', 'url' => '/emergencyhouse/campaign/list.php', 'right' => array('campaign', 'read'), 'picto' => 'fontawesome_house-user'),
 	'offer' => array('table' => 'emergencyhouse_offer', 'condition' => 'status = 2', 'label' => 'ActiveOffers', 'url' => '/emergencyhouse/offer/list.php', 'right' => array('listing', 'read'), 'picto' => 'home'),
 	'request' => array('table' => 'emergencyhouse_request', 'condition' => 'status IN (1, 2)', 'label' => 'ActiveRequests', 'url' => '/emergencyhouse/request/list.php', 'right' => array('listing', 'read'), 'picto' => 'people-arrows'),
 	'solicitation' => array('table' => 'emergencyhouse_solicitation', 'condition' => 'status IN (0, 1)', 'label' => 'ActiveSolicitations', 'url' => '/emergencyhouse/solicitation/list.php', 'right' => array('solicitation', 'write'), 'picto' => 'comment'),
@@ -52,7 +52,7 @@ $sqlRecent .= $db->plimit(10);
 $recentReports = emergencyhouseCanDo($user, 'report', 'write') ? $db->query($sqlRecent) : false;
 
 llxHeader('', $langs->trans('EmergencyHouseDashboard'));
-print load_fiche_titre($langs->trans('EmergencyHouseDashboard'), '', 'emergencyhouse@emergencyhouse');
+print load_fiche_titre($langs->trans('EmergencyHouseDashboard'), '', 'fontawesome_house-user');
 if (emergencyhouseCanDo($user, 'configuration', 'write')) {
 	$previewUrl = dol_buildpath('/emergencyhouse/admin/public-preview.php', 1);
 	print '<div class="tabsAction"><a class="butAction" target="_blank" rel="noopener noreferrer" href="'.dol_escape_htmltag($previewUrl).'">';

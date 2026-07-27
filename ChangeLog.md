@@ -17,12 +17,15 @@
   contrôlant Sodium, la longueur minimale et la séparation des deux clés.
 - Ajout d’un aperçu privé du portail, protégé par la session et le droit de
   configuration Dolibarr, utilisable avant toute configuration publique.
+- Utilisation du pictogramme natif Dolibarr `fontawesome_house-user` pour
+  représenter l’hébergement d’urgence dans le back-office.
 - Définition de l’URL publique comme racine web directe du répertoire
   `public/` : navigation, formulaires, ressources et liens de notification
   n’ajoutent plus le chemin `/custom/emergencyhouse/public`.
 - Remplacement du modèle de numérotation générique par six modèles propres aux
   campagnes, offres, demandes, sollicitations, allocations et signalements,
-  avec migration conservatrice du choix historique.
+  avec migration conservatrice du choix historique, repli immédiat des anciennes
+  constantes et descriptions distinctes dans les réglages.
 - Ajout du connecteur de géocodage Géoplateforme inspiré de `lmdbzoning`, sans
   journalisation de l’adresse exacte, et d’un guide OpenStreetMap/géocodage.
 - Ajout d’une aide SMS indiquant explicitement l’indisponibilité du transport

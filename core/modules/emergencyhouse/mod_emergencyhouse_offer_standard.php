@@ -16,4 +16,6 @@ class mod_emergencyhouse_offer_standard extends mod_emergencyhouse_standard
 	protected $prefix = 'EHO';
 	/** @var string */
 	protected $example = 'EHO-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseOfferNumberingModelDescription';
 }

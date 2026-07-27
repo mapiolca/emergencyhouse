@@ -16,4 +16,6 @@ class mod_emergencyhouse_request_standard extends mod_emergencyhouse_standard
 	protected $prefix = 'EHR';
 	/** @var string */
 	protected $example = 'EHR-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseRequestNumberingModelDescription';
 }

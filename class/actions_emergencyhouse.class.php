@@ -37,7 +37,7 @@ class ActionsEmergencyHouse
 		$elementDefinitions = array();
 		$moduleNames = array();
 		$elements = array(
-			'campaign' => array('emergencyhouse@emergencyhouse', 'CampaignSharingInfo'),
+			'campaign' => array('fontawesome_house-user', 'CampaignSharingInfo'),
 			'offer' => array('home', 'OfferSharingInfo'),
 			'request' => array('people-arrows', 'RequestSharingInfo'),
 			'solicitation' => array('comment', 'SolicitationSharingInfo'),

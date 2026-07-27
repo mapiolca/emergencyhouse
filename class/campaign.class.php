@@ -19,7 +19,7 @@ class EmergencyHouseCampaign extends EmergencyHouseCommonObject
 	/** @var string */
 	public $table_element = 'emergencyhouse_campaign';
 	/** @var string */
-	public $picto = 'emergencyhouse@emergencyhouse';
+	public $picto = 'fontawesome_house-user';
 	/** @var string */
 	public $trigger_prefix = 'EMERGENCYHOUSE_CAMPAIGN';
 	/** @var string */

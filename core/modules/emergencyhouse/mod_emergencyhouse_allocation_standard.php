@@ -16,4 +16,6 @@ class mod_emergencyhouse_allocation_standard extends mod_emergencyhouse_standard
 	protected $prefix = 'EHA';
 	/** @var string */
 	protected $example = 'EHA-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseAllocationNumberingModelDescription';
 }

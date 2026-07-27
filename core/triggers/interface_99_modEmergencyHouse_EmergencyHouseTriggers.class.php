@@ -18,7 +18,7 @@ class InterfaceEmergencyHouseTriggers extends DolibarrTriggers
 	/** @var string */
 	public $version = '1.0.0';
 	/** @var string */
-	public $picto = 'emergencyhouse@emergencyhouse';
+	public $picto = 'fontawesome_house-user';
 
 	/**
 	 * Execute a CRUD trigger.

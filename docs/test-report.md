@@ -15,6 +15,7 @@ Les contrôles suivants sont exécutables depuis la racine du module :
 
 ```bash
 php test/static-contracts.php
+php test/numbering-model-contract.php
 php test/public-url-contract.php
 ```
 
@@ -41,7 +42,9 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 27 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `434 contrats validés` ;
+- contrats statiques : `441 contrats validés` ;
+- modèles de numérotation : six noms, descriptions, préfixes et périmètres
+  d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,
   redirection interne et fallback Dolibarr validés ;
 - ressources publiques autonomes : sorties CSS, JavaScript et SVG identiques

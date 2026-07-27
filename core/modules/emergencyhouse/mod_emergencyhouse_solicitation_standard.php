@@ -16,4 +16,6 @@ class mod_emergencyhouse_solicitation_standard extends mod_emergencyhouse_standa
 	protected $prefix = 'EHS';
 	/** @var string */
 	protected $example = 'EHS-2607-00001';
+	/** @var string */
+	protected $descriptionKey = 'EmergencyHouseSolicitationNumberingModelDescription';
 }
