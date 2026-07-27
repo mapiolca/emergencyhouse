@@ -1,0 +1,567 @@
+<?php
+/* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
+
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
+
+/**
+ * Shared object behavior for Emergency House business objects.
+ */
+abstract class EmergencyHouseCommonObject extends CommonObject
+{
+	/** @var string */
+	public $module = 'emergencyhouse';
+	/** @var int */
+	public $ismultientitymanaged = 1;
+	/** @var int */
+	public $isextrafieldmanaged = 1;
+	/** @var string */
+	public $trigger_prefix = '';
+	/** @var string */
+	public $ref = '';
+	/** @var int */
+	public $entity = 1;
+	/** @var int */
+	public $status = 0;
+	/** @var int|null */
+	public $date_creation;
+	/** @var int|null */
+	public $tms;
+	/** @var int|null */
+	public $fk_user_creat;
+	/** @var int|null */
+	public $fk_user_modif;
+	/** @var string|null */
+	public $import_key;
+	/** @var string|null */
+	public $note_public;
+	/** @var string|null */
+	public $note_private;
+	/** @var string|null */
+	public $model_pdf;
+	/** @var string|null */
+	public $last_main_doc;
+	/** @var string */
+	public $public_uuid = '';
+	/** @var int|null */
+	public $fk_project;
+	/** @var int|null */
+	public $socid;
+
+	/**
+	 * Create object and call the module CRUD trigger atomically.
+	 *
+	 * @param User $user User
+	 * @param int  $notrigger Disable trigger
+	 * @return int
+	 */
+	public function create($user, $notrigger = 0)
+	{
+		if (!$this->prepareCommonCreate($user)) {
+			return -1;
+		}
+
+		$this->db->begin();
+		$result = $this->insertPrepared($user, $notrigger);
+		if ($result <= 0) {
+			$this->db->rollback();
+			return $result;
+		}
+		$this->db->commit();
+		return $result;
+	}
+
+	/**
+	 * Prepare common values before opening a caller-owned transaction.
+	 *
+	 * @param User $user User
+	 * @return bool
+	 */
+	protected function prepareCommonCreate($user)
+	{
+		global $conf;
+
+		$this->entity = !empty($this->entity) ? (int) $this->entity : (int) $conf->entity;
+		if (empty($this->date_creation)) {
+			$this->date_creation = dol_now();
+		}
+		if (empty($this->ref)) {
+			$nextRef = $this->getNextNumRef();
+			if (!is_string($nextRef) || $nextRef === '') {
+				$this->error = 'ErrorNumberingModel';
+				return false;
+			}
+			$this->ref = $nextRef;
+		}
+		if (property_exists($this, 'public_uuid') && empty($this->public_uuid)) {
+			$this->public_uuid = bin2hex(random_bytes(16));
+		}
+		$this->fk_user_creat = (int) $user->id;
+		return true;
+	}
+
+	/**
+	 * Insert an object already prepared by prepareCommonCreate().
+	 *
+	 * The caller owns the database transaction.
+	 *
+	 * @param User $user User
+	 * @param int  $notrigger Disable trigger
+	 * @return int
+	 */
+	protected function insertPrepared($user, $notrigger = 0)
+	{
+		$result = $this->createCommon($user, 1);
+		if ($result <= 0) {
+			return $result;
+		}
+		if (!$notrigger && $this->call_trigger($this->trigger_prefix.'_CREATE', $user) < 0) {
+			return -1;
+		}
+		return $result;
+	}
+
+	/**
+	 * Fetch an object and enforce entity access.
+	 *
+	 * @param int         $id  Row ID
+	 * @param string|null $ref Reference
+	 * @return int
+	 */
+	public function fetch($id, $ref = null)
+	{
+		$result = $this->fetchCommon($id, $ref);
+		if ($result > 0 && !emergencyhouseEntityIsAccessible((int) $this->entity, $this)) {
+			$this->error = 'ErrorRecordNotFound';
+			return 0;
+		}
+		return $result;
+	}
+
+	/**
+	 * Update object and call the module CRUD trigger atomically.
+	 *
+	 * @param User $user User
+	 * @param int  $notrigger Disable trigger
+	 * @return int
+	 */
+	public function update($user, $notrigger = 0)
+	{
+		if (!$this->prepareCommonUpdate($user)) {
+			return -1;
+		}
+
+		$this->db->begin();
+		$result = $this->updatePrepared($user, $notrigger);
+		if ($result <= 0) {
+			$this->db->rollback();
+			return $result;
+		}
+		$this->db->commit();
+		return $result;
+	}
+
+	/**
+	 * Update an object while the calling service owns the transaction.
+	 *
+	 * Subclasses may override this method when they must recompute business
+	 * fields before the common update.
+	 *
+	 * @param User $user User
+	 * @param int  $notrigger Disable trigger
+	 * @return int
+	 */
+	public function updateInsideServiceTransaction($user, $notrigger = 0)
+	{
+		if (!$this->prepareCommonUpdate($user)) {
+			return -1;
+		}
+		return $this->updatePrepared($user, $notrigger);
+	}
+
+	/**
+	 * Load the old copy and prepare standard update fields.
+	 *
+	 * @param User $user User
+	 * @return bool
+	 */
+	protected function prepareCommonUpdate($user)
+	{
+		if (empty($this->id)) {
+			$this->error = 'ErrorRecordNotFound';
+			return false;
+		}
+
+		$class = get_class($this);
+		/** @var static $oldcopy */
+		$oldcopy = new $class($this->db);
+		$fetchResult = $oldcopy->fetch((int) $this->id);
+		if ($fetchResult <= 0) {
+			$this->error = !empty($oldcopy->error) ? $oldcopy->error : 'ErrorRecordNotFound';
+			$this->errors = !empty($oldcopy->errors) ? $oldcopy->errors : array();
+			return false;
+		}
+		$this->oldcopy = $oldcopy;
+		$this->fk_user_modif = (int) $user->id;
+		return true;
+	}
+
+	/**
+	 * Update an object already prepared by prepareCommonUpdate().
+	 *
+	 * The caller owns the database transaction.
+	 *
+	 * @param User $user User
+	 * @param int  $notrigger Disable trigger
+	 * @return int
+	 */
+	protected function updatePrepared($user, $notrigger = 0)
+	{
+		$result = $this->updateCommon($user, 1);
+		if ($result <= 0) {
+			return $result;
+		}
+
+		if (!$notrigger) {
+			$triggerResult = $this->call_trigger($this->trigger_prefix.'_UPDATE', $user);
+			if ($triggerResult < 0) {
+				return -1;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * Delete object and call the module CRUD trigger atomically.
+	 *
+	 * @param User $user User
+	 * @param int  $notrigger Disable trigger
+	 * @return int
+	 */
+	public function delete($user, $notrigger = 0)
+	{
+		$this->db->begin();
+		if (!$notrigger) {
+			$triggerResult = $this->call_trigger($this->trigger_prefix.'_DELETE', $user);
+			if ($triggerResult < 0) {
+				$this->db->rollback();
+				return -1;
+			}
+		}
+
+		$result = $this->deleteCommon($user, 1);
+		if ($result <= 0) {
+			$this->db->rollback();
+			return $result;
+		}
+
+		$this->db->commit();
+		return $result;
+	}
+
+	/**
+	 * Fetch a paginated entity-scoped list.
+	 *
+	 * @param string $sortorder Sort order
+	 * @param string $sortfield Sort field
+	 * @param int    $limit     Limit
+	 * @param int    $offset    Offset
+	 * @param array<string, scalar> $filter Filters
+	 * @return array<int, static>|int
+	 */
+	public function fetchAll($sortorder = 'DESC', $sortfield = 't.rowid', $limit = 100, $offset = 0, array $filter = array())
+	{
+		$allowedSorts = array('t.rowid', 't.ref', 't.status', 't.date_creation', 't.tms');
+		if (!in_array($sortfield, $allowedSorts, true)) {
+			$sortfield = 't.rowid';
+		}
+		$sortorder = strtoupper($sortorder) === 'ASC' ? 'ASC' : 'DESC';
+
+		$sql = 'SELECT t.rowid FROM '.MAIN_DB_PREFIX.$this->table_element.' AS t';
+		$sql .= ' WHERE t.entity IN ('.$this->db->sanitize(getEntity($this->element)).')';
+		foreach ($filter as $key => $value) {
+			if (!isset($this->fields[$key])) {
+				continue;
+			}
+			if (is_int($value) || ctype_digit((string) $value)) {
+				$sql .= ' AND t.'.$key.' = '.((int) $value);
+			} else {
+				$sql .= " AND t.".$key." LIKE '%".$this->db->escape((string) $value)."%'";
+			}
+		}
+		$sql .= ' ORDER BY '.$sortfield.' '.$sortorder;
+		$sql .= $this->db->plimit($limit, $offset);
+
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return -1;
+		}
+
+		$records = array();
+		while (is_object($obj = $this->db->fetch_object($resql))) {
+			$class = get_class($this);
+			/** @var static $record */
+			$record = new $class($this->db);
+			if ($record->fetch((int) $obj->rowid) > 0) {
+				$records[] = $record;
+			}
+		}
+
+		return $records;
+	}
+
+	/**
+	 * Generate a reference through the configured Dolibarr numbering model.
+	 *
+	 * @return string|int
+	 */
+	public function getNextNumRef()
+	{
+		$constant = 'EMERGENCYHOUSE_'.strtoupper($this->element).'_ADDON';
+		$modelName = getDolGlobalString($constant, 'emergencyhouse_standard');
+		if (!preg_match('/^[a-zA-Z0-9_]+$/', $modelName)) {
+			$this->error = 'ErrorNumberingModel';
+			return -1;
+		}
+		$modelFile = '/emergencyhouse/core/modules/emergencyhouse/mod_'.$modelName.'.php';
+		dol_include_once($modelFile);
+		$className = 'mod_'.$modelName;
+		if (!class_exists($className)) {
+			$this->error = 'ErrorNumberingModel';
+			return -1;
+		}
+		$model = new $className();
+		if (!method_exists($model, 'getNextValue')) {
+			$this->error = 'ErrorNumberingModel';
+			return -1;
+		}
+		$result = $model->getNextValue($this);
+		if (!is_string($result) || $result === '') {
+			$this->error = !empty($model->error) ? $model->error : 'ErrorNumberingModel';
+			return -1;
+		}
+		return $result;
+	}
+
+	/**
+	 * Build native tooltip data for the object.
+	 *
+	 * @param array<string, mixed> $params Tooltip parameters
+	 * @return array<string, string>
+	 */
+	public function getTooltipContentArray($params)
+	{
+		global $langs;
+
+		$objectLabelKey = $this->getObjectTranslationKey();
+		if (getDolGlobalInt('MAIN_OPTIMIZEFORTEXTBROWSER')) {
+			return array('optimize' => $langs->trans($objectLabelKey));
+		}
+
+		$datas = array();
+		$datas['picto'] = img_picto('', $this->picto).' <u>'.dol_escape_htmltag($langs->trans($objectLabelKey)).'</u>';
+		if (isset($this->status)) {
+			$datas['status'] = ' '.$this->getLibStatut(5);
+		}
+		if (!empty($this->ref)) {
+			$datas['ref'] = '<br><b>'.$langs->trans('Ref').':</b> '.dol_escape_htmltag($this->ref);
+		}
+		$objectProperties = get_object_vars($this);
+		if (isset($objectProperties['label']) && is_string($objectProperties['label']) && $objectProperties['label'] !== '') {
+			$datas['label'] = '<br><b>'.$langs->trans('Label').':</b> '.dol_escape_htmltag($objectProperties['label']);
+		}
+
+		return $datas;
+	}
+
+	/**
+	 * Native-style object link.
+	 *
+	 * @param int    $withpicto             Include pictogram (0=no, 1=icon and reference, 2=icon only)
+	 * @param string $option                Supports nolink
+	 * @param int    $notooltip             Disable tooltip
+	 * @param string $morecss               Additional CSS classes
+	 * @param int    $saveLastSearchValue   -1=auto, 0=no, 1=yes
+	 * @return string
+	 */
+	public function getNomUrl($withpicto = 0, $option = '', $notooltip = 0, $morecss = '', $saveLastSearchValue = -1)
+	{
+		global $action, $conf, $hookmanager, $user;
+
+		if (!empty($conf->dol_no_mouse_hover)) {
+			$notooltip = 1;
+		}
+
+		$params = array(
+			'id' => (int) $this->id,
+			'objecttype' => $this->element.'@'.$this->module,
+			'option' => $option,
+		);
+		$classForTooltip = 'classfortooltip';
+		$dataParams = '';
+		if (!$notooltip && getDolGlobalInt('MAIN_ENABLE_AJAX_TOOLTIP')) {
+			$classForTooltip = 'classforajaxtooltip';
+			$jsonParams = json_encode($params);
+			if (is_string($jsonParams)) {
+				$dataParams = ' data-params="'.dol_escape_htmltag($jsonParams).'"';
+			}
+			$tooltip = '';
+		} else {
+			$tooltip = implode('', $this->getTooltipContentArray($params));
+		}
+
+		$permission = $this->getNomUrlPermission();
+		$canRead = is_object($user)
+			&& emergencyhouseCanDo($user, $permission['object'], $permission['action'], $this);
+		$url = '';
+		if ($canRead && !empty($this->id)) {
+			$url = dol_buildpath('/emergencyhouse/'.$this->element.'/card.php', 1).'?id='.((int) $this->id);
+			if ($option !== 'nolink') {
+				$saveSearch = $saveLastSearchValue === 1;
+				if ($saveLastSearchValue === -1
+					&& isset($_SERVER['PHP_SELF'])
+					&& preg_match('/list\.php/', (string) $_SERVER['PHP_SELF'])) {
+					$saveSearch = true;
+				}
+				if ($saveSearch) {
+					$url .= '&save_lastsearch_values=1';
+				}
+			}
+		}
+
+		$attributes = '';
+		if (!$notooltip) {
+			$attributes .= $tooltip !== ''
+				? ' title="'.dol_escape_htmltag($tooltip, 1).'"'
+				: ' title="tocomplete"';
+			$attributes .= $dataParams;
+			$attributes .= ' class="'.$classForTooltip.($morecss !== '' ? ' '.dol_escape_htmltag($morecss) : '').'"';
+		} elseif ($morecss !== '') {
+			$attributes .= ' class="'.dol_escape_htmltag($morecss).'"';
+		}
+
+		if ($option === 'nolink' || $url === '') {
+			$linkStart = '<span'.$attributes.'>';
+			$linkEnd = '</span>';
+		} else {
+			$linkStart = '<a href="'.dol_escape_htmltag($url).'"'.$attributes.'>';
+			$linkEnd = '</a>';
+		}
+
+		$result = $linkStart;
+		if ($withpicto) {
+			$result .= img_object(
+				$notooltip ? '' : $tooltip,
+				$this->picto ?: 'generic',
+				$withpicto !== 2 ? 'class="paddingright"' : '',
+				0,
+				0,
+				$notooltip ? 0 : 1
+			);
+		}
+		if ($withpicto !== 2) {
+			$ref = !empty($this->ref) ? $this->ref : (string) $this->id;
+			$result .= dol_escape_htmltag($ref);
+		}
+		$result .= $linkEnd;
+
+		if (is_object($hookmanager)) {
+			$hookmanager->initHooks(array($this->element.'dao'));
+			$parameters = array('id' => (int) $this->id, 'getnomurl' => &$result);
+			$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action);
+			if ($reshook > 0) {
+				$result = $hookmanager->resPrint;
+			} else {
+				$result .= $hookmanager->resPrint;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Resolve the object label used by native links and tooltips.
+	 *
+	 * @return string
+	 */
+	protected function getObjectTranslationKey()
+	{
+		$labels = array(
+			'campaign' => 'Campaign',
+			'offer' => 'Offer',
+			'request' => 'Request',
+			'solicitation' => 'Solicitation',
+			'allocation' => 'Allocation',
+			'report' => 'Report',
+		);
+
+		return isset($labels[$this->element]) ? $labels[$this->element] : 'EmergencyHouse';
+	}
+
+	/**
+	 * Resolve the granular permission used by getNomUrl().
+	 *
+	 * @return array{object:string, action:string}
+	 */
+	protected function getNomUrlPermission()
+	{
+		$permissions = array(
+			'campaign' => array('object' => 'campaign', 'action' => 'read'),
+			'offer' => array('object' => 'listing', 'action' => 'read'),
+			'request' => array('object' => 'listing', 'action' => 'read'),
+			'solicitation' => array('object' => 'solicitation', 'action' => 'write'),
+			'allocation' => array('object' => 'allocation', 'action' => 'write'),
+			'report' => array('object' => 'report', 'action' => 'write'),
+		);
+
+		return isset($permissions[$this->element])
+			? $permissions[$this->element]
+			: array('object' => 'listing', 'action' => 'read');
+	}
+
+	/**
+	 * Render status with the native Dolibarr badge.
+	 *
+	 * @param int $status Status
+	 * @param int $mode Display mode
+	 * @return string
+	 */
+	abstract public function LibStatut($status, $mode = 0);
+
+	/**
+	 * Render current status.
+	 *
+	 * @param int $mode Display mode
+	 * @return string
+	 */
+	public function getLibStatut($mode = 0)
+	{
+		return $this->LibStatut((int) $this->status, $mode);
+	}
+
+	/**
+	 * Return fields common to business objects.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	protected static function commonFields()
+	{
+		return array(
+			'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => 1, 'visible' => -1, 'notnull' => 1, 'position' => 1),
+			'entity' => array('type' => 'integer', 'label' => 'Entity', 'enabled' => 1, 'visible' => -1, 'notnull' => 1, 'default' => 1, 'index' => 1, 'position' => 5),
+			'ref' => array('type' => 'varchar(128)', 'label' => 'Ref', 'enabled' => 1, 'visible' => 1, 'notnull' => 1, 'index' => 1, 'position' => 10),
+			'status' => array('type' => 'integer', 'label' => 'Status', 'enabled' => 1, 'visible' => 1, 'notnull' => 1, 'default' => 0, 'index' => 1, 'position' => 500),
+			'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => 1, 'visible' => -2, 'notnull' => 1, 'position' => 900),
+			'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 910),
+			'fk_user_creat' => array('type' => 'integer:User:user/class/user.class.php', 'label' => 'UserAuthor', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 920),
+			'fk_user_modif' => array('type' => 'integer:User:user/class/user.class.php', 'label' => 'UserModif', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 930),
+			'import_key' => array('type' => 'varchar(14)', 'label' => 'ImportId', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 940),
+			'note_public' => array('type' => 'text', 'label' => 'NotePublic', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 950),
+			'note_private' => array('type' => 'text', 'label' => 'NotePrivate', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 960),
+			'model_pdf' => array('type' => 'varchar(255)', 'label' => 'ModelPdf', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 970),
+			'last_main_doc' => array('type' => 'varchar(255)', 'label' => 'LastMainDoc', 'enabled' => 1, 'visible' => -2, 'notnull' => 0, 'position' => 980),
+		);
+	}
+
+}

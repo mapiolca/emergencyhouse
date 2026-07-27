@@ -1,0 +1,56 @@
+<?php
+/* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
+
+if (!defined('NOLOGIN')) {
+	define('NOLOGIN', 1);
+}
+if (!defined('NOREQUIREMENU')) {
+	define('NOREQUIREMENU', 1);
+}
+if (!defined('NOREQUIREHTML')) {
+	define('NOREQUIREHTML', 1);
+}
+
+$res = 0;
+if (!$res && file_exists('../../main.inc.php')) {
+	$res = include '../../main.inc.php';
+}
+if (!$res && file_exists('../../../main.inc.php')) {
+	$res = include '../../../main.inc.php';
+}
+if (!$res && file_exists('../../../../main.inc.php')) {
+	$res = include '../../../../main.inc.php';
+}
+if (!$res) {
+	http_response_code(500);
+	exit;
+}
+
+dol_include_once('/emergencyhouse/class/publicauthservice.class.php');
+dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
+
+$langs->loadLangs(array('main', 'emergencyhouse@emergencyhouse'));
+
+if (!isModEnabled('emergencyhouse') || !getDolGlobalInt('EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED', 0)) {
+	http_response_code(503);
+	emergencyhousePublicRenderUnavailable();
+	exit;
+}
+
+emergencyhousePublicSendSecurityHeaders();
+if (!emergencyhousePublicIsSecureTransport()) {
+	http_response_code(403);
+	emergencyhousePublicRenderUnavailable('PublicHttpsRequired');
+	exit;
+}
+
+$emergencyhousePublicIp = emergencyhousePublicRemoteAddress();
+$emergencyhousePublicUserAgent = emergencyhousePublicUserAgent();
+$emergencyhousePublicAuth = new EmergencyHousePublicAuthService($db);
+$authenticatedAccount = $emergencyhousePublicAuth->authenticateFromCookie(
+	$emergencyhousePublicIp,
+	$emergencyhousePublicUserAgent
+);
+$emergencyhousePublicAccount = $authenticatedAccount instanceof EmergencyHousePublicAccount
+	? $authenticatedAccount
+	: null;

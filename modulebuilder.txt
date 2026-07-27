@@ -1,0 +1,3 @@
+Emergency House external module
+ModuleBuilder-compatible layout
+
