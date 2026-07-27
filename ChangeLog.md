@@ -34,6 +34,9 @@
 - Les URL de confidentialité et de conditions d’utilisation d’une campagne
   deviennent facultatives : une valeur vide hérite des documents juridiques de
   la plateforme et ne bloque plus la publication.
+- La connexion publique distingue désormais des identifiants incorrects d’une
+  panne technique ; les échecs internes de recherche de compte, de limitation
+  de débit et de création de session sont journalisés sans exposer de secret.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des

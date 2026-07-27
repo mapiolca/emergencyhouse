@@ -19,13 +19,16 @@ $next = emergencyhousePublicSafeReturnUrl(GETPOST('next', 'restricthtml'));
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, array('login', 'magic'), true)) {
 	$email = trim(GETPOST('email', 'restricthtml'));
 	$identity = $emergencyhousePublicIp.'|'.EmergencyHouseEncryptionService::normalizeEmail($email);
-	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'login', $identity, 10, 3600)) {
-		$errorKey = 'ErrorRateLimitExceeded';
+	$rateLimitError = '';
+	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'login', $identity, 10, 3600, $rateLimitError)) {
+		$errorKey = $rateLimitError === 'ErrorRateLimitExceeded' ? 'ErrorRateLimitExceeded' : 'ErrorInternalError';
 	} elseif ($action === 'login') {
 		$password = GETPOST('password', 'none');
 		$account = $emergencyhousePublicAuth->login($email, $password, $emergencyhousePublicIp, $emergencyhousePublicUserAgent);
 		if (!$account instanceof EmergencyHousePublicAccount) {
-			$errorKey = 'ErrorAuthenticationFailed';
+			$errorKey = $emergencyhousePublicAuth->error === 'ErrorAuthenticationFailed'
+				? 'PublicAuthenticationFailed'
+				: 'ErrorInternalError';
 		} else {
 			header('Location: '.($next !== '' ? $next : emergencyhousePublicUrl('account/index.php')));
 			exit;

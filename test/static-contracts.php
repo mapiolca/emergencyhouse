@@ -503,6 +503,30 @@ emergencyhouseContract(
 	empty($publicDolibarrMentions) && stripos($publicControllers, 'Dolibarr') === false,
 	'Aucune mention de Dolibarr dans l’interface publique'
 );
+$publicLogin = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'login.php');
+$publicAuthService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'publicauthservice.class.php');
+emergencyhouseContract(
+	strpos($publicLogin, "'PublicAuthenticationFailed'") !== false
+		&& strpos($publicLogin, "\$emergencyhousePublicAuth->error === 'ErrorAuthenticationFailed'") !== false,
+	'Échec de connexion public distinct d’une erreur technique'
+);
+emergencyhouseContract(
+	strpos($publicAuthService, 'if ($fetchResult < 0)') !== false
+		&& strpos($publicAuthService, 'account lookup failed') !== false
+		&& strpos($publicAuthService, 'session creation failed') !== false
+		&& strpos($publicAuthService, 'session insert failed') !== false,
+	'Journalisation des erreurs techniques de connexion publique'
+);
+$publicRateLimitCallers = $publicLogin
+	.emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php')
+	.emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'forgot.php')
+	.emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'resend.php');
+emergencyhouseContract(
+	substr_count($publicRateLimitCallers, "\$rateLimitError === 'ErrorRateLimitExceeded'") === 4
+		&& strpos($publicLibrary, '&$errorCode = null') !== false
+		&& strpos($publicLibrary, "\$errorCode !== 'ErrorRateLimitExceeded'") !== false,
+	'Distinction entre limitation de débit et panne technique'
+);
 
 preg_match_all(
 	"/emergencyhousePublicAlert\\(\\s*'([A-Za-z][A-Za-z0-9_]*)'/",

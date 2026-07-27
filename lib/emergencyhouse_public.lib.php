@@ -456,13 +456,19 @@ function emergencyhousePublicCsrfFields($auth = null, $action = '')
  * @param string $identity Raw identity
  * @param int $limit Limit
  * @param int $windowSeconds Window
+ * @param string|null $errorCode Service error code
  * @return bool
  */
-function emergencyhousePublicConsumeRateLimit($db, $entity, $scope, $identity, $limit, $windowSeconds)
+function emergencyhousePublicConsumeRateLimit($db, $entity, $scope, $identity, $limit, $windowSeconds, &$errorCode = null)
 {
 	dol_include_once('/emergencyhouse/class/ratelimitservice.class.php');
 	$rateLimiter = new EmergencyHouseRateLimitService($db);
-	return $rateLimiter->consume($entity, $scope, $identity, $limit, $windowSeconds, $windowSeconds);
+	$result = $rateLimiter->consume($entity, $scope, $identity, $limit, $windowSeconds, $windowSeconds);
+	$errorCode = $result ? '' : ($rateLimiter->error !== '' ? $rateLimiter->error : 'ErrorInternalError');
+	if (!$result && $errorCode !== 'ErrorRateLimitExceeded') {
+		dol_syslog(__FUNCTION__.': '.$errorCode, LOG_ERR);
+	}
+	return $result;
 }
 
 /**

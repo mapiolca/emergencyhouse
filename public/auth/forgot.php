@@ -12,8 +12,9 @@ $errorKey = '';
 if ($action === 'request' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 	$email = trim(GETPOST('email', 'restricthtml'));
 	$identity = $emergencyhousePublicIp.'|'.EmergencyHouseEncryptionService::normalizeEmail($email);
-	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'password-reset', $identity, 5, 3600)) {
-		$errorKey = 'ErrorRateLimitExceeded';
+	$rateLimitError = '';
+	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'password-reset', $identity, 5, 3600, $rateLimitError)) {
+		$errorKey = $rateLimitError === 'ErrorRateLimitExceeded' ? 'ErrorRateLimitExceeded' : 'ErrorInternalError';
 	} else {
 		$account = new EmergencyHousePublicAccount($db);
 		if ($account->fetchByEmail($email) > 0 && $account->status === EmergencyHousePublicAccount::STATUS_ACTIVE) {

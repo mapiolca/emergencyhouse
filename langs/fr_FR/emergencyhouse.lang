@@ -898,6 +898,7 @@ ErrorAllocationOutsideAvailability=La période d'allocation se situe hors des di
 ErrorAllocationRequiresCapacityService=L'allocation doit passer par le service de capacité.
 ErrorApiDisabled=L'API Emergency House est désactivée.
 ErrorAuthenticationFailed=Échec de l'authentification.
+PublicAuthenticationFailed=Adresse e-mail ou mot de passe incorrect.
 ErrorAuthenticationRequired=Une authentification est requise.
 ErrorCampaignCannotBePublished=Cette campagne ne peut pas être publiée dans son état actuel.
 ErrorCampaignMismatch=L'offre et la demande n'appartiennent pas à la même campagne.

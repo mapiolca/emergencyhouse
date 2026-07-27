@@ -29,8 +29,9 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 	$privacyAccepted = !$dataPolicyEnabled || GETPOSTINT('privacy_accepted') > 0;
 
 	$identity = $emergencyhousePublicIp.'|'.EmergencyHouseEncryptionService::normalizeEmail($email);
-	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'register', $identity, 5, 3600)) {
-		$errorKey = 'ErrorRateLimitExceeded';
+	$rateLimitError = '';
+	if (!emergencyhousePublicConsumeRateLimit($db, (int) $conf->entity, 'register', $identity, 5, 3600, $rateLimitError)) {
+		$errorKey = $rateLimitError === 'ErrorRateLimitExceeded' ? 'ErrorRateLimitExceeded' : 'ErrorInternalError';
 	} elseif (!$adultConfirmed || !$termsAccepted || !$privacyAccepted) {
 		$errorKey = 'ErrorRequiredConsents';
 	} else {

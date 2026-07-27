@@ -52,18 +52,25 @@ class EmergencyHousePublicAuthService
 	{
 		$account = new EmergencyHousePublicAccount($this->db, $this->encryption);
 		$fetchResult = $account->fetchByEmail($email);
-		if ($fetchResult <= 0 || !$account->verifyPassword($password)) {
-			if ($fetchResult > 0) {
-				$account->registerFailedLogin();
+		if ($fetchResult < 0) {
+			$this->error = $account->error !== '' ? $account->error : 'ErrorInternalError';
+			dol_syslog(__METHOD__.': account lookup failed: '.$this->error, LOG_ERR);
+			return false;
+		}
+		if ($fetchResult === 0 || !$account->verifyPassword($password)) {
+			if ($fetchResult > 0 && $account->registerFailedLogin() < 0) {
+				dol_syslog(__METHOD__.': failed-login counter update failed: '.$account->error, LOG_WARNING);
 			}
 			$this->error = 'ErrorAuthenticationFailed';
 			return false;
 		}
 		if ($account->registerSuccessfulLogin() < 0) {
-			$this->error = $account->error;
+			$this->error = $account->error !== '' ? $account->error : 'ErrorInternalError';
+			dol_syslog(__METHOD__.': successful-login update failed: '.$this->error, LOG_ERR);
 			return false;
 		}
 		if (!$this->createSession($account, $ipAddress, $userAgent)) {
+			dol_syslog(__METHOD__.': session creation failed: '.$this->error, LOG_ERR);
 			return false;
 		}
 		$this->account = $account;
@@ -88,6 +95,7 @@ class EmergencyHousePublicAuthService
 		$userAgentHash = $this->encryption->hashLookup($userAgent, 'session-user-agent');
 		if (!is_string($encryptedCsrf) || !is_string($ipHash) || !is_string($userAgentHash)) {
 			$this->error = $this->encryption->error;
+			dol_syslog(__METHOD__.': session secrets unavailable: '.$this->error, LOG_ERR);
 			return false;
 		}
 		$durationMinutes = max(15, getDolGlobalInt('EMERGENCYHOUSE_SESSION_IDLE_MINUTES', 120));
@@ -103,6 +111,7 @@ class EmergencyHousePublicAuthService
 		$sql .= " '".$this->db->idate($now)."', '".$this->db->idate($now)."', '".$this->db->idate($expiresAt)."')";
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
+			dol_syslog(__METHOD__.': session insert failed: '.$this->error, LOG_ERR);
 			$this->db->rollback();
 			return false;
 		}

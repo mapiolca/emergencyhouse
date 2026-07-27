@@ -38,6 +38,8 @@ Le script vérifie notamment :
   utilisées par l’interface publique ;
 - l’héritage des documents juridiques de la plateforme lorsque les URL propres
   à une campagne sont laissées vides ;
+- la distinction entre identifiants publics incorrects, limitation de débit et
+  panne technique, avec journalisation des erreurs internes de session ;
 - l’activation et la désactivation synchronisées des neuf travaux planifiés,
   sans suppression de leur configuration ;
 - le contrat d’URL racine du répertoire public et l’absence de liens de
@@ -55,7 +57,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 27 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `473 contrats validés` ;
+- contrats statiques : `476 contrats validés` ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,
