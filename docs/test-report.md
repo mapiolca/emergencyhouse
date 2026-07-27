@@ -35,6 +35,8 @@ Le script vérifie notamment :
 - le contrat d’URL racine du répertoire public et l’absence de liens de
   notification contournant le constructeur commun ;
 - la présence des guides Sécurité et fournisseurs ;
+- la publication conditionnelle des CGU et l’utilisation de l’éditeur WYSIWYG
+  natif ;
 - l’unicité et la parité des traductions `fr_FR` et `en_US`.
 
 Une passe de lint PHP doit également être exécutée sur tous les fichiers
@@ -43,7 +45,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 27 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `447 contrats validés` ;
+- contrats statiques : `452 contrats validés` ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,

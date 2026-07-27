@@ -18,6 +18,7 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/doc/pdf_emergencyhouse_agreement.modules.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
@@ -66,7 +67,7 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_PUBLIC_ORGANISATION_NAME' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_OFFICIAL_PHONE' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL' => array('type' => 'string', 'default' => ''),
-		'EMERGENCYHOUSE_PUBLIC_TERMS_URL' => array('type' => 'string', 'default' => ''),
+		'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => ''),
 	),
 	'authentication' => array(
 		'EMERGENCYHOUSE_SESSION_IDLE_MINUTES' => array('type' => 'int', 'default' => '120'),
@@ -131,6 +132,7 @@ $settingsByTab = array(
  */
 $settingHelpKeys = array(
 	'EMERGENCYHOUSE_PUBLIC_BASE_URL' => 'HelpPublicBaseUrl',
+	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => 'HelpPublicTermsHtml',
 	'EMERGENCYHOUSE_OSM_TILE_URL' => 'HelpOsmTileUrl',
 	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
 	'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => 'HelpGeocodingEndpoint',
@@ -469,7 +471,22 @@ if (isset($settingsByTab[$tab])) {
 			);
 		}
 
-		if ($name === 'EMERGENCYHOUSE_FREE_TEXT') {
+		if ($name === 'EMERGENCYHOUSE_PUBLIC_TERMS_HTML') {
+			$editor = new DolEditor(
+				$name,
+				$value,
+				'',
+				300,
+				'dolibarr_notes',
+				'',
+				false,
+				false,
+				isModEnabled('fckeditor'),
+				12,
+				'100%'
+			);
+			$editor->Create();
+		} elseif ($name === 'EMERGENCYHOUSE_FREE_TEXT') {
 			print '<textarea class="flat centpercent" rows="5" name="'.dol_escape_htmltag($name).'">'.dol_escape_htmltag($value).'</textarea>';
 		} elseif (!empty($options)) {
 			print $form->selectarray($name, $options, $value, 0, 0, 0, '', 0, 0, 0, '', 'minwidth300');

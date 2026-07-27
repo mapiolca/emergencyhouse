@@ -16,6 +16,7 @@ $action = GETPOST('action', 'aZ09');
 $errorKey = '';
 $registered = GETPOSTINT('registered') > 0;
 $dataPolicyEnabled = isModEnabled('datapolicy');
+$termsEnabled = emergencyhousePublicHtmlHasContent(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''));
 
 if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 	$firstname = trim(GETPOST('firstname', 'restricthtml'));
@@ -24,7 +25,7 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 	$phone = trim(GETPOST('phone', 'restricthtml'));
 	$password = GETPOST('password', 'none');
 	$adultConfirmed = GETPOSTINT('adult_confirmed') > 0;
-	$termsAccepted = GETPOSTINT('terms_accepted') > 0;
+	$termsAccepted = !$termsEnabled || GETPOSTINT('terms_accepted') > 0;
 	$privacyAccepted = !$dataPolicyEnabled || GETPOSTINT('privacy_accepted') > 0;
 
 	$identity = $emergencyhousePublicIp.'|'.EmergencyHouseEncryptionService::normalizeEmail($email);
@@ -43,8 +44,12 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 			$consent = new EmergencyHouseConsentService($db);
 			$consentVersion = getDolGlobalString('EMERGENCYHOUSE_GLOBAL_CONSENT_VERSION', '1.0');
 			$proof = hash('sha256', $account->public_uuid.'|'.$consentVersion.'|'.dol_now());
-			$consentResult = $consent->setConsent((int) $account->entity, (int) $account->id, null, 'terms', $consentVersion, true, $proof);
-			$requiredConsentCount = 1;
+			$consentResult = 0;
+			$requiredConsentCount = 0;
+			if ($termsEnabled) {
+				$consentResult += $consent->setConsent((int) $account->entity, (int) $account->id, null, 'terms', $consentVersion, true, $proof);
+				$requiredConsentCount++;
+			}
 			if ($dataPolicyEnabled) {
 				$consentResult += $consent->setConsent((int) $account->entity, (int) $account->id, null, 'privacy', $consentVersion, true, $proof);
 				$requiredConsentCount++;
@@ -106,7 +111,12 @@ print '<div class="eh-field eh-field-full"><label for="password">'.$langs->trans
 print '</div></div>';
 print '<div class="eh-form-section"><h2>'.$langs->trans('YourCommitments').'</h2>';
 print '<label class="eh-switch"><span>'.$langs->trans('ConfirmAdultAge').'</span><input type="checkbox" role="switch" name="adult_confirmed" value="1" required></label>';
-print '<label class="eh-switch"><span>'.$langs->trans('AcceptTermsOfUse').'</span><input type="checkbox" role="switch" name="terms_accepted" value="1" required></label>';
+if ($termsEnabled) {
+	$termsLink = '<a href="'.dol_escape_htmltag(emergencyhousePublicUrl('terms.php')).'" target="_blank" rel="noopener noreferrer">'
+		.$langs->trans('TermsOfUse').'</a>';
+	print '<label class="eh-switch"><span>'.$langs->trans('AcceptTermsOfUsePrefix').' '.$termsLink.'.</span>';
+	print '<input type="checkbox" role="switch" name="terms_accepted" value="1" required></label>';
+}
 if ($dataPolicyEnabled) {
 	print '<label class="eh-switch"><span>'.$langs->trans('AcceptPrivacyPolicy').'</span><input type="checkbox" role="switch" name="privacy_accepted" value="1" required></label>';
 }

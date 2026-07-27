@@ -251,6 +251,19 @@ function emergencyhousePublicNavItem($code, $active, $url, $label, $class = '')
 }
 
 /**
+ * Check whether rich HTML contains meaningful visible text.
+ *
+ * @param string $html Rich HTML
+ * @return bool
+ */
+function emergencyhousePublicHtmlHasContent($html)
+{
+	$text = dol_string_nohtmltag($html);
+	$text = str_replace(array("\xC2\xA0", "\xE2\x80\x8B"), '', $text);
+	return trim($text) !== '';
+}
+
+/**
  * Render public footer.
  *
  * @param bool $preview Render private preview footer links
@@ -265,18 +278,21 @@ function emergencyhousePublicRenderFooter($preview = false)
 	print '<div><strong>'.$langs->trans('EmergencyHouse').'</strong><p>'.$langs->trans('EmergencyHousePublicDisclaimer').'</p></div>';
 	print '<nav aria-label="'.$langs->trans('LegalNavigation').'"><ul>';
 	$privacyUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_URL', '');
-	$termsUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_URL', '');
+	$termsHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''));
+	$termsEnabled = emergencyhousePublicHtmlHasContent($termsHtml);
 	$dataPolicyEnabled = isModEnabled('datapolicy');
 	if ($preview) {
 		if ($dataPolicyEnabled) {
 			print '<li><a href="#main">'.$langs->trans('PrivacyPolicy').'</a></li>';
 		}
-		print '<li><a href="#main">'.$langs->trans('TermsOfUse').'</a></li>';
+		if ($termsEnabled) {
+			print '<li><a href="#main">'.$langs->trans('TermsOfUse').'</a></li>';
+		}
 	} elseif ($dataPolicyEnabled && $privacyUrl !== '') {
 		print '<li><a href="'.dol_escape_htmltag($privacyUrl).'">'.$langs->trans('PrivacyPolicy').'</a></li>';
 	}
-	if (!$preview && $termsUrl !== '') {
-		print '<li><a href="'.dol_escape_htmltag($termsUrl).'">'.$langs->trans('TermsOfUse').'</a></li>';
+	if (!$preview && $termsEnabled) {
+		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('terms.php')).'">'.$langs->trans('TermsOfUse').'</a></li>';
 	}
 	print '<li><a href="'.dol_escape_htmltag($preview ? '#main' : emergencyhousePublicUrl('accessibility.php')).'">'.$langs->trans('Accessibility').'</a></li>';
 	print '</ul></nav></div></footer>';

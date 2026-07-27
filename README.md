@@ -78,6 +78,13 @@ feuilles de style, le script public et le logo sont également servis sous
 `/assets/` depuis cette même racine. Si la constante est vide, le portail
 conserve son URL interne Dolibarr pour faciliter une recette locale.
 
+Les conditions générales d’utilisation sont saisies dans
+`EMERGENCYHOUSE_PUBLIC_TERMS_HTML` depuis l’onglet **Portail**. Dolibarr utilise
+son éditeur WYSIWYG natif lorsque ce module est actif, avec repli sur une zone
+de texte standard. Le contenu est publié sur `/terms.php` ; si la constante est
+vide, le lien, la page et le consentement d’inscription correspondants sont
+masqués.
+
 ## Aperçu privé du portail
 
 Un utilisateur Dolibarr disposant du droit de configuration peut ouvrir

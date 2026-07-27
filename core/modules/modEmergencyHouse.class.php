@@ -418,6 +418,7 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY' => array('private', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_BASE_URL' => array('', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine'),
 			'EMERGENCYHOUSE_OFFER_PUBLICATION_POLICY' => array('operator_validation', 'chaine'),
 			'EMERGENCYHOUSE_OSM_TILES_ENABLED' => array('1', 'yesno'),
 			'EMERGENCYHOUSE_OSM_TILE_URL' => array('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'chaine'),

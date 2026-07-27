@@ -209,6 +209,9 @@ $publicLibrary = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'lib'.DIRE
 $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
 );
+$termsController = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'terms.php'
+);
 $notificationService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php');
 emergencyhouseContract(
 	strpos($publicLibrary, "getDolGlobalString('EMERGENCYHOUSE_PUBLIC_BASE_URL', '')") !== false
@@ -224,6 +227,24 @@ emergencyhouseContract(
 		&& strpos($publicLibrary, "\$dataPolicyEnabled = isModEnabled('datapolicy');") !== false
 		&& strpos($publicLibrary, '$dataPolicyEnabled && $privacyUrl !==') !== false,
 	'Politique de confidentialité masquée et non exigée lorsque Data Policy est désactivé'
+);
+emergencyhouseContract(
+	strpos($setup, "require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';") !== false
+		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => '')") !== false
+		&& strpos($setup, "isModEnabled('fckeditor')") !== false
+		&& strpos($setup, '$editor = new DolEditor(') !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine')") !== false,
+	'CGU administrables avec l’éditeur WYSIWYG natif et repli textarea'
+);
+emergencyhouseContract(
+	strpos($publicLibrary, "emergencyhousePublicUrl('terms.php')") !== false
+		&& strpos($publicLibrary, 'emergencyhousePublicHtmlHasContent($termsHtml)') !== false
+		&& strpos($registerController, '$termsAccepted = !$termsEnabled ||') !== false
+		&& strpos($registerController, 'if ($termsEnabled) {') !== false
+		&& strpos($termsController, 'http_response_code(404);') !== false
+		&& strpos($termsController, 'dolPrintHTML($termsHtml)') !== false
+		&& strpos($publicLibrary, 'EMERGENCYHOUSE_PUBLIC_TERMS_URL') === false,
+	'Page et consentement CGU publiés uniquement lorsqu’un contenu HTML existe'
 );
 emergencyhouseContract(
 	substr_count($notificationService, 'emergencyhousePublicAbsoluteUrl(') === 2
