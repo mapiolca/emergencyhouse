@@ -157,6 +157,21 @@ emergencyhouseContract(
 	'Désactivation non destructive'
 );
 
+$setupPath = $root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'setup.php';
+$setup = emergencyhouseReadRequired($setupPath);
+emergencyhouseContract(
+	strpos($setup, "require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';") !== false
+		&& substr_count($setup, 'base64_encode(getRandomPassword(true, null, 48))') === 2,
+	'Génération native Dolibarr de deux clés encodées en base64'
+);
+emergencyhouseContract(
+	!preg_match(
+		"/dolibarr_set_const\\s*\\([^;]*'EMERGENCYHOUSE_(?:ENCRYPTION|HMAC)_KEY'/s",
+		$setup
+	),
+	'Aucune clé secrète persistée dans une constante Dolibarr'
+);
+
 $allPhp = '';
 foreach (emergencyhousePhpFiles($root) as $phpFile) {
 	if (realpath($phpFile) === realpath(__FILE__)) {
@@ -196,6 +211,10 @@ emergencyhouseContract(
 emergencyhouseContract(
 	strpos($allPhp, '@phpstan-ignore') === false,
 	'Pas de suppression locale PHPStan'
+);
+emergencyhouseContract(
+	strpos($allPhp, 'EMERGENCYHOUSE_MASTER_KEY') === false,
+	'Nom par défaut de la clé de chiffrement cohérent dans tout le module'
 );
 emergencyhouseContract(
 	!preg_match('/input\s+[^>]*type=["\']date["\']/i', $allPhp),

@@ -86,6 +86,12 @@ encodées en base64. Elles ne doivent être enregistrées ni dans Git, ni dans l
 base de données, ni dans une constante Dolibarr. Leur nom peut être adapté dans
 les réglages du module.
 
+L’onglet **Sécurité** des réglages permet de générer ces deux valeurs avec le
+générateur natif `getRandomPassword()` de Dolibarr. Le module encode chaque
+valeur en base64, les affiche une seule fois dans une réponse non mise en cache
+et ne les enregistre pas. Il faut les copier immédiatement dans la
+configuration d’environnement du serveur.
+
 ## Cartographie et fournisseurs
 
 Les tuiles OpenStreetMap sont activables avec l’attribution requise. Le

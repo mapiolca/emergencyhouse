@@ -33,7 +33,7 @@ class EmergencyHouseEncryptionService
 		}
 		$variable = $environmentVariable;
 		if (empty($variable)) {
-			$variable = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_MASTER_KEY');
+			$variable = getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY');
 		}
 		$value = getenv($variable);
 		if (!is_string($value) || $value === '') {

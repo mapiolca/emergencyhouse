@@ -17,6 +17,7 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/mod_emergencyhouse_standard.php');
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/doc/pdf_emergencyhouse_agreement.modules.php');
@@ -46,6 +47,13 @@ $numberingConstants = array(
 	'EMERGENCYHOUSE_ALLOCATION_ADDON' => 'Allocation',
 	'EMERGENCYHOUSE_REPORT_ADDON' => 'Report',
 );
+
+/**
+ * Keys generated for the current response only. They are never persisted.
+ *
+ * @var list<array{name:string,value:string}>
+ */
+$generatedEnvironmentKeys = array();
 
 /**
  * @var array<string, array<string, array{type:string,default:string}>> $settingsByTab
@@ -166,6 +174,25 @@ if ($action === 'set_numbering_model') {
 	);
 	header('Location: '.$_SERVER['PHP_SELF'].'?tab=general');
 	exit;
+} elseif ($action === 'generate_environment_keys' && $tab === 'security') {
+	$encryptionKey = base64_encode(getRandomPassword(true, null, 48));
+	do {
+		$hmacKey = base64_encode(getRandomPassword(true, null, 48));
+	} while (hash_equals($encryptionKey, $hmacKey));
+
+	$generatedEnvironmentKeys = array(
+		array(
+			'name' => getDolGlobalString('EMERGENCYHOUSE_ENCRYPTION_KEY_ENV', 'EMERGENCYHOUSE_ENCRYPTION_KEY'),
+			'value' => $encryptionKey,
+		),
+		array(
+			'name' => getDolGlobalString('EMERGENCYHOUSE_HMAC_KEY_ENV', 'EMERGENCYHOUSE_HMAC_KEY'),
+			'value' => $hmacKey,
+		),
+	);
+
+	header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+	header('Pragma: no-cache');
 } elseif ($action === 'save' && isset($settingsByTab[$tab])) {
 	$error = 0;
 	$values = array();
@@ -230,6 +257,27 @@ if ($tab === 'providers') {
 }
 if ($tab === 'authentication') {
 	print '<div class="info">'.$langs->trans('OfferPublicationSecurityPolicyInfo').'</div>';
+}
+if ($tab === 'security') {
+	print '<div class="warning">'.$langs->trans('EnvironmentKeysNotStoredInfo').'</div>';
+	if (!empty($generatedEnvironmentKeys)) {
+		print '<br>'.load_fiche_titre($langs->trans('GeneratedEnvironmentKeys'), '', 'key');
+		print '<div class="warning">'.$langs->trans('GeneratedEnvironmentKeysOneTimeWarning').'</div>';
+		print '<table class="noborder centpercent">';
+		print '<tr class="liste_titre"><th>'.$langs->trans('EnvironmentVariable').'</th><th>'.$langs->trans('GeneratedValue').'</th></tr>';
+		foreach ($generatedEnvironmentKeys as $generatedEnvironmentKey) {
+			print '<tr class="oddeven"><td><code>'.dol_escape_htmltag($generatedEnvironmentKey['name']).'</code></td>';
+			print '<td><input class="flat centpercent" type="text" readonly autocomplete="off" spellcheck="false"';
+			print ' value="'.dol_escape_htmltag($generatedEnvironmentKey['value']).'"></td></tr>';
+		}
+		print '</table>';
+	}
+	print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="action" value="generate_environment_keys">';
+	print '<input type="hidden" name="tab" value="security">';
+	print '<p class="center"><button class="button" type="submit">'.$langs->trans('GenerateEnvironmentKeys').'</button></p>';
+	print '</form>';
 }
 
 if (isset($settingsByTab[$tab])) {

@@ -11,6 +11,8 @@
   et sans suppression cascade métier.
 - Ajout du chiffrement Sodium, des empreintes HMAC, des limitations de débit et
   des règles de conservation.
+- Ajout dans l’onglet Sécurité d’un générateur natif Dolibarr pour produire,
+  sans persistance, les deux clés d’environnement distinctes encodées en base64.
 - Ajout des triggers CRUD, des événements Agenda/Notifications, des
   substitutions, des modèles de numérotation et du document PDF de convention.
 - Ajout d’une file transactionnelle distincte pour les comptes du portail
