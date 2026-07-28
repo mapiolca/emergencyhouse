@@ -2,6 +2,14 @@
 
 ## Non publié
 
+- Remplacement de la saisie de l’identifiant technique **Objet lié** dans les
+  vérifications par un Select2 natif dépendant du type d’objet ; les cibles
+  ouvertes depuis une fiche sont verrouillées et affichées par leur référence,
+  avec respect des droits sur les identités et du périmètre Multicompany.
+- Traduction des valeurs techniques de visibilité, de vérification, de sens de
+  sollicitation et de gravité dans les fiches et listes du back-office ; ajout
+  du lien natif **Retour à la liste** dans les bannières et navigation
+  précédent/suivant désormais fondée sur les identifiants `rowid`.
 - Correction de la traduction bilingue de la durée maximale facultative et
   regroupement compact des sélecteurs natifs jour, mois et année sur les
   formulaires publics d’offre et de demande.

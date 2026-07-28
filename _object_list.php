@@ -136,7 +136,7 @@ $configurations = array(
 			'offer' => array('label' => 'Offer', 'checked' => 1, 'position' => 20),
 			'request' => array('label' => 'Request', 'checked' => 1, 'position' => 30),
 			't.date_creation' => array('label' => 'DateCreation', 'checked' => 1, 'position' => 40),
-			't.date_expiration' => array('label' => 'ExpirationDate', 'checked' => 1, 'position' => 50),
+			't.date_expiration' => array('label' => 'DateExpiration', 'checked' => 1, 'position' => 50),
 			't.status' => array('label' => 'Status', 'checked' => 1, 'position' => 60),
 			't.entity' => array('label' => 'Environment', 'checked' => 1, 'position' => 70),
 		),
@@ -420,6 +420,11 @@ foreach ($rows as $row) {
 			print dol_escape_htmltag($langs->trans('ObjectType'.ucfirst((string) $row->object_type)));
 		} elseif ($field === 't.fk_object') {
 			print emergencyhouseListLinkedObject($db, (string) $row->object_type, (int) $row->fk_object, '');
+		} elseif ($field === 't.severity') {
+			$severity = (int) $row->severity;
+			print $severity >= 0 && $severity <= 5
+				? dol_escape_htmltag($langs->trans('SeverityLevel'.$severity))
+				: '<span class="opacitymedium">'.$langs->trans('UnknownValue').'</span>';
 		} else {
 			$property = substr($field, 2);
 			print isset($row->{$property}) ? dol_escape_htmltag((string) $row->{$property}) : '';

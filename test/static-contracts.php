@@ -575,6 +575,9 @@ foreach ($statusObjects as $statusObject) {
 $objectList = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_list.php');
 $matchList = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'match'.DIRECTORY_SEPARATOR.'list.php');
 $verificationList = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'verification'.DIRECTORY_SEPARATOR.'list.php');
+$verificationJavascript = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'js'.DIRECTORY_SEPARATOR.'verification.js'
+);
 emergencyhouseContract(
 	strpos($objectList, '$record->getLibStatut(5)') !== false
 		&& strpos($matchList, '$statusCode, 5)') !== false
@@ -582,6 +585,33 @@ emergencyhouseContract(
 		&& strpos($verificationList, '$verificationStatusType') !== false
 		&& strpos($verificationList, "\t\t5\n") !== false,
 	'Listes du back-office rendues avec les badges de statut natifs'
+);
+emergencyhouseContract(
+	strpos($verificationList, 'type="number" min="1" name="fk_object"') === false
+		&& strpos($verificationList, "\$form->selectarray('fk_object', \$targetOptions") !== false
+		&& strpos($verificationList, "ajax_combobox('fk_object')") !== false,
+	'Cible de vérification choisie par un Select2 natif sans saisie d’identifiant technique'
+);
+emergencyhouseContract(
+	strpos($verificationList, 'name="target_mode" value="locked"') !== false
+		&& strpos($verificationList, 'emergencyhouseVerificationRenderTarget(') !== false
+		&& strpos($verificationList, "GETPOSTINT('fk_object')") !== false
+		&& strpos($verificationList, 'emergencyhouseVerificationEntityIsAccessible(') !== false,
+	'Cible provenant d’une fiche affichée sans saisie et revalidée côté serveur'
+);
+emergencyhouseContract(
+	strpos($verificationList, "emergencyhouseEntityScope(\$objectType)") !== false
+		&& strpos($verificationList, "emergencyhouseCanDo(\$user, 'sensitive', 'contact')") !== false
+		&& strpos($verificationList, "\$sql .= ' WHERE entity = '.((int) \$conf->entity);") !== false
+		&& strpos($verificationJavascript, "targetSelect.disabled = true;") !== false
+		&& strpos($verificationJavascript, "url.searchParams.set('object_type'") !== false,
+	'Sélecteur dépendant respectant Multicompany et la protection des identités publiques'
+);
+emergencyhouseContract(
+	strpos($verificationList, "trans('DateExpiration')") !== false
+		&& strpos($verificationList, "trans('ExpirationDate')") === false
+		&& strpos($verificationList, "'v.fk_object' => 'VerifiedObject'") !== false,
+	'Libellés traduits Objet vérifié et Date d’expiration sur les vérifications'
 );
 $objectCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_card.php');
 $matchCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'match'.DIRECTORY_SEPARATOR.'card.php');
@@ -606,6 +636,25 @@ emergencyhouseContract(
 		&& strpos($matchCard, "print '</table></div></div><div class=\"clearboth\"></div>';") !== false
 		&& strpos($matchCard, 'dolGetButtonAction(') !== false,
 	'Actions de fiche placées dans la barre native après dégagement des colonnes'
+);
+emergencyhouseContract(
+	strpos(
+		$objectCard,
+		"\$listUrl = dol_buildpath('/emergencyhouse/'.\$object->element.'/list.php', 1).'?restore_lastsearch_values=1';"
+	) !== false
+		&& strpos($objectCard, "\$langs->trans('BackToList')") !== false
+		&& strpos($objectCard, "dol_banner_tab(\$object, 'id', \$linkback, 1, 'rowid', 'ref');") !== false,
+	'Bannières avec retour liste natif et navigation précédent/suivant basée sur rowid'
+);
+emergencyhouseContract(
+	strpos($objectCard, "'offers_requests' => 'VisibilityOffersAndRequests'") !== false
+		&& strpos($objectCard, "'email_verification' => 'VerificationEmailOnly'") !== false
+		&& strpos($objectCard, "'request_to_offer' => 'SolicitationDirectionRequestToOffer'") !== false
+		&& strpos($objectCard, "'date_expiration' => 'DateExpiration'") !== false
+		&& strpos($objectList, "'label' => 'DateExpiration'") !== false
+		&& strpos($objectCard, "trans('SeverityLevel'.\$severity)") !== false
+		&& strpos($objectList, "trans('SeverityLevel'.\$severity)") !== false,
+	'Valeurs techniques des fiches et gravités de liste rendues par des traductions bilingues'
 );
 emergencyhouseContract(
 	strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';") !== false
@@ -897,6 +946,14 @@ $requiredTranslations = array(
 	'OfferPhotoStatusApproved',
 	'OfferPhotoStatusRejected',
 	'MaximumStayDaysOptional',
+	'SeverityLevel4',
+	'SeverityLevel5',
+	'SolicitationDirectionRequestToOffer',
+	'SolicitationDirectionOfferToRequest',
+	'SolicitationDirectionOperator',
+	'UnknownValue',
+	'ObjectToVerify',
+	'VerifiedObject',
 	'CompatibilityOfferPhotos',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',
