@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Ajout au portail public d’un formulaire multilingue de demande de nouvelle
+  campagne, accessible sans compte, protégé par CSRF, captcha et limitation de
+  débit ; chaque demande crée une campagne privée en brouillon, numérotée et
+  transmise aux triggers natifs pour validation par un opérateur.
 - Ajout de quinze langues communes au module et au portail public : français,
   anglais, espagnol, allemand, italien, portugais, néerlandais, polonais,
   roumain, ukrainien, russe, arabe, turc, chinois simplifié et japonais.

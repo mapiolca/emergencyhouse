@@ -150,6 +150,7 @@ foreach (array(
 	'email_verified' => 'public/auth/verify.php',
 	'login_success' => 'public/auth/login.php',
 	'contact_sent' => 'public/contact.php',
+	'campaign_requested' => 'public/campaign-request.php',
 	'offer_submitted' => 'public/offer/edit.php',
 	'request_submitted' => 'public/request/edit.php',
 	'solicitation_created' => 'public/solicitation/create.php',

@@ -69,6 +69,8 @@ Le script vérifie notamment :
 - la présence des guides Sécurité et fournisseurs ;
 - la publication conditionnelle des CGU et l’utilisation de l’éditeur WYSIWYG
   natif ;
+- la demande publique de campagne avec CSRF, captcha, limitation de débit,
+  création numérotée en brouillon privé et validation opérateur obligatoire ;
 - la traduction de chaque message littéral affiché par les alertes publiques ;
 - l’unicité, la parité des clés et la conservation des variables dans les
   quinze catalogues ;
@@ -87,7 +89,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 28 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `739 contrats validés` ;
+- contrats statiques : `746 contrats validés` ;
 - mesure d’audience : tables sans donnée personnelle, collecte désactivée,
   cookie fixe, opposition, engagement, verrouillage, agrégation, rétention,
   filtres exacts, parcours ordonné, menu et conversions contrôlés validés ;
@@ -102,7 +104,7 @@ Résultats de la passe finale du 28 juillet 2026 :
   notification, redirection interne et fallback Dolibarr validés ;
 - ressources publiques autonomes : sorties CSS, JavaScript et SVG identiques
   aux sources canoniques du module ;
-- quinze catalogues : `1518` clés identiques, sans doublon ni variable perdue ;
+- quinze catalogues : `1535` clés identiques, sans doublon ni variable perdue ;
 - langues : 15 locales enregistrées, négociation `Accept-Language`, fallback
   et RTL arabe validés ;
 - clés : deux valeurs de 32 octets acceptées, valeurs identiques et valeur
@@ -134,6 +136,9 @@ Résultats de la passe finale du 28 juillet 2026 :
 - domaine public dont la racine documentaire pointe sur `public/` : accueil,
   ressources `/assets/`, navigation, formulaires, redirections et liens
   reçus par courriel ;
+- demande de campagne anonyme et authentifiée : préremplissage, captcha,
+  limitation de débit, création du brouillon dans la bonne entité et absence
+  de publication avant validation opérateur ;
 - parcours navigateur dans les quinze langues, dont arabe RTL, et contrôle par
   locuteurs natifs des traductions fonctionnelles et juridiques ;
 - correspondances et réservations concurrentes ;

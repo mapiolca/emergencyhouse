@@ -102,6 +102,8 @@ Multicompany sont conservés. Ils sont tous réactivés avec le module.
 - `https://emergencyhouse.example.org/?lang=fr_FR` pour l’accueil ;
 - `https://emergencyhouse.example.org/offer/index.php?lang=fr_FR` pour les
   offres ;
+- `https://emergencyhouse.example.org/campaign-request.php?lang=fr_FR` pour
+  demander la création d’une nouvelle campagne ;
 - `https://emergencyhouse.example.org/contact.php?lang=fr_FR` pour contacter le
   support ;
 - `https://emergencyhouse.example.org/account/index.php?lang=fr_FR` pour l’espace
@@ -188,6 +190,22 @@ consentement d’inscription correspondant ne sont actifs que si son interrupteu
 est activé et si son contenu contient du texte visible. L’ancienne constante
 `EMERGENCYHOUSE_PUBLIC_PRIVACY_URL` n’est plus utilisée, mais sa valeur
 historique n’est pas supprimée lors d’une mise à jour.
+
+### Demande publique de campagne
+
+La page `/campaign-request.php` est accessible depuis la navigation, le pied
+de page et la section des campagnes de l’accueil. Elle permet à un visiteur,
+avec ou sans compte public, de transmettre ses coordonnées, la zone concernée,
+le type d’urgence, la période et une description détaillée. Les coordonnées
+d’un compte authentifié sont préremplies. Le formulaire précise qu’elles
+deviendront les coordonnées officielles de la campagne si celle-ci est validée.
+
+Une demande valide crée l’objet Campagne natif du module avec sa référence,
+son trigger CRUD `CREATE` et le statut **Brouillon**. Sa visibilité reste
+**Privée** et seul un opérateur peut ensuite la contrôler, la compléter et la
+publier depuis le back-office. Le formulaire ne publie donc jamais directement
+une campagne. Il exige le token CSRF, le captcha natif et la limitation de
+débit par adresse réseau configurée pour le portail.
 
 ### Contact public
 

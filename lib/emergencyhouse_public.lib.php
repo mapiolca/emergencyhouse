@@ -644,6 +644,12 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	print '</a>';
 	print '<nav aria-label="'.$langs->trans('PrimaryNavigation').'"><ul>';
 	print emergencyhousePublicNavItem('campaigns', $active, $preview ? '#preview-campaigns' : emergencyhousePublicUrl(), $langs->trans('Campaigns'));
+	print emergencyhousePublicNavItem(
+		'campaign_request',
+		$active,
+		$preview ? '#preview-campaigns' : emergencyhousePublicUrl('campaign-request.php'),
+		$langs->trans('RequestCampaignCreation')
+	);
 	print emergencyhousePublicNavItem('offers', $active, $preview ? '#preview-offers' : emergencyhousePublicUrl('offer/index.php'), $langs->trans('Offers'));
 	print emergencyhousePublicNavItem('requests', $active, $preview ? '#preview-requests' : emergencyhousePublicUrl('request/index.php'), $langs->trans('Requests'));
 	print emergencyhousePublicNavItem('contact', $active, $preview ? '#preview-contact' : emergencyhousePublicUrl('contact.php'), $langs->trans('ContactUs'));
@@ -812,6 +818,10 @@ function emergencyhousePublicRenderFooter($preview = false)
 	print '<div><strong>'.$langs->trans('ContactUs').'</strong><ul class="eh-footer-contact">';
 	print '<li><a href="'.dol_escape_htmltag($preview ? '#preview-contact' : emergencyhousePublicUrl('contact.php')).'">'
 		.$langs->trans('ContactForm').'</a></li>';
+	if (!$preview) {
+		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('campaign-request.php')).'">'
+			.$langs->trans('RequestCampaignCreation').'</a></li>';
+	}
 	$supportPhone = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE', ''));
 	$supportEmail = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL', ''));
 	if ($supportPhone !== '') {

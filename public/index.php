@@ -57,7 +57,9 @@ print '</aside></div></section>';
 
 print '<section class="eh-shell eh-section" aria-labelledby="campaigns-title">';
 print '<div class="eh-section-heading"><div><p class="eh-eyebrow">'.$langs->trans('CurrentEmergencies').'</p>';
-print '<h2 id="campaigns-title">'.$langs->trans('ActiveCampaigns').'</h2><p>'.$langs->trans('ChooseCampaignHelp').'</p></div></div>';
+print '<h2 id="campaigns-title">'.$langs->trans('ActiveCampaigns').'</h2><p>'.$langs->trans('ChooseCampaignHelp').'</p></div>';
+print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('campaign-request.php')).'">'
+	.$langs->trans('RequestCampaignCreation').'</a></div>';
 if (empty($campaigns)) {
 	print '<div class="eh-empty"><h3>'.$langs->trans('NoActiveCampaign').'</h3><p>'.$langs->trans('NoActiveCampaignHelp').'</p></div>';
 } else {

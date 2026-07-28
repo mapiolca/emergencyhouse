@@ -407,6 +407,28 @@ $registerController = emergencyhouseReadRequired(
 $languageController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'language.php'
 );
+$publicCampaignRequest = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'campaign-request.php'
+);
+emergencyhouseContract(
+	strpos($publicCampaignRequest, "require __DIR__.'/_init.php';") !== false
+		&& strpos($publicCampaignRequest, "emergencyhousePublicVerifyAuthenticatedPost(\$emergencyhousePublicAuth, 'request_campaign')") !== false
+		&& strpos($publicCampaignRequest, 'emergencyhousePublicCsrfFields(') !== false
+		&& strpos($publicCampaignRequest, 'emergencyhousePublicConsumeRateLimit(') !== false
+		&& strpos($publicCampaignRequest, "unset(\$_SESSION['dol_antispam_value']);") !== false
+		&& strpos($publicCampaignRequest, 'EmergencyHouseCampaign::STATUS_DRAFT') !== false
+		&& strpos($publicCampaignRequest, "\$campaign->public_visibility_mode = 'private';") !== false
+		&& strpos($publicCampaignRequest, "\$campaign->context['trigger_reason'] = 'public_creation_request';") !== false
+		&& strpos($publicCampaignRequest, '$campaign->create($triggerUser)') !== false
+		&& strpos($publicCampaignRequest, '->setStatus(') === false
+		&& strpos($publicCampaignRequest, 'emergencyhousePublicNativeDateSelector(') !== false,
+	'Demande publique de campagne sécurisée, créée en brouillon et soumise à validation opérateur'
+);
+emergencyhouseContract(
+	strpos($publicLibrary, "emergencyhousePublicUrl('campaign-request.php')") !== false
+		&& strpos($publicCampaignRequest, "'campaign_request'") !== false,
+	'Formulaire de nouvelle campagne accessible depuis la navigation publique'
+);
 emergencyhouseContract(
 	strpos($listingService, "c.public_visibility_mode = 'offers_requests'") !== false
 		&& strpos($publicRequestIndex, "array('requests', 'both')") === false,

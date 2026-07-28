@@ -350,6 +350,7 @@ class EmergencyHousePublicAnalyticsService
 			'/report/create.php' => 'report_form',
 			'/accessibility.php' => 'accessibility',
 			'/audience.php' => 'audience_privacy',
+			'/campaign-request.php' => 'campaign_request',
 			'/campaign.php' => 'campaign_detail',
 			'/contact.php' => 'contact',
 			'/privacy.php' => 'privacy',
@@ -370,7 +371,7 @@ class EmergencyHousePublicAnalyticsService
 	public static function allowedPageCodes()
 	{
 		return array(
-			'home', 'campaign_detail', 'offer_list', 'offer_detail', 'offer_form',
+			'home', 'campaign_detail', 'campaign_request', 'offer_list', 'offer_detail', 'offer_form',
 			'request_list', 'request_detail', 'request_form', 'contact', 'login',
 			'register', 'password_forgot', 'password_reset', 'magic_login',
 			'email_verification', 'verification_resend', 'account_dashboard',
@@ -388,7 +389,7 @@ class EmergencyHousePublicAnalyticsService
 	{
 		return array(
 			'registration_completed', 'email_verified', 'login_success',
-			'contact_sent', 'offer_draft_saved', 'offer_submitted',
+			'contact_sent', 'campaign_requested', 'offer_draft_saved', 'offer_submitted',
 			'request_draft_saved', 'request_submitted', 'solicitation_created',
 			'solicitation_updated', 'message_sent', 'report_created',
 			'personal_data_exported', 'deletion_requested', 'allocation_updated',
