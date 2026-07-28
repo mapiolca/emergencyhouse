@@ -95,11 +95,11 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-campaign-summary h3 { margin: 0 0 8px; font-size: 19px; line-height: 1.25; }
 .eh-campaign-summary h3 a { color: var(--eh-ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .eh-campaign-summary .eh-badge { margin-top: 10px; }
-.eh-offer-campaign-group { padding-block: 32px; border-top: 1px solid var(--eh-border); }
-.eh-offer-campaign-group:first-child { padding-top: 0; border-top: 0; }
-.eh-offer-campaign-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
-.eh-offer-campaign-heading h3 { margin: 0; font-size: clamp(22px, 3vw, 30px); line-height: 1.1; }
-.eh-offer-campaign-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
+.eh-listing-campaign-group { padding-block: 32px; border-top: 1px solid var(--eh-border); }
+.eh-listing-campaign-group:first-child { padding-top: 0; border-top: 0; }
+.eh-listing-campaign-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.eh-listing-campaign-heading h3 { margin: 0; font-size: clamp(22px, 3vw, 30px); line-height: 1.1; }
+.eh-listing-campaign-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
 .eh-photo-manager, .eh-offer-gallery { margin-bottom: 24px; }
 .eh-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
 .eh-photo-card { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--eh-border); border-radius: 14px; background: var(--eh-paper); }
@@ -253,8 +253,8 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 	.eh-field-full { grid-column: auto; }
 	.eh-stat-grid { grid-template-columns: 1fr 1fr; }
 	.eh-section-heading { align-items: start; flex-direction: column; }
-	.eh-offer-campaign-heading { align-items: start; flex-direction: column; }
-	.eh-offer-campaign-actions { align-items: flex-start; justify-content: flex-start; }
+	.eh-listing-campaign-heading { align-items: start; flex-direction: column; }
+	.eh-listing-campaign-actions { align-items: flex-start; justify-content: flex-start; }
 	.eh-pagination { flex-wrap: wrap; }
 	.eh-form { padding: 18px; }
 	.eh-form-actions { justify-content: stretch; }

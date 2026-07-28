@@ -182,16 +182,16 @@ if (!$mine && empty($campaigns)) {
 		}
 		$offerGroups[$offerCampaignId]['offers'][] = $offer;
 	}
-	print '<section class="eh-offer-results eh-section-tight" aria-labelledby="offer-campaigns-title">';
+	print '<section class="eh-listing-results eh-section-tight" aria-labelledby="offer-campaigns-title">';
 	print '<div class="eh-section-heading"><div><h2 id="offer-campaigns-title">'.$langs->trans('Campaigns').'</h2></div></div>';
-	print '<div class="eh-offer-groups">';
+	print '<div class="eh-listing-groups">';
 	foreach ($offerGroups as $offerCampaignId => $offerGroup) {
 		$campaignPageUrl = emergencyhousePublicUrl('campaign.php', array('slug' => $offerGroup['slug']));
 		$campaignOfferCount = $campaignOfferCounts[$offerCampaignId] ?? count($offerGroup['offers']);
-		print '<section class="eh-offer-campaign-group" aria-labelledby="offer-campaign-'.$offerCampaignId.'">';
-		print '<div class="eh-offer-campaign-heading"><div>';
+		print '<section class="eh-listing-campaign-group" aria-labelledby="offer-campaign-'.$offerCampaignId.'">';
+		print '<div class="eh-listing-campaign-heading"><div>';
 		print '<h3 id="offer-campaign-'.$offerCampaignId.'">'.dol_escape_htmltag($offerGroup['label']).'</h3></div>';
-		print '<div class="eh-offer-campaign-actions"><span class="eh-badge">'.$langs->trans(
+		print '<div class="eh-listing-campaign-actions"><span class="eh-badge">'.$langs->trans(
 			$campaignOfferCount === 1 ? 'CampaignAvailableOfferCountOne' : 'CampaignAvailableOfferCount',
 			$campaignOfferCount
 		).'</span>';

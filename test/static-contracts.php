@@ -401,7 +401,7 @@ $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
 );
 emergencyhouseContract(
-	strpos($publicRequestIndex, "\$campaign->public_visibility_mode === 'offers_requests'") !== false
+	strpos($listingService, "c.public_visibility_mode = 'offers_requests'") !== false
 		&& strpos($publicRequestIndex, "array('requests', 'both')") === false,
 	'Les demandes publiques sont exposées pour le mode de campagne Offres et demandes'
 );
@@ -431,7 +431,7 @@ emergencyhouseContract(
 );
 emergencyhouseContract(
 	strpos($publicOfferIndex, '$offerGroups[$offerCampaignId]') !== false
-		&& strpos($publicOfferIndex, 'class="eh-offer-campaign-group"') !== false
+		&& strpos($publicOfferIndex, 'class="eh-listing-campaign-group"') !== false
 		&& strpos($publicOfferIndex, 'id="offer-campaigns-title"') !== false
 		&& strpos($publicOfferIndex, "\$langs->trans('Campaigns')") !== false
 		&& strpos($publicOfferIndex, "'campaign.php', array('slug' => \$offerGroup['slug'])") !== false
@@ -444,6 +444,47 @@ emergencyhouseContract(
 		&& strpos($publicLibrary, "filemtime(\$cssFile)") !== false
 		&& strpos($publicLibrary, "\$cssUrl .= (strpos(\$cssUrl, '?') === false ? '?' : '&').'v='.\$cssVersion;") !== false,
 	'Aperçu des campagnes côte à côte avec repli mobile et invalidation du cache CSS'
+);
+emergencyhouseContract(
+	strpos($publicRequestIndex, '$campaignId = (int) $campaigns[0]') === false
+		&& strpos($publicRequestIndex, '$listingService->fetchPublicRequestCampaigns($zone)') !== false
+		&& strpos($publicRequestIndex, "\$langs->trans('AllCampaigns')") !== false
+		&& strpos($publicRequestIndex, 'name="zone"') !== false,
+	'Vue publique des demandes ouverte par défaut sur toutes les campagnes'
+);
+emergencyhouseContract(
+	strpos($listingService, 'public function fetchPublicRequestCampaigns($zone = \'\')') !== false
+		&& strpos($listingService, 'COUNT(r.rowid) AS request_count') !== false
+		&& strpos($listingService, 'LEFT JOIN \'.MAIN_DB_PREFIX.\'emergencyhouse_request AS r') !== false
+		&& strpos($listingService, "AND c.public_visibility_mode = 'offers_requests'") !== false
+		&& strpos($listingService, "AND r.visibility = 'public'") !== false
+		&& strpos($listingService, 'r.verification_status = \'.EmergencyHouseVerificationService::STATUS_VERIFIED') !== false
+		&& strpos($listingService, 'r.remaining_count > 0') !== false,
+	'Synthèse des campagnes conservant celles sans demande publiquement admissible'
+);
+emergencyhouseContract(
+	strpos($listingService, 'public function fetchPublicRequests($campaignId = 0') !== false
+		&& strpos($listingService, 'INNER JOIN \'.MAIN_DB_PREFIX.\'emergencyhouse_campaign AS c') !== false
+		&& substr_count($listingService, "r.desired_zone LIKE '%\".\$zoneFilter.\"%'") >= 2
+		&& substr_count($listingService, "r.desired_town LIKE '%\".\$zoneFilter.\"%'") >= 2
+		&& substr_count($listingService, "r.desired_zip LIKE '%\".\$zoneFilter.\"%'") >= 2
+		&& strpos($listingService, 'ORDER BY c.date_start DESC, c.rowid DESC, r.urgency_level DESC, r.date_start ASC, r.rowid DESC') !== false,
+	'Demandes globales filtrées par zone et ordonnées par campagne puis urgence'
+);
+emergencyhouseContract(
+	strpos($publicRequestIndex, '$requestGroups[$requestCampaignId]') !== false
+		&& strpos($publicRequestIndex, 'class="eh-listing-campaign-group"') !== false
+		&& strpos($publicRequestIndex, 'id="request-campaigns-title"') !== false
+		&& strpos($publicRequestIndex, "'campaign.php', array('slug' => \$requestGroup['slug'])") !== false
+		&& strpos($publicRequestIndex, '$page = min($page, $totalPages - 1);') !== false,
+	'Résultats des demandes regroupés par campagne sous une hiérarchie de titres cohérente'
+);
+emergencyhouseContract(
+	strpos($publicRequestIndex, "\$paginationParams['campaign'] = \$campaignId;") !== false
+		&& strpos($publicRequestIndex, "\$paginationParams['zone'] = \$zone;") !== false
+		&& strpos($publicRequestIndex, "trans('PaginationPageOf'") !== false
+		&& strpos($publicRequestIndex, '$listingService->fetchOwnedRequests($account, $limit, $page * $limit)') !== false,
+	'Pagination des demandes conservant les filtres sans modifier Mes demandes'
 );
 emergencyhouseContract(
 	strpos($publicOfferIndex, "\$paginationParams['campaign'] = \$campaignId;") !== false
@@ -1130,6 +1171,9 @@ $requiredTranslations = array(
 	'CampaignsOverviewHelp',
 	'CampaignAvailableOfferCountOne',
 	'CampaignAvailableOfferCount',
+	'RequestCampaignsOverviewHelp',
+	'CampaignVisibleRequestCountOne',
+	'CampaignVisibleRequestCount',
 	'PaginationPageOf',
 	'Suspend',
 	'Expire',

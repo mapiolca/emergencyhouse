@@ -956,27 +956,88 @@ class EmergencyHouseListingService
 	}
 
 	/**
-	 * List safe public requests only when the campaign allows their exposure.
+	 * List open public campaigns with the number of matching visible requests.
 	 *
-	 * @param int $campaignId Campaign ID
-	 * @param int $limit Limit
-	 * @param int $offset Offset
+	 * Campaigns that do not expose requests or have no matching request remain
+	 * in the result with a zero count.
+	 *
+	 * @param string $zone Desired area, town or postal code filter
 	 * @return array<int, array<string, int|string|null>>|false
 	 */
-	public function fetchPublicRequests($campaignId, $limit = 24, $offset = 0)
+	public function fetchPublicRequestCampaigns($zone = '')
+	{
+		global $conf;
+
+		$sql = 'SELECT c.rowid, c.slug, c.label, c.date_start, c.date_end, COUNT(r.rowid) AS request_count';
+		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_campaign AS c';
+		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'emergencyhouse_request AS r';
+		$sql .= ' ON r.entity = c.entity AND r.fk_campaign = c.rowid';
+		$sql .= " AND c.public_visibility_mode = 'offers_requests'";
+		$sql .= " AND r.visibility = 'public'";
+		$sql .= ' AND r.verification_status = '.EmergencyHouseVerificationService::STATUS_VERIFIED;
+		$sql .= ' AND r.status IN ('.EmergencyHouseRequest::STATUS_ACTIVE.','.EmergencyHouseRequest::STATUS_PARTIALLY_ALLOCATED.')';
+		$sql .= ' AND r.remaining_count > 0';
+		if ($zone !== '') {
+			$zoneFilter = $this->db->escape($zone);
+			$sql .= " AND (r.desired_zone LIKE '%".$zoneFilter."%'";
+			$sql .= " OR r.desired_town LIKE '%".$zoneFilter."%'";
+			$sql .= " OR r.desired_zip LIKE '%".$zoneFilter."%')";
+		}
+		$sql .= ' WHERE c.entity = '.((int) $conf->entity);
+		$sql .= ' AND c.status = '.EmergencyHouseCampaign::STATUS_PUBLISHED;
+		$sql .= " AND c.date_start <= '".$this->db->idate(dol_now())."'";
+		$sql .= " AND (c.date_end IS NULL OR c.date_end >= '".$this->db->idate(dol_now())."')";
+		$sql .= ' GROUP BY c.rowid, c.slug, c.label, c.date_start, c.date_end';
+		$sql .= ' ORDER BY c.date_start DESC, c.rowid DESC';
+		return $this->fetchSafeRows($sql);
+	}
+
+	/**
+	 * List safe public requests only when campaigns allow their exposure.
+	 *
+	 * A campaign ID of 0 returns requests from every currently open campaign.
+	 *
+	 * @param int $campaignId Campaign ID, or 0 for every open campaign
+	 * @param int $limit Limit
+	 * @param int $offset Offset
+	 * @param string $zone Desired area, town or postal code filter
+	 * @return array<int, array<string, int|string|null>>|false
+	 */
+	public function fetchPublicRequests($campaignId = 0, $limit = 24, $offset = 0, $zone = '')
 	{
 		global $conf;
 
 		$sql = 'SELECT r.rowid, r.public_uuid, r.ref, r.fk_campaign, r.person_count, r.remaining_count,';
-		$sql .= ' r.date_start, r.date_end, r.desired_zone, r.search_radius, r.urgency_level, r.title, r.description_public, r.tms';
+		$sql .= ' r.date_start, r.date_end, r.desired_zone, r.desired_town, r.desired_zip, r.search_radius,';
+		$sql .= ' r.urgency_level, r.title, r.description_public, r.tms, c.slug AS campaign_slug,';
+		$sql .= ' c.label AS campaign_label, c.date_start AS campaign_date_start, c.date_end AS campaign_date_end';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_request AS r';
+		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'emergencyhouse_campaign AS c';
+		$sql .= ' ON c.rowid = r.fk_campaign AND c.entity = r.entity';
 		$sql .= ' WHERE r.entity = '.((int) $conf->entity);
-		$sql .= ' AND r.fk_campaign = '.((int) $campaignId);
+		if ($campaignId > 0) {
+			$sql .= ' AND r.fk_campaign = '.((int) $campaignId);
+		} else {
+			$sql .= ' AND c.status = '.EmergencyHouseCampaign::STATUS_PUBLISHED;
+			$sql .= " AND c.date_start <= '".$this->db->idate(dol_now())."'";
+			$sql .= " AND (c.date_end IS NULL OR c.date_end >= '".$this->db->idate(dol_now())."')";
+		}
+		$sql .= " AND c.public_visibility_mode = 'offers_requests'";
 		$sql .= ' AND r.visibility = \'public\'';
 		$sql .= ' AND r.verification_status = '.EmergencyHouseVerificationService::STATUS_VERIFIED;
 		$sql .= ' AND r.status IN ('.EmergencyHouseRequest::STATUS_ACTIVE.','.EmergencyHouseRequest::STATUS_PARTIALLY_ALLOCATED.')';
 		$sql .= ' AND r.remaining_count > 0';
-		$sql .= ' ORDER BY r.urgency_level DESC, r.date_start ASC, r.rowid DESC';
+		if ($zone !== '') {
+			$zoneFilter = $this->db->escape($zone);
+			$sql .= " AND (r.desired_zone LIKE '%".$zoneFilter."%'";
+			$sql .= " OR r.desired_town LIKE '%".$zoneFilter."%'";
+			$sql .= " OR r.desired_zip LIKE '%".$zoneFilter."%')";
+		}
+		if ($campaignId > 0) {
+			$sql .= ' ORDER BY r.urgency_level DESC, r.date_start ASC, r.rowid DESC';
+		} else {
+			$sql .= ' ORDER BY c.date_start DESC, c.rowid DESC, r.urgency_level DESC, r.date_start ASC, r.rowid DESC';
+		}
 		$sql .= $this->db->plimit(min(100, max(1, $limit)), max(0, $offset));
 		return $this->fetchSafeRows($sql);
 	}

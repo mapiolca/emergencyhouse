@@ -9,6 +9,9 @@
 - Affichage compact côte à côte de l’aperçu des campagnes avec repli sur une
   colonne sur mobile, titre de section **Campagnes** aligné sur la hiérarchie
   de l’aperçu et versionnement de la feuille de style publique.
+- Alignement de la page publique des demandes sur celle des offres : vue
+  globale par défaut, compteurs par campagne, filtre de zone, regroupement,
+  pagination et conservation stricte du mode de visibilité des demandes.
 - Ajout sur l’accueil d’une bannière bilingue indiquant que le service évolue
   en permanence grâce aux retours utilisateurs et que ses améliorations sont
   accélérées face à l’urgence dans le Sud-Ouest.
