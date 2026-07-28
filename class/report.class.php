@@ -140,12 +140,12 @@ class EmergencyHouseReport extends EmergencyHouseCommonObject
 	{
 		global $langs;
 		$labels = array(
-			self::STATUS_OPEN => array('StatusOpen', 1),
-			self::STATUS_IN_REVIEW => array('StatusInReview', 3),
-			self::STATUS_RESOLVED => array('StatusResolved', 4),
-			self::STATUS_DISMISSED => array('StatusDismissed', 6),
+			self::STATUS_OPEN => array('StatusOpen', 'status1'),
+			self::STATUS_IN_REVIEW => array('StatusInReview', 'status3'),
+			self::STATUS_RESOLVED => array('StatusResolved', 'status4'),
+			self::STATUS_DISMISSED => array('StatusDismissed', 'status6'),
 		);
-		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 0);
+		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);
 	}
 }

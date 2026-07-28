@@ -407,7 +407,7 @@ foreach ($rows as $row) {
 		} elseif ($field === 'reason') {
 			print dol_escape_htmltag($langs->trans((string) $row->reason_label));
 		} elseif ($field === 't.status') {
-			print $record->LibStatut((int) $row->status, 5);
+			print $record->getLibStatut(5);
 		} elseif ($field === 't.entity') {
 			$entityLabel = isset($entityOptions[(int) $row->entity]) ? $entityOptions[(int) $row->entity] : (string) $row->entity;
 			print '<div class="refidno multicompany-entity-card-container center">';

@@ -228,12 +228,18 @@ foreach ($rows as $row) {
 			print dol_escape_htmltag(number_format((float) $row->{$property}, 2, '.', '')).'%';
 		} elseif ($field === 'm.score_class') {
 			$scoreClass = (string) $row->score_class;
-			$statusCode = $scoreClass === 'strong' ? 4 : ($scoreClass === 'medium' ? 1 : 6);
-			print dolGetStatus($langs->trans('MatchClass'.ucfirst($scoreClass)), '', '', $statusCode, 1);
+			$statusCode = $scoreClass === 'strong' ? 'status4' : ($scoreClass === 'medium' ? 'status1' : 'status6');
+			print dolGetStatus($langs->trans('MatchClass'.ucfirst($scoreClass)), '', '', $statusCode, 5);
 		} elseif ($field === 'm.date_calculation') {
 			print dol_print_date($db->jdate($row->date_calculation), 'dayhour');
 		} elseif ($field === 'm.status') {
-			print dolGetStatus($langs->trans((int) $row->status === 1 ? 'StatusActive' : 'StatusInactive'), '', '', (int) $row->status === 1 ? 4 : 6, 1);
+			print dolGetStatus(
+				$langs->trans((int) $row->status === 1 ? 'StatusActive' : 'StatusInactive'),
+				'',
+				'',
+				(int) $row->status === 1 ? 'status4' : 'status6',
+				5
+			);
 		} elseif ($field === 'm.entity') {
 			print emergencyhouseEntityBadge((int) $row->entity, $entityOptions);
 		}

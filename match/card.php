@@ -68,7 +68,7 @@ foreach (array(
 print '<tr><td>'.$langs->trans('CapacityEvaluated').'</td><td>'.((int) $match->capacity_evaluated).'</td></tr>';
 print '<tr><td>'.$langs->trans('NightsRequested').'</td><td>'.(isset($match->nights_requested) ? (int) $match->nights_requested : $langs->trans('NotDefined')).'</td></tr>';
 print '<tr><td>'.$langs->trans('NightsCovered').'</td><td>'.(isset($match->nights_covered) ? (int) $match->nights_covered : $langs->trans('NotDefined')).'</td></tr>';
-print '</table></div></div>';
+print '</table></div></div><div class="clearboth"></div>';
 if (is_array($warnings) && !empty($warnings)) {
 	print load_fiche_titre($langs->trans('Warnings'));
 	print '<ul>';
@@ -82,7 +82,15 @@ if (is_array($explanation)) {
 	print '<pre class="wordbreak">'.dol_escape_htmltag((string) json_encode($explanation, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)).'</pre>';
 }
 if ((int) $match->status === 1 && emergencyhouseCanDo($user, 'allocation', 'write')) {
-	print '<div class="tabsAction"><a class="butAction" href="'.dol_buildpath('/emergencyhouse/allocation/create.php', 1).'?source=m:'.((int) $match->rowid).'">'.$langs->trans('CreateAllocation').'</a></div>';
+	print '<div class="tabsAction">';
+	print dolGetButtonAction(
+		'',
+		$langs->trans('CreateAllocation'),
+		'default',
+		dol_buildpath('/emergencyhouse/allocation/create.php', 1).'?source=m:'.((int) $match->rowid),
+		''
+	);
+	print '</div>';
 }
 llxFooter();
 $db->close();

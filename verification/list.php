@@ -277,7 +277,14 @@ foreach ($rows as $row) {
 	}
 	print '</td><td>'.$langs->trans('Verification'.ucfirst((string) $row->verification_type)).'</td>';
 	print '<td>'.$langs->trans((string) $row->level_label).'</td>';
-	print '<td>'.dolGetStatus($verificationStatusOptions[(int) $row->status] ?? $langs->trans('StatusUnknown'), '', '', (int) $row->status === 1 ? 4 : ((int) $row->status === 2 ? 6 : 1), 1).'</td>';
+	$verificationStatusType = (int) $row->status === 1 ? 'status4' : ((int) $row->status === 2 ? 'status6' : 'status1');
+	print '<td>'.dolGetStatus(
+		$verificationStatusOptions[(int) $row->status] ?? $langs->trans('StatusUnknown'),
+		'',
+		'',
+		$verificationStatusType,
+		5
+	).'</td>';
 	print '<td>'.($userStatic->fetch((int) $row->fk_operator) > 0 ? $userStatic->getNomUrl(-1) : '<span class="opacitymedium">#'.((int) $row->fk_operator).'</span>').'</td>';
 	print '<td>'.dol_print_date($db->jdate($row->date_creation), 'dayhour').'</td>';
 	print '<td>'.(!empty($row->date_expiration) ? dol_print_date($db->jdate($row->date_expiration), 'day') : '').'</td>';

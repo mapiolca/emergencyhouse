@@ -305,14 +305,14 @@ class EmergencyHouseAllocation extends EmergencyHouseCommonObject
 	{
 		global $langs;
 		$labels = array(
-			self::STATUS_PROPOSED => array('StatusProposed', 1),
-			self::STATUS_CONFIRMED => array('StatusConfirmed', 4),
-			self::STATUS_ACTIVE => array('StatusActive', 4),
-			self::STATUS_COMPLETED => array('StatusCompleted', 6),
-			self::STATUS_CANCELLED => array('StatusCancelled', 6),
-			self::STATUS_INCIDENT => array('StatusIncident', 8),
+			self::STATUS_PROPOSED => array('StatusProposed', 'status1'),
+			self::STATUS_CONFIRMED => array('StatusConfirmed', 'status4'),
+			self::STATUS_ACTIVE => array('StatusActive', 'status4'),
+			self::STATUS_COMPLETED => array('StatusCompleted', 'status6'),
+			self::STATUS_CANCELLED => array('StatusCancelled', 'status6'),
+			self::STATUS_INCIDENT => array('StatusIncident', 'status8'),
 		);
-		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 0);
+		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);
 	}
 }

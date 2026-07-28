@@ -239,14 +239,14 @@ class EmergencyHouseSolicitation extends EmergencyHouseCommonObject
 	{
 		global $langs;
 		$labels = array(
-			self::STATUS_PENDING => array('StatusPending', 1),
-			self::STATUS_ACCEPTED => array('StatusAccepted', 4),
-			self::STATUS_REFUSED => array('StatusRefused', 8),
-			self::STATUS_CANCELLED => array('StatusCancelled', 6),
-			self::STATUS_EXPIRED => array('StatusExpired', 6),
-			self::STATUS_CLOSED => array('StatusClosed', 6),
+			self::STATUS_PENDING => array('StatusPending', 'status1'),
+			self::STATUS_ACCEPTED => array('StatusAccepted', 'status4'),
+			self::STATUS_REFUSED => array('StatusRefused', 'status8'),
+			self::STATUS_CANCELLED => array('StatusCancelled', 'status6'),
+			self::STATUS_EXPIRED => array('StatusExpired', 'status6'),
+			self::STATUS_CLOSED => array('StatusClosed', 'status6'),
 		);
-		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 0);
+		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);
 	}
 }

@@ -486,7 +486,7 @@ if ($tab === 'notes' && property_exists($object, 'note_public')) {
 		print ajax_combobox('fk_moderation_action');
 		print ajax_combobox('reason_code');
 	}
-	print '</div></div>';
+	print '</div></div><div class="clearboth"></div>';
 }
 
 print dol_get_fiche_end();
@@ -497,16 +497,27 @@ if ($tab === 'card' && $permissionToWrite) {
 		|| ($object instanceof EmergencyHouseOffer && (int) $object->verification_status <= 0)) {
 		print '<div class="tabsAction">';
 		if ($object instanceof EmergencyHouseCampaign) {
-			print '<a class="butAction" href="'.dol_buildpath('/emergencyhouse/campaign/edit.php', 1).'?id='.((int) $object->id).'">'.$langs->trans('Modify').'</a>';
+			print dolGetButtonAction(
+				'',
+				$langs->trans('Modify'),
+				'default',
+				dol_buildpath('/emergencyhouse/campaign/edit.php', 1).'?id='.((int) $object->id),
+				''
+			);
 		}
 		if ($object instanceof EmergencyHouseOffer && (int) $object->verification_status <= 0) {
-			print '<a class="butAction" href="'.dol_buildpath('/emergencyhouse/verification/list.php', 1).'?object_type=offer&fk_object='.((int) $object->id).'">'.$langs->trans('RecordVerification').'</a>';
+			print dolGetButtonAction(
+				'',
+				$langs->trans('RecordVerification'),
+				'default',
+				dol_buildpath('/emergencyhouse/verification/list.php', 1).'?object_type=offer&amp;fk_object='.((int) $object->id),
+				''
+			);
 		}
 		foreach ($allowedStatuses as $status => $label) {
-			print '<form class="inline-block" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'?id='.((int) $object->id).'">';
-			print '<input type="hidden" name="token" value="'.newToken().'"><input type="hidden" name="action" value="set_status">';
-			print '<input type="hidden" name="new_status" value="'.((int) $status).'">';
-			print '<button class="butAction" type="submit">'.$langs->trans($label).'</button></form>';
+			$statusUrl = $_SERVER['PHP_SELF'].'?id='.((int) $object->id);
+			$statusUrl .= '&amp;action=set_status&amp;new_status='.((int) $status).'&amp;token='.newToken();
+			print dolGetButtonAction('', $langs->trans($label), 'default', $statusUrl, '');
 		}
 		print '</div>';
 	}

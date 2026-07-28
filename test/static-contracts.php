@@ -485,6 +485,43 @@ emergencyhouseContract(
 	'Publication de campagne indépendante des URL juridiques spécifiques'
 );
 
+$statusObjects = array('campaign', 'offer', 'request', 'solicitation', 'allocation', 'report');
+foreach ($statusObjects as $statusObject) {
+	$statusClass = emergencyhouseReadRequired(
+		$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.$statusObject.'.class.php'
+	);
+	emergencyhouseContract(
+		strpos($statusClass, "'status0'") !== false
+			|| strpos($statusClass, "'status1'") !== false,
+		'Type de badge Dolibarr déclaré pour '.$statusObject
+	);
+	emergencyhouseContract(
+		preg_match("/array\\('Status[^']+',\\s*[0-9]+\\)/", $statusClass) !== 1,
+		'Aucun type de statut numérique non natif pour '.$statusObject
+	);
+}
+$objectList = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_list.php');
+$matchList = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'match'.DIRECTORY_SEPARATOR.'list.php');
+$verificationList = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'verification'.DIRECTORY_SEPARATOR.'list.php');
+emergencyhouseContract(
+	strpos($objectList, '$record->getLibStatut(5)') !== false
+		&& strpos($matchList, '$statusCode, 5)') !== false
+		&& strpos($matchList, "(int) \$row->status === 1 ? 'status4' : 'status6'") !== false
+		&& strpos($verificationList, '$verificationStatusType') !== false
+		&& strpos($verificationList, "\t\t5\n") !== false,
+	'Listes du back-office rendues avec les badges de statut natifs'
+);
+$objectCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_card.php');
+$matchCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'match'.DIRECTORY_SEPARATOR.'card.php');
+emergencyhouseContract(
+	strpos($objectCard, "print '</div></div><div class=\"clearboth\"></div>';") !== false
+		&& substr_count($objectCard, 'dolGetButtonAction(') >= 3
+		&& strpos($objectCard, '<form class="inline-block"') === false
+		&& strpos($matchCard, "print '</table></div></div><div class=\"clearboth\"></div>';") !== false
+		&& strpos($matchCard, 'dolGetButtonAction(') !== false,
+	'Actions de fiche placées dans la barre native après dégagement des colonnes'
+);
+
 $encryptionService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'encryptionservice.class.php');
 emergencyhouseContract(
 	strpos($encryptionService, 'strlen($material) < 32') !== false
@@ -626,6 +663,12 @@ emergencyhouseContract(empty($missingInEnglish), 'Toutes les clés françaises e
 emergencyhouseContract(empty($missingInFrench), 'Toutes les clés anglaises existent en français');
 emergencyhouseContract(count($frTranslations) >= 1000, 'Catalogue français complet');
 emergencyhouseContract(count($enTranslations) >= 1000, 'Catalogue anglais complet');
+
+$publicInit = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'_init.php');
+emergencyhouseContract(
+	strpos($publicInit, "\$langs->loadLangs(array('main', 'companies', 'emergencyhouse@emergencyhouse'));") !== false,
+	'Domaine natif companies chargé pour les libellés d’adresse du portail public'
+);
 
 $publicUserInterfacePhp = $publicControllers."\n".$publicLibrary;
 $publicDateTranslationPlaceholders = array(

@@ -299,15 +299,15 @@ class EmergencyHouseRequest extends EmergencyHouseCommonObject
 	{
 		global $langs;
 		$labels = array(
-			self::STATUS_DRAFT => array('StatusDraft', 0),
-			self::STATUS_ACTIVE => array('StatusActive', 4),
-			self::STATUS_PARTIALLY_ALLOCATED => array('StatusPartiallyAllocated', 1),
-			self::STATUS_FULFILLED => array('StatusFulfilled', 4),
-			self::STATUS_SUSPENDED => array('StatusSuspended', 5),
-			self::STATUS_EXPIRED => array('StatusExpired', 6),
-			self::STATUS_CLOSED => array('StatusClosed', 6),
+			self::STATUS_DRAFT => array('StatusDraft', 'status0'),
+			self::STATUS_ACTIVE => array('StatusActive', 'status4'),
+			self::STATUS_PARTIALLY_ALLOCATED => array('StatusPartiallyAllocated', 'status1'),
+			self::STATUS_FULFILLED => array('StatusFulfilled', 'status4'),
+			self::STATUS_SUSPENDED => array('StatusSuspended', 'status5'),
+			self::STATUS_EXPIRED => array('StatusExpired', 'status6'),
+			self::STATUS_CLOSED => array('StatusClosed', 'status6'),
 		);
-		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 0);
+		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);
 	}
 }

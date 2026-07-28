@@ -214,13 +214,13 @@ class EmergencyHouseCampaign extends EmergencyHouseCommonObject
 	{
 		global $langs;
 		$labels = array(
-			self::STATUS_DRAFT => array('StatusDraft', 0),
-			self::STATUS_PUBLISHED => array('StatusPublished', 4),
-			self::STATUS_SUSPENDED => array('StatusSuspended', 5),
-			self::STATUS_CLOSED => array('StatusClosed', 6),
-			self::STATUS_ARCHIVED => array('StatusArchived', 9),
+			self::STATUS_DRAFT => array('StatusDraft', 'status0'),
+			self::STATUS_PUBLISHED => array('StatusPublished', 'status4'),
+			self::STATUS_SUSPENDED => array('StatusSuspended', 'status5'),
+			self::STATUS_CLOSED => array('StatusClosed', 'status6'),
+			self::STATUS_ARCHIVED => array('StatusArchived', 'status9'),
 		);
-		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 0);
+		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);
 	}
 }
