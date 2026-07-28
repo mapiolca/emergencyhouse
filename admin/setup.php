@@ -77,8 +77,8 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_PUBLIC_OFFICIAL_PHONE' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('type' => 'string', 'default' => ''),
-		'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => array('type' => 'string', 'default' => ''),
+		'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => ''),
 	),
 	'authentication' => array(
@@ -157,6 +157,7 @@ $settingHelpKeys = array(
 	'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => 'HelpPublicSupportEmail',
 	'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => 'HelpPublicSupportPhone',
 	'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => 'HelpPublicSocialImageUrl',
+	'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => 'HelpPublicPrivacyHtml',
 	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => 'HelpPublicTermsHtml',
 	'EMERGENCYHOUSE_OSM_TILE_URL' => 'HelpOsmTileUrl',
 	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
@@ -617,7 +618,7 @@ if (isset($settingsByTab[$tab])) {
 			);
 		}
 
-		if ($name === 'EMERGENCYHOUSE_PUBLIC_TERMS_HTML') {
+		if (in_array($name, array('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', 'EMERGENCYHOUSE_PUBLIC_TERMS_HTML'), true)) {
 			$editor = new DolEditor(
 				$name,
 				$value,
@@ -776,6 +777,8 @@ if ($tab === 'portal') {
 	print '<tr class="liste_titre"><th>'.$langs->trans('BinaryOptions').'</th><th>'.$langs->trans('Value').'</th></tr>';
 	$binarySettings = array(
 		'EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED',
+		'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED',
+		'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED',
 		'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED',
 		'EMERGENCYHOUSE_OSM_TILES_ENABLED',
 		'EMERGENCYHOUSE_PHOTOS_ENABLED',

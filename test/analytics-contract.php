@@ -86,7 +86,9 @@ emergencyhouseAnalyticsContract(
 emergencyhouseAnalyticsContract(
 	strpos($service, 'allowedPageCodes') !== false
 	&& strpos($service, 'allowedEventCodes') !== false
-	&& strpos($service, 'normalizePublicContent') !== false,
+	&& strpos($service, 'normalizePublicContent') !== false
+	&& strpos($service, "'/privacy.php' => 'privacy'") !== false
+	&& strpos($service, "'report_form', 'privacy', 'terms'") !== false,
 	'Codes contrôlés et validation des contenus publics'
 );
 emergencyhouseAnalyticsContract(

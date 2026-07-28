@@ -3,10 +3,10 @@
 
 require __DIR__.'/_init.php';
 
-$termsHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''));
+$privacyHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', ''));
 if (!emergencyhousePublicLegalPageIsPublished(
-	'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED',
-	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML'
+	'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED',
+	'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML'
 )) {
 	http_response_code(404);
 	emergencyhousePublicRenderHeader($langs->trans('PublicPageNotFound'), $emergencyhousePublicAccount);
@@ -18,18 +18,18 @@ if (!emergencyhousePublicLegalPageIsPublished(
 }
 
 emergencyhousePublicRenderHeader(
-	$langs->trans('TermsOfUse'),
+	$langs->trans('PrivacyPolicy'),
 	$emergencyhousePublicAccount,
 	'',
 	true,
 	false,
 	array(
-		'description' => $langs->trans('PublicTermsDescription'),
-		'canonical' => emergencyhousePublicAbsoluteUrl('terms.php'),
+		'description' => $langs->trans('PublicPrivacyDescription'),
+		'canonical' => emergencyhousePublicAbsoluteUrl('privacy.php'),
 	)
 );
 print '<section class="eh-shell eh-section">';
-print '<div class="eh-page-title"><h1>'.$langs->trans('TermsOfUse').'</h1></div>';
-print '<article class="eh-card eh-legal-content">'.dolPrintHTML($termsHtml).'</article>';
+print '<div class="eh-page-title"><h1>'.$langs->trans('PrivacyPolicy').'</h1></div>';
+print '<article class="eh-card eh-legal-content">'.dolPrintHTML($privacyHtml).'</article>';
 print '</section>';
 emergencyhousePublicRenderFooter();

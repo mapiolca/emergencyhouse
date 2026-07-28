@@ -2,6 +2,15 @@
 
 ## Non publié
 
+- Remplacement de la note de confidentialité par un projet complet de politique
+  RGPD à personnaliser avant publication : responsable du traitement, données,
+  finalités et bases légales, destinataires, publications, correspondance
+  automatisée, cookies, durées, transferts, sécurité et exercice des droits.
+- Ajout de la politique de confidentialité administrable avec l’éditeur
+  WYSIWYG natif, de sa page publique dédiée et d’interrupteurs de publication
+  distincts pour la confidentialité et les CGU ; liens, pages et consentements
+  sont désormais exposés uniquement lorsque l’interrupteur et le contenu
+  correspondant sont tous deux présents.
 - Correction de la résolution native des six objets Emergency House depuis
   l’Agenda via le hook `elementproperties`, et ajout de libellés bilingues aux
   événements CRUD afin d’éviter l’affichage littéral de `UPDATEInDolibarr`.

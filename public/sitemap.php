@@ -19,7 +19,10 @@ $urls = array(
 	array('loc' => emergencyhousePublicAbsoluteUrl('contact.php')),
 	array('loc' => emergencyhousePublicAbsoluteUrl('accessibility.php')),
 );
-if (emergencyhousePublicHtmlHasContent(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''))) {
+if (emergencyhousePublicLegalPageIsPublished('EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED', 'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML')) {
+	$urls[] = array('loc' => emergencyhousePublicAbsoluteUrl('privacy.php'));
+}
+if (emergencyhousePublicLegalPageIsPublished('EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED', 'EMERGENCYHOUSE_PUBLIC_TERMS_HTML')) {
 	$urls[] = array('loc' => emergencyhousePublicAbsoluteUrl('terms.php'));
 }
 
