@@ -17,6 +17,10 @@
   transactionnelle de la file, de l’objet et du registre ; les objets vérifiés
   ou refusés sont refusés côté serveur, y compris lors d’une décision
   concurrente.
+- Traduction des valeurs techniques de visibilité, de vérification, de sens de
+  sollicitation et de gravité dans les fiches et listes du back-office ; ajout
+  du lien natif **Retour à la liste** dans les bannières et navigation
+  précédent/suivant désormais fondée sur les identifiants `rowid`.
 - Création et validation immédiates d’un adhérent natif lors de chaque
   inscription publique, avec type configuré par entité, rapprochement strict
   par e-mail et transaction empêchant tout compte ou adhérent orphelin.

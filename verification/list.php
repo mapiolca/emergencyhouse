@@ -292,7 +292,7 @@ if ($view === 'queue') {
 		'v.status' => array('label' => 'Status', 'checked' => 1, 'position' => 50),
 		'v.fk_operator' => array('label' => 'Operator', 'checked' => 1, 'position' => 60),
 		'v.date_creation' => array('label' => 'DateCreation', 'checked' => 1, 'position' => 70),
-		'v.date_expiration' => array('label' => 'ExpirationDate', 'checked' => 1, 'position' => 80),
+		'v.date_expiration' => array('label' => 'DateExpiration', 'checked' => 1, 'position' => 80),
 	);
 	if ($showEnvironment) {
 		$arrayfields['v.entity'] = array('label' => 'Environment', 'checked' => 1, 'position' => 90);

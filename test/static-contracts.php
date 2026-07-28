@@ -635,6 +635,13 @@ emergencyhouseContract(
 		&& strpos($verificationList, "\t\t\t\t5\n") !== false,
 	'Listes du back-office rendues avec les badges de statut natifs'
 );
+emergencyhouseContract(
+	strpos($verificationList, 'type="number" min="1" name="fk_object"') === false
+		&& strpos($verificationList, "GETPOSTINT('fk_object')") === false
+		&& strpos($verificationList, "'q.fk_object' => array('label' => 'ObjectToVerify'") !== false
+		&& strpos($verificationList, "'v.date_expiration' => array('label' => 'DateExpiration'") !== false,
+	'Cible imposée par la file et libellés traduits sur les vérifications'
+);
 $objectCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_card.php');
 $matchCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'match'.DIRECTORY_SEPARATOR.'card.php');
 $offerClass = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'offer.class.php');
@@ -658,6 +665,25 @@ emergencyhouseContract(
 		&& strpos($matchCard, "print '</table></div></div><div class=\"clearboth\"></div>';") !== false
 		&& strpos($matchCard, 'dolGetButtonAction(') !== false,
 	'Actions de fiche placées dans la barre native après dégagement des colonnes'
+);
+emergencyhouseContract(
+	strpos(
+		$objectCard,
+		"\$listUrl = dol_buildpath('/emergencyhouse/'.\$object->element.'/list.php', 1).'?restore_lastsearch_values=1';"
+	) !== false
+		&& strpos($objectCard, "\$langs->trans('BackToList')") !== false
+		&& strpos($objectCard, "dol_banner_tab(\$object, 'id', \$linkback, 1, 'rowid', 'ref');") !== false,
+	'Bannières avec retour liste natif et navigation précédent/suivant basée sur rowid'
+);
+emergencyhouseContract(
+	strpos($objectCard, "'offers_requests' => 'VisibilityOffersAndRequests'") !== false
+		&& strpos($objectCard, "'email_verification' => 'VerificationEmailOnly'") !== false
+		&& strpos($objectCard, "'request_to_offer' => 'SolicitationDirectionRequestToOffer'") !== false
+		&& strpos($objectCard, "'date_expiration' => 'DateExpiration'") !== false
+		&& strpos($objectList, "'label' => 'DateExpiration'") !== false
+		&& strpos($objectCard, "trans('SeverityLevel'.\$severity)") !== false
+		&& strpos($objectList, "trans('SeverityLevel'.\$severity)") !== false,
+	'Valeurs techniques des fiches et gravités de liste rendues par des traductions bilingues'
 );
 emergencyhouseContract(
 	strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';") !== false
@@ -966,6 +992,14 @@ $requiredTranslations = array(
 	'OfferPhotoStatusApproved',
 	'OfferPhotoStatusRejected',
 	'MaximumStayDaysOptional',
+	'SeverityLevel4',
+	'SeverityLevel5',
+	'SolicitationDirectionRequestToOffer',
+	'SolicitationDirectionOfferToRequest',
+	'SolicitationDirectionOperator',
+	'UnknownValue',
+	'ObjectToVerify',
+	'VerifiedObject',
 	'CompatibilityOfferPhotos',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',
