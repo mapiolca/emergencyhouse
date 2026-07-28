@@ -347,6 +347,7 @@ MatchingConfigurationVersion=Matching configuration version
 MaxAdults=Maximum adults
 MaxChildren=Maximum children
 MaximumStayDays=Maximum stay duration
+MaximumStayDaysOptional=Maximum stay duration, optional
 MinimumGroupSize=Minimum group size
 MinimumStayDays=Minimum stay duration
 ModelPdf=Document model

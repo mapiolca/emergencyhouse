@@ -763,7 +763,7 @@ function emergencyhousePublicGetNativeDate($prefix, $allowEmpty = false)
  */
 function emergencyhousePublicNativeDateSelector($form, $timestamp, $prefix, $allowEmpty = false)
 {
-	global $conf;
+	global $conf, $langs;
 
 	$ajaxEnabled = isset($conf->use_javascript_ajax) ? $conf->use_javascript_ajax : null;
 	$conf->use_javascript_ajax = 0;
@@ -774,7 +774,31 @@ function emergencyhousePublicNativeDateSelector($form, $timestamp, $prefix, $all
 	} else {
 		$conf->use_javascript_ajax = $ajaxEnabled;
 	}
-	return $html;
+
+	if ($allowEmpty && $selected === -1) {
+		$emptyOption = '<option value="0" selected>&nbsp;</option>';
+		foreach (array('Day', 'Month') as $partTranslationKey) {
+			$position = strpos($html, $emptyOption);
+			if ($position === false) {
+				break;
+			}
+			$replacement = '<option value="0" selected>'.dol_escape_htmltag($langs->trans($partTranslationKey)).'</option>';
+			$html = substr_replace($html, $replacement, $position, strlen($emptyOption));
+		}
+	}
+
+	$partLabels = array(
+		'day' => $langs->trans('Day'),
+		'month' => $langs->trans('Month'),
+		'year' => $langs->trans('Year'),
+	);
+	foreach ($partLabels as $suffix => $partLabel) {
+		$idAttribute = ' id="'.$prefix.$suffix.'"';
+		$accessibleIdAttribute = ' aria-label="'.dol_escape_htmltag($partLabel).'"'.$idAttribute;
+		$html = str_replace($idAttribute, $accessibleIdAttribute, $html);
+	}
+
+	return '<span class="eh-date-selector">'.$html.'</span>';
 }
 
 /**

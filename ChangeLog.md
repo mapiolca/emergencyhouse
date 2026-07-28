@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Correction de la traduction bilingue de la durée maximale facultative et
+  regroupement compact des sélecteurs natifs jour, mois et année sur les
+  formulaires publics d’offre et de demande.
 - Correction du contrat des neuf travaux planifiés Emergency House : un
   traitement réussi retourne désormais `0` à Dolibarr, tandis que le nombre
   d’éléments traités est conservé dans la sortie du travail ; les échecs réels

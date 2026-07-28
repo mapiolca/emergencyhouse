@@ -194,8 +194,8 @@ if (empty($campaignOptions)) {
 	print '</div></section>';
 
 	print '<section class="eh-form-section"><h2>'.$langs->trans('DatesAndSearchArea').'</h2><div class="eh-field-grid">';
-	print '<div class="eh-field"><label for="date_startday">'.$langs->trans('DateStart').'</label>'.emergencyhousePublicNativeDateSelector($form, (int) $values['date_start'], 'date_start').'</div>';
-	print '<div class="eh-field"><label for="date_endday">'.$langs->trans('DateEndOptional').'</label>'.emergencyhousePublicNativeDateSelector($form, $values['date_end'] === null ? null : (int) $values['date_end'], 'date_end', true).'</div>';
+	print '<fieldset class="eh-field eh-fieldset"><legend>'.$langs->trans('DateStart').'</legend>'.emergencyhousePublicNativeDateSelector($form, (int) $values['date_start'], 'date_start').'</fieldset>';
+	print '<fieldset class="eh-field eh-fieldset"><legend>'.$langs->trans('DateEndOptional').'</legend>'.emergencyhousePublicNativeDateSelector($form, $values['date_end'] === null ? null : (int) $values['date_end'], 'date_end', true).'</fieldset>';
 	print emergencyhouseRequestSwitch('duration_unknown', 'DurationUnknown', (int) $values['duration_unknown']);
 	print '<div class="eh-field eh-field-full"><label for="desired_zone">'.$langs->trans('DesiredZone').'</label><input type="text" id="desired_zone" name="desired_zone" required maxlength="255" value="'.dol_escape_htmltag((string) $values['desired_zone']).'"></div>';
 	print '<div class="eh-field"><label for="desired_zip">'.$langs->trans('DesiredZipOptional').'</label><input type="text" id="desired_zip" name="desired_zip" maxlength="25" value="'.dol_escape_htmltag((string) $values['desired_zip']).'"></div>';
@@ -285,4 +285,3 @@ function emergencyhouseRequestSwitch($name, $labelKey, $value)
 	return '<label class="eh-switch" for="'.dol_escape_htmltag($name).'"><span>'.$langs->trans($labelKey).'</span>'
 		.'<input type="checkbox" role="switch" id="'.dol_escape_htmltag($name).'" name="'.dol_escape_htmltag($name).'" value="1"'.($value > 0 ? ' checked' : '').'></label>';
 }
-

@@ -303,6 +303,13 @@ emergencyhouseContract(
 );
 
 $publicLibrary = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'lib'.DIRECTORY_SEPARATOR.'emergencyhouse_public.lib.php');
+$publicStyles = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'public.css.php');
+$publicOfferEditor = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'edit.php'
+);
+$publicRequestEditor = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'request'.DIRECTORY_SEPARATOR.'edit.php'
+);
 $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
 );
@@ -315,6 +322,17 @@ emergencyhouseContract(
 		&& strpos($publicLibrary, "\$relativePath === 'index.php' ? '' : \$relativePath") !== false
 		&& strpos($publicLibrary, "dol_buildpath('/emergencyhouse/public/'.ltrim") === false,
 	'L’URL configurée est la racine directe du répertoire public'
+);
+emergencyhouseContract(
+	strpos($publicLibrary, '<span class="eh-date-selector">') !== false
+		&& strpos($publicLibrary, "array('Day', 'Month')") !== false
+		&& strpos($publicLibrary, "'year' => \$langs->trans('Year')") !== false
+		&& strpos($publicStyles, '.eh-date-selector {') !== false
+		&& strpos($publicStyles, 'grid-template-columns: minmax(62px, .7fr)') !== false
+		&& strpos($publicStyles, '.eh-date-selector:focus-within') !== false
+		&& substr_count($publicOfferEditor, '<fieldset class="eh-field eh-fieldset"><legend>') >= 2
+		&& substr_count($publicRequestEditor, '<fieldset class="eh-field eh-fieldset"><legend>') >= 2,
+	'Sélecteurs de date natifs regroupés, compacts et accessibles sur le portail'
 );
 emergencyhouseContract(
 	strpos($registerController, "\$dataPolicyEnabled = isModEnabled('datapolicy');") !== false
@@ -433,9 +451,6 @@ emergencyhouseContract(
 		&& strpos($publicContactService, 'queueEmail(') === false
 		&& strpos($publicContactService, 'dol_move_uploaded_file(') === false,
 	'Images contrôlées, envoyées immédiatement et non conservées'
-);
-$publicOfferEditor = emergencyhouseReadRequired(
-	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'edit.php'
 );
 $publicOfferView = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'view.php'
@@ -881,6 +896,7 @@ $requiredTranslations = array(
 	'OfferPhotoStatusPending',
 	'OfferPhotoStatusApproved',
 	'OfferPhotoStatusRejected',
+	'MaximumStayDaysOptional',
 	'CompatibilityOfferPhotos',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',

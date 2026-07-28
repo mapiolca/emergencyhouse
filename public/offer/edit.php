@@ -270,8 +270,8 @@ if (empty($campaignOptions)) {
 	print '</div></div></section>';
 
 	print '<section class="eh-form-section"><h2>'.$langs->trans('AvailabilityAndCapacity').'</h2><div class="eh-field-grid">';
-	print '<div class="eh-field"><label for="date_startday">'.$langs->trans('DateStart').'</label>'.emergencyhousePublicNativeDateSelector($form, (int) $values['date_start'], 'date_start').'</div>';
-	print '<div class="eh-field"><label for="date_endday">'.$langs->trans('DateEndOptional').'</label>'.emergencyhousePublicNativeDateSelector($form, $values['date_end'] === null ? null : (int) $values['date_end'], 'date_end', true).'</div>';
+	print '<fieldset class="eh-field eh-fieldset"><legend>'.$langs->trans('DateStart').'</legend>'.emergencyhousePublicNativeDateSelector($form, (int) $values['date_start'], 'date_start').'</fieldset>';
+	print '<fieldset class="eh-field eh-fieldset"><legend>'.$langs->trans('DateEndOptional').'</legend>'.emergencyhousePublicNativeDateSelector($form, $values['date_end'] === null ? null : (int) $values['date_end'], 'date_end', true).'</fieldset>';
 	print emergencyhouseOfferNumberField('capacity_total', 'CapacityTotal', (int) $values['capacity_total'], 1, 1000);
 	print emergencyhouseOfferNumberField('max_adults', 'MaxAdults', (int) $values['max_adults'], 0, 1000);
 	print emergencyhouseOfferNumberField('max_children', 'MaxChildren', (int) $values['max_children'], 0, 1000);

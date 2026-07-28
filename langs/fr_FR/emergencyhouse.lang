@@ -347,6 +347,7 @@ MatchingConfigurationVersion=Version de la configuration de correspondance
 MaxAdults=Nombre maximal d'adultes
 MaxChildren=Nombre maximal d'enfants
 MaximumStayDays=Durée maximale du séjour
+MaximumStayDaysOptional=Durée maximale du séjour, facultative
 MinimumGroupSize=Taille minimale du groupe
 MinimumStayDays=Durée minimale du séjour
 ModelPdf=Modèle de document

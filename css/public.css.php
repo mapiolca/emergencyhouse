@@ -125,6 +125,30 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 }
 .eh-field textarea { min-height: 128px; resize: vertical; }
 .eh-field input:focus, .eh-field select:focus, .eh-field textarea:focus { border-color: var(--eh-primary); box-shadow: 0 0 0 4px rgba(12,107,88,.12); }
+.eh-date-selector {
+	display: grid;
+	grid-template-columns: minmax(62px, .7fr) minmax(94px, 1.15fr) minmax(86px, .9fr);
+	overflow: hidden;
+	border: 1px solid #aebbb6;
+	border-radius: 10px;
+	background: #fff;
+}
+.eh-date-selector:focus-within { border-color: var(--eh-primary); box-shadow: 0 0 0 4px rgba(12,107,88,.12); }
+.eh-field .eh-date-selector select,
+.eh-field .eh-date-selector input[type="number"] {
+	width: 100% !important;
+	max-width: none !important;
+	min-width: 0;
+	min-height: 48px;
+	padding: 10px 12px;
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
+}
+.eh-field .eh-date-selector > :not(:first-child) { border-left: 1px solid var(--eh-border); }
+.eh-field .eh-date-selector select:focus,
+.eh-field .eh-date-selector input[type="number"]:focus { box-shadow: none; }
 .eh-field .select2-container { width: 100% !important; }
 .eh-field .select2-container .select2-selection--single,
 .eh-field .select2-container .select2-selection--multiple {
