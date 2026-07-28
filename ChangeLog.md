@@ -1,5 +1,26 @@
 # ChangeLog
 
+## Non publié
+
+- Ajout du référencement contrôlé du portail : accueil et pages de confiance
+  indexables, campagnes actives indexables sur opt-in, offres, demandes et
+  espaces personnels maintenus hors index.
+- Ajout des descriptions, URL canoniques, métadonnées Open Graph/Twitter et
+  données structurées JSON-LD pour le site, l’organisme et les campagnes.
+- Ajout des points de découverte dynamiques `robots.txt`, `sitemap.xml` et
+  `llms.txt`, limités aux contenus publics autorisés et sans données
+  personnelles.
+- Autorisation explicite de `OAI-SearchBot` et `ChatGPT-User`, avec blocage de
+  `GPTBot` par défaut et interrupteur administrateur distinct pour consentir à
+  l’entraînement.
+- Ajout d’une image sociale configurable par entité et validation HTTPS dans
+  les réglages du portail.
+- Correction de la découverte des 18 événements CRUD Emergency House par le
+  module Notifications natif : `c_action_trigger.elementtype` utilise désormais
+  la clé de module `emergencyhouse`, compatible avec le filtrage Dolibarr
+  v20 à v23, avec migration idempotente des installations existantes lors de
+  la réactivation du module.
+
 ## 1.0.0 — 2026-07-26
 
 - Livraison initiale du module Emergency House pour Dolibarr v20+ et PHP 8.0+.

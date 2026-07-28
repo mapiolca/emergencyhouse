@@ -106,6 +106,158 @@ function emergencyhousePublicAbsoluteUrl($path = 'index.php', array $parameters 
 }
 
 /**
+ * Return the language tag exposed in public metadata.
+ *
+ * @return string BCP 47 language tag
+ */
+function emergencyhousePublicLanguageTag()
+{
+	global $langs;
+
+	return preg_match('/^[a-z]{2}_[A-Z]{2}$/', $langs->defaultlang)
+		? str_replace('_', '-', $langs->defaultlang)
+		: 'fr';
+}
+
+/**
+ * Build the public organization node shared by structured data graphs.
+ *
+ * @param string $homeUrl Canonical public home URL
+ * @return array<string, mixed>
+ */
+function emergencyhousePublicOrganizationStructuredData($homeUrl)
+{
+	global $langs;
+
+	$name = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_ORGANISATION_NAME', ''));
+	if ($name === '') {
+		$name = $langs->trans('EmergencyHouse');
+	}
+	$organization = array(
+		'@type' => 'Organization',
+		'@id' => $homeUrl.'#organization',
+		'name' => $name,
+		'url' => $homeUrl,
+		'logo' => emergencyhousePublicAbsoluteUrl('assets/emergencyhouse.svg.php'),
+	);
+	$email = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL', ''));
+	$phone = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE', ''));
+	if (filter_var($email, FILTER_VALIDATE_EMAIL) !== false || $phone !== '') {
+		$contactPoint = array(
+			'@type' => 'ContactPoint',
+			'contactType' => 'customer support',
+			'availableLanguage' => array(emergencyhousePublicLanguageTag()),
+		);
+		if (filter_var($email, FILTER_VALIDATE_EMAIL) !== false) {
+			$contactPoint['email'] = $email;
+		}
+		if ($phone !== '') {
+			$contactPoint['telephone'] = $phone;
+		}
+		$organization['contactPoint'] = $contactPoint;
+	}
+
+	return $organization;
+}
+
+/**
+ * Build structured data for the public home page.
+ *
+ * @param string $canonical Canonical home URL
+ * @return array<string, mixed>
+ */
+function emergencyhousePublicHomeStructuredData($canonical)
+{
+	global $langs;
+
+	$organization = emergencyhousePublicOrganizationStructuredData($canonical);
+	$website = array(
+		'@type' => 'WebSite',
+		'@id' => $canonical.'#website',
+		'url' => $canonical,
+		'name' => $langs->trans('EmergencyHouse'),
+		'description' => $langs->trans('PublicHeroDescription'),
+		'inLanguage' => emergencyhousePublicLanguageTag(),
+		'publisher' => array('@id' => $canonical.'#organization'),
+	);
+
+	return array(
+		'@context' => 'https://schema.org',
+		'@graph' => array($website, $organization),
+	);
+}
+
+/**
+ * Build structured data for one explicitly indexable public campaign.
+ *
+ * @param EmergencyHouseCampaign $campaign Campaign
+ * @param string $canonical Canonical campaign URL
+ * @return array<string, mixed>
+ */
+function emergencyhousePublicCampaignStructuredData($campaign, $canonical)
+{
+	global $langs;
+
+	$homeUrl = emergencyhousePublicAbsoluteUrl();
+	$description = trim((string) $campaign->description_public);
+	$organization = emergencyhousePublicOrganizationStructuredData($homeUrl);
+	$service = array(
+		'@type' => 'Service',
+		'@id' => $canonical.'#service',
+		'url' => $canonical,
+		'name' => (string) $campaign->label,
+		'description' => $description,
+		'serviceType' => $langs->trans('SolidarityAccommodation'),
+		'provider' => array('@id' => $homeUrl.'#organization'),
+	);
+	$webPage = array(
+		'@type' => 'WebPage',
+		'@id' => $canonical.'#webpage',
+		'url' => $canonical,
+		'name' => (string) $campaign->label,
+		'description' => $description,
+		'inLanguage' => emergencyhousePublicLanguageTag(),
+		'isPartOf' => array('@id' => $homeUrl.'#website'),
+		'about' => array('@id' => $canonical.'#service'),
+	);
+	if (!empty($campaign->date_publication)) {
+		$webPage['datePublished'] = gmdate('c', (int) $campaign->date_publication);
+	}
+	if (!empty($campaign->tms)) {
+		$webPage['dateModified'] = gmdate('c', (int) $campaign->tms);
+	}
+	$website = array(
+		'@type' => 'WebSite',
+		'@id' => $homeUrl.'#website',
+		'url' => $homeUrl,
+		'name' => $langs->trans('EmergencyHouse'),
+	);
+	$breadcrumbs = array(
+		'@type' => 'BreadcrumbList',
+		'@id' => $canonical.'#breadcrumb',
+		'itemListElement' => array(
+			array(
+				'@type' => 'ListItem',
+				'position' => 1,
+				'name' => $langs->trans('Home'),
+				'item' => $homeUrl,
+			),
+			array(
+				'@type' => 'ListItem',
+				'position' => 2,
+				'name' => (string) $campaign->label,
+				'item' => $canonical,
+			),
+		),
+	);
+
+	return array(
+		'@context' => 'https://schema.org',
+		'@graph' => array($website, $organization, $service, $webPage, $breadcrumbs),
+	);
+}
+
+/**
  * Send strict headers before rendering the isolated public surface.
  *
  * @return void
@@ -176,13 +328,21 @@ function emergencyhousePublicUserAgent()
  * @param string $active Active navigation code
  * @param bool $allowIndex Permit search indexing for an explicitly public campaign
  * @param bool $preview Render private preview links without public actions
+ * @param array{
+ *     description?:string,
+ *     canonical?:string,
+ *     image?:string,
+ *     og_type?:string,
+ *     robots?:'noindex,follow'|'noindex,nofollow',
+ *     structured_data?:array<string, mixed>
+ * } $seo Search metadata
  * @return void
  */
-function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false)
+function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false, array $seo = array())
 {
 	global $langs;
 
-	$language = preg_match('/^[a-z]{2}_[A-Z]{2}$/', $langs->defaultlang) ? str_replace('_', '-', $langs->defaultlang) : 'fr';
+	$language = emergencyhousePublicLanguageTag();
 	$cssUrl = $preview
 		? dol_buildpath('/emergencyhouse/css/public.css.php', 1)
 		: emergencyhousePublicUrl('assets/public.css.php');
@@ -193,12 +353,71 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 		? dol_buildpath('/emergencyhouse/img/emergencyhouse.svg', 1)
 		: emergencyhousePublicUrl('assets/emergencyhouse.svg.php');
 	$loadDolibarrFrontendLibraries = $preview || emergencyhousePublicConfiguredBaseUrl() === '';
+	$robots = $allowIndex
+		? 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'
+		: (isset($seo['robots']) && $seo['robots'] === 'noindex,follow' ? 'noindex,follow' : 'noindex,nofollow');
+	$description = '';
+	if (isset($seo['description']) && trim($seo['description']) !== '') {
+		$description = trim(dol_string_nohtmltag($seo['description']));
+		$normalizedDescription = preg_replace('/\s+/u', ' ', $description);
+		$description = is_string($normalizedDescription) ? dol_trunc($normalizedDescription, 320) : '';
+	}
+	$canonical = isset($seo['canonical']) && filter_var($seo['canonical'], FILTER_VALIDATE_URL) !== false
+		? $seo['canonical']
+		: '';
+	$ogType = isset($seo['og_type']) && in_array($seo['og_type'], array('website', 'article'), true)
+		? $seo['og_type']
+		: 'website';
+	$socialImage = isset($seo['image']) ? trim($seo['image']) : '';
+	if ($socialImage === '') {
+		$socialImage = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL', ''));
+	}
+	$hasConfiguredSocialImage = filter_var($socialImage, FILTER_VALIDATE_URL) !== false;
+	if (!$hasConfiguredSocialImage) {
+		$socialImage = emergencyhousePublicAbsoluteUrl('assets/emergencyhouse.svg.php');
+	}
+	if (!$allowIndex && !headers_sent()) {
+		header('X-Robots-Tag: '.$robots, true);
+	}
 	print '<!doctype html>';
 	print '<html lang="'.dol_escape_htmltag($language).'"><head>';
 	print '<meta charset="utf-8">';
 	print '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
-	print '<meta name="robots" content="'.($allowIndex ? 'index,follow' : 'noindex,nofollow').'">';
+	print '<meta name="robots" content="'.dol_escape_htmltag($robots).'">';
 	print '<title>'.dol_escape_htmltag($title).' — '.$langs->trans('EmergencyHouse').'</title>';
+	if ($description !== '') {
+		print '<meta name="description" content="'.dol_escape_htmltag($description).'">';
+	}
+	if ($canonical !== '') {
+		print '<link rel="canonical" href="'.dol_escape_htmltag($canonical).'">';
+	}
+	print '<meta property="og:type" content="'.dol_escape_htmltag($ogType).'">';
+	print '<meta property="og:site_name" content="'.dol_escape_htmltag($langs->trans('EmergencyHouse')).'">';
+	print '<meta property="og:locale" content="'.dol_escape_htmltag(str_replace('-', '_', $language)).'">';
+	print '<meta property="og:title" content="'.dol_escape_htmltag($title).'">';
+	if ($description !== '') {
+		print '<meta property="og:description" content="'.dol_escape_htmltag($description).'">';
+	}
+	if ($canonical !== '') {
+		print '<meta property="og:url" content="'.dol_escape_htmltag($canonical).'">';
+	}
+	print '<meta property="og:image" content="'.dol_escape_htmltag($socialImage).'">';
+	print '<meta property="og:image:alt" content="'.dol_escape_htmltag($langs->trans('EmergencyHouse')).'">';
+	print '<meta name="twitter:card" content="'.($hasConfiguredSocialImage ? 'summary_large_image' : 'summary').'">';
+	print '<meta name="twitter:title" content="'.dol_escape_htmltag($title).'">';
+	if ($description !== '') {
+		print '<meta name="twitter:description" content="'.dol_escape_htmltag($description).'">';
+	}
+	print '<meta name="twitter:image" content="'.dol_escape_htmltag($socialImage).'">';
+	if (isset($seo['structured_data']) && is_array($seo['structured_data'])) {
+		$structuredData = json_encode(
+			$seo['structured_data'],
+			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+		);
+		if (is_string($structuredData)) {
+			print '<script type="application/ld+json">'.$structuredData.'</script>';
+		}
+	}
 	if ($loadDolibarrFrontendLibraries) {
 		print '<link rel="stylesheet" href="'.DOL_URL_ROOT.'/includes/jquery/plugins/select2/dist/css/select2.min.css">';
 	}

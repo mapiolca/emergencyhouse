@@ -41,6 +41,25 @@ function dol_escape_htmltag($value)
 	return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+/**
+ * @param string $value HTML
+ * @return string
+ */
+function dol_string_nohtmltag($value)
+{
+	return strip_tags($value);
+}
+
+/**
+ * @param string $value Value
+ * @param int $length Length
+ * @return string
+ */
+function dol_trunc($value, $length)
+{
+	return strlen($value) > $length ? substr($value, 0, $length - 3).'...' : $value;
+}
+
 require dirname(__DIR__).'/lib/emergencyhouse_public.lib.php';
 
 /**
@@ -115,8 +134,33 @@ emergencyhousePublicUrlAssert(
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/offer/index.php') !== false
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/contact.php') !== false
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/assets/public.css.php') !== false
+		&& strpos($renderedHeader, 'content="noindex,nofollow"') !== false
 		&& strpos($renderedHeader, '/custom/emergencyhouse') === false,
 	'La navigation et les ressources rendues doivent utiliser la racine publique.'
+);
+
+ob_start();
+emergencyhousePublicRenderHeader(
+	'Campagne de test',
+	null,
+	'campaigns',
+	true,
+	false,
+	array(
+		'description' => 'Une campagne publique de test.',
+		'canonical' => 'https://emergencyhouse.example.org/campaign.php?slug=test',
+		'structured_data' => array('@context' => 'https://schema.org', '@type' => 'WebPage'),
+	)
+);
+$seoHeader = ob_get_clean();
+emergencyhousePublicUrlAssert(
+	is_string($seoHeader)
+		&& strpos($seoHeader, 'index,follow,max-image-preview:large') !== false
+		&& strpos($seoHeader, '<meta name="description" content="Une campagne publique de test.">') !== false
+		&& strpos($seoHeader, '<link rel="canonical" href="https://emergencyhouse.example.org/campaign.php?slug=test">') !== false
+		&& strpos($seoHeader, '<meta property="og:title" content="Campagne de test">') !== false
+		&& strpos($seoHeader, '<script type="application/ld+json">') !== false,
+	'Les pages indexables doivent exposer leurs métadonnées de recherche et de partage.'
 );
 
 $emergencyhouseTestPublicBaseUrl = '';

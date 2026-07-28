@@ -71,6 +71,7 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL' => array('type' => 'string', 'default' => ''),
+		'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => ''),
 	),
 	'authentication' => array(
@@ -138,6 +139,7 @@ $settingHelpKeys = array(
 	'EMERGENCYHOUSE_PUBLIC_BASE_URL' => 'HelpPublicBaseUrl',
 	'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => 'HelpPublicSupportEmail',
 	'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => 'HelpPublicSupportPhone',
+	'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => 'HelpPublicSocialImageUrl',
 	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => 'HelpPublicTermsHtml',
 	'EMERGENCYHOUSE_OSM_TILE_URL' => 'HelpOsmTileUrl',
 	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
@@ -251,6 +253,7 @@ if ($action === 'set_numbering_model') {
 	}
 	if ($tab === 'portal') {
 		$publicBaseUrl = trim($values['EMERGENCYHOUSE_PUBLIC_BASE_URL']);
+		$socialImageUrl = trim($values['EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL']);
 		$supportEmail = trim($values['EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL']);
 		$supportPhone = trim(dol_string_nohtmltag($values['EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE']));
 		$values['EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL'] = $supportEmail;
@@ -276,6 +279,23 @@ if ($action === 'set_numbering_model') {
 		if ($supportEmail !== '' && (filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false || dol_strlen($supportEmail) > 255)) {
 			$error++;
 			setEventMessages($langs->trans('ErrorSupportEmailInvalid'), null, 'errors');
+		}
+		if ($socialImageUrl !== '') {
+			$socialImageUrlParts = parse_url($socialImageUrl);
+			if (
+				filter_var($socialImageUrl, FILTER_VALIDATE_URL) === false
+				|| !is_array($socialImageUrlParts)
+				|| !isset($socialImageUrlParts['scheme'], $socialImageUrlParts['host'])
+				|| strtolower((string) $socialImageUrlParts['scheme']) !== 'https'
+				|| isset($socialImageUrlParts['user'])
+				|| isset($socialImageUrlParts['pass'])
+				|| isset($socialImageUrlParts['fragment'])
+			) {
+				$error++;
+				setEventMessages($langs->trans('ErrorPublicSocialImageUrlInvalid'), null, 'errors');
+			} else {
+				$values['EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL'] = $socialImageUrl;
+			}
 		}
 		if (dol_strlen($supportPhone) > 40) {
 			$error++;
@@ -536,7 +556,7 @@ if (isset($settingsByTab[$tab])) {
 			print ajax_combobox($name);
 		} elseif ($definition['type'] === 'int') {
 			print '<input class="flat minwidth100" type="number" min="0" name="'.dol_escape_htmltag($name).'" value="'.((int) $value).'">';
-		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_BASE_URL') {
+		} elseif (in_array($name, array('EMERGENCYHOUSE_PUBLIC_BASE_URL', 'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL'), true)) {
 			print '<input class="flat minwidth500" type="url" inputmode="url" placeholder="https://emergencyhouse.example.org/"';
 			print ' name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';
 		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL') {
@@ -628,6 +648,7 @@ if ($tab === 'portal') {
 	print '<tr class="liste_titre"><th>'.$langs->trans('BinaryOptions').'</th><th>'.$langs->trans('Value').'</th></tr>';
 	$binarySettings = array(
 		'EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED',
+		'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED',
 		'EMERGENCYHOUSE_OSM_TILES_ENABLED',
 		'EMERGENCYHOUSE_PHOTOS_ENABLED',
 		'EMERGENCYHOUSE_API_ENABLED',

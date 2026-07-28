@@ -28,12 +28,30 @@ $offers = $listingService->fetchPublicOffers((int) $campaign->id, 6, 0);
 if (!is_array($offers)) {
 	$offers = array();
 }
+$campaignIndexable = !empty($campaign->robots_index)
+	&& emergencyhousePublicHtmlHasContent((string) $campaign->description_public)
+	&& emergencyhousePublicHtmlHasContent((string) $campaign->official_instructions)
+	&& (int) $campaign->date_start <= dol_now()
+	&& (empty($campaign->date_end) || (int) $campaign->date_end >= dol_now());
+$campaignCanonical = emergencyhousePublicAbsoluteUrl('campaign.php', array('slug' => (string) $campaign->slug));
+/** @var array<string, mixed> Heterogeneous search metadata, including a recursive JSON-LD tree. */
+$campaignSeo = array(
+	'description' => (string) $campaign->description_public,
+	'og_type' => 'article',
+	'robots' => 'noindex,follow',
+);
+if ($campaignIndexable) {
+	$campaignSeo['canonical'] = $campaignCanonical;
+	$campaignSeo['structured_data'] = emergencyhousePublicCampaignStructuredData($campaign, $campaignCanonical);
+}
 
 emergencyhousePublicRenderHeader(
 	(string) $campaign->label,
 	$emergencyhousePublicAccount,
 	'campaigns',
-	!empty($campaign->robots_index)
+	$campaignIndexable,
+	false,
+	$campaignSeo
 );
 print '<section class="eh-hero"><div class="eh-shell eh-hero-grid"><div>';
 print '<p class="eh-eyebrow">'.dol_escape_htmltag($campaign->coordinator_name).'</p>';

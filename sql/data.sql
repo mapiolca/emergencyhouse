@@ -255,56 +255,56 @@ SELECT 1, 0, 'stay_reminder', 'email', 'en_US', 'Reminder for stay __ALLOCATION_
 WHERE NOT EXISTS (SELECT 1 FROM llx_emergencyhouse_notification_template WHERE entity = 1 AND fk_campaign = 0 AND template_code = 'stay_reminder' AND channel = 'email' AND lang = 'en_US');
 
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'campaign@emergencyhouse', 'EMERGENCYHOUSE_CAMPAIGN_CREATE', 'CampaignCreated', 'CampaignCreatedDescription', 45020101
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_CAMPAIGN_CREATE', 'CampaignCreated', 'CampaignCreatedDescription', 45020101
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_CAMPAIGN_CREATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'campaign@emergencyhouse', 'EMERGENCYHOUSE_CAMPAIGN_UPDATE', 'CampaignUpdated', 'CampaignUpdatedDescription', 45020102
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_CAMPAIGN_UPDATE', 'CampaignUpdated', 'CampaignUpdatedDescription', 45020102
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_CAMPAIGN_UPDATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'campaign@emergencyhouse', 'EMERGENCYHOUSE_CAMPAIGN_DELETE', 'CampaignDeleted', 'CampaignDeletedDescription', 45020103
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_CAMPAIGN_DELETE', 'CampaignDeleted', 'CampaignDeletedDescription', 45020103
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_CAMPAIGN_DELETE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'offer@emergencyhouse', 'EMERGENCYHOUSE_OFFER_CREATE', 'OfferCreated', 'OfferCreatedDescription', 45020104
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_OFFER_CREATE', 'OfferCreated', 'OfferCreatedDescription', 45020104
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_OFFER_CREATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'offer@emergencyhouse', 'EMERGENCYHOUSE_OFFER_UPDATE', 'OfferUpdated', 'OfferUpdatedDescription', 45020105
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_OFFER_UPDATE', 'OfferUpdated', 'OfferUpdatedDescription', 45020105
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_OFFER_UPDATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'offer@emergencyhouse', 'EMERGENCYHOUSE_OFFER_DELETE', 'OfferDeleted', 'OfferDeletedDescription', 45020106
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_OFFER_DELETE', 'OfferDeleted', 'OfferDeletedDescription', 45020106
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_OFFER_DELETE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'request@emergencyhouse', 'EMERGENCYHOUSE_REQUEST_CREATE', 'RequestCreated', 'RequestCreatedDescription', 45020107
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_REQUEST_CREATE', 'RequestCreated', 'RequestCreatedDescription', 45020107
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_REQUEST_CREATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'request@emergencyhouse', 'EMERGENCYHOUSE_REQUEST_UPDATE', 'RequestUpdated', 'RequestUpdatedDescription', 45020108
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_REQUEST_UPDATE', 'RequestUpdated', 'RequestUpdatedDescription', 45020108
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_REQUEST_UPDATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'request@emergencyhouse', 'EMERGENCYHOUSE_REQUEST_DELETE', 'RequestDeleted', 'RequestDeletedDescription', 45020109
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_REQUEST_DELETE', 'RequestDeleted', 'RequestDeletedDescription', 45020109
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_REQUEST_DELETE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'solicitation@emergencyhouse', 'EMERGENCYHOUSE_SOLICITATION_CREATE', 'SolicitationCreated', 'SolicitationCreatedDescription', 45020110
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_SOLICITATION_CREATE', 'SolicitationCreated', 'SolicitationCreatedDescription', 45020110
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_SOLICITATION_CREATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'solicitation@emergencyhouse', 'EMERGENCYHOUSE_SOLICITATION_UPDATE', 'SolicitationUpdated', 'SolicitationUpdatedDescription', 45020111
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_SOLICITATION_UPDATE', 'SolicitationUpdated', 'SolicitationUpdatedDescription', 45020111
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_SOLICITATION_UPDATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'solicitation@emergencyhouse', 'EMERGENCYHOUSE_SOLICITATION_DELETE', 'SolicitationDeleted', 'SolicitationDeletedDescription', 45020112
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_SOLICITATION_DELETE', 'SolicitationDeleted', 'SolicitationDeletedDescription', 45020112
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_SOLICITATION_DELETE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'allocation@emergencyhouse', 'EMERGENCYHOUSE_ALLOCATION_CREATE', 'AllocationCreated', 'AllocationCreatedDescription', 45020113
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_ALLOCATION_CREATE', 'AllocationCreated', 'AllocationCreatedDescription', 45020113
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_ALLOCATION_CREATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'allocation@emergencyhouse', 'EMERGENCYHOUSE_ALLOCATION_UPDATE', 'AllocationUpdated', 'AllocationUpdatedDescription', 45020114
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_ALLOCATION_UPDATE', 'AllocationUpdated', 'AllocationUpdatedDescription', 45020114
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_ALLOCATION_UPDATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'allocation@emergencyhouse', 'EMERGENCYHOUSE_ALLOCATION_DELETE', 'AllocationDeleted', 'AllocationDeletedDescription', 45020115
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_ALLOCATION_DELETE', 'AllocationDeleted', 'AllocationDeletedDescription', 45020115
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_ALLOCATION_DELETE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'report@emergencyhouse', 'EMERGENCYHOUSE_REPORT_CREATE', 'ReportCreated', 'ReportCreatedDescription', 45020116
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_REPORT_CREATE', 'ReportCreated', 'ReportCreatedDescription', 45020116
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_REPORT_CREATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'report@emergencyhouse', 'EMERGENCYHOUSE_REPORT_UPDATE', 'ReportUpdated', 'ReportUpdatedDescription', 45020117
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_REPORT_UPDATE', 'ReportUpdated', 'ReportUpdatedDescription', 45020117
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_REPORT_UPDATE');
 INSERT INTO llx_c_action_trigger (elementtype, code, label, description, rang)
-SELECT 'report@emergencyhouse', 'EMERGENCYHOUSE_REPORT_DELETE', 'ReportDeleted', 'ReportDeletedDescription', 45020118
+SELECT 'emergencyhouse', 'EMERGENCYHOUSE_REPORT_DELETE', 'ReportDeleted', 'ReportDeletedDescription', 45020118
 WHERE NOT EXISTS (SELECT 1 FROM llx_c_action_trigger WHERE code = 'EMERGENCYHOUSE_REPORT_DELETE');

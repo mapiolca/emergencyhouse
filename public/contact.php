@@ -95,7 +95,13 @@ if ($action === 'send' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST
 emergencyhousePublicRenderHeader(
 	$langs->trans('ContactUs'),
 	$emergencyhousePublicAccount,
-	'contact'
+	'contact',
+	true,
+	false,
+	array(
+		'description' => $langs->trans('PublicContactIntroduction'),
+		'canonical' => emergencyhousePublicAbsoluteUrl('contact.php'),
+	)
 );
 print '<section class="eh-shell eh-section">';
 print '<div class="eh-page-title"><p class="eh-eyebrow">'.$langs->trans('Support').'</p>';

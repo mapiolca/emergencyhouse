@@ -189,6 +189,35 @@ emergencyhouseContract(
 	'Activation et désactivation synchronisées des travaux planifiés natifs'
 );
 
+$notificationActions = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'actions_emergencyhouse.class.php'
+);
+$installationData = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'sql'.DIRECTORY_SEPARATOR.'data.sql'
+);
+preg_match_all(
+	"/SELECT 'emergencyhouse', '(EMERGENCYHOUSE_(?:CAMPAIGN|OFFER|REQUEST|SOLICITATION|ALLOCATION|REPORT)_(?:CREATE|UPDATE|DELETE))'/",
+	$installationData,
+	$notificationSqlMatches
+);
+$notificationSqlCodes = isset($notificationSqlMatches[1])
+	? array_values(array_unique($notificationSqlMatches[1]))
+	: array();
+emergencyhouseContract(
+	count($notificationSqlCodes) === 18
+		&& strpos($installationData, "@emergencyhouse', 'EMERGENCYHOUSE_") === false
+		&& strpos($descriptor, '$this->buildNotificationTriggerModuleUpdateSql(),') !== false
+		&& strpos($descriptor, "SET elementtype = 'emergencyhouse'") !== false
+		&& strpos($descriptor, "LEFT(code, 15) = 'EMERGENCYHOUSE_'") !== false,
+	'Dix-huit triggers natifs rattachés et migrés vers la clé de module Notifications'
+);
+foreach ($notificationSqlCodes as $notificationSqlCode) {
+	emergencyhouseContract(
+		strpos($notificationActions, "'".$notificationSqlCode."'") !== false,
+		'Événement exposé par notifsupported : '.$notificationSqlCode
+	);
+}
+
 $notificationService = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php'
 );
@@ -325,6 +354,31 @@ foreach (array('public.css.php', 'public.js.php', 'emergencyhouse.svg.php') as $
 		'Ressource autonome du portail : '.$publicAsset
 	);
 }
+$publicRobots = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'robots.php');
+$publicSitemap = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'sitemap.php');
+$publicLlmIndex = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'llms.php');
+$publicHomeSeo = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'index.php');
+emergencyhouseContract(
+	strpos($publicRobots, 'OAI-SearchBot') !== false
+		&& strpos($publicRobots, 'ChatGPT-User') !== false
+		&& strpos($publicRobots, 'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED') !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED' => array('0', 'yesno')") !== false,
+	'Robots IA séparés entre recherche, navigation utilisateur et entraînement'
+);
+emergencyhouseContract(
+	strpos($publicSitemap, 'robots_index = 1') !== false
+		&& strpos($publicSitemap, 'description_public IS NOT NULL') !== false
+		&& strpos($publicSitemap, "emergencyhousePublicAbsoluteUrl('campaign.php'") !== false
+		&& strpos($publicLlmIndex, 'LlmIndexPrivacyNotice') !== false,
+	'Sitemap et index LLM limités aux campagnes publiques complètes et autorisées'
+);
+emergencyhouseContract(
+	strpos($publicLibrary, 'rel="canonical"') !== false
+		&& strpos($publicLibrary, 'application/ld+json') !== false
+		&& strpos($publicLibrary, 'og:description') !== false
+		&& strpos($publicHomeSeo, 'emergencyhousePublicHomeStructuredData') !== false,
+	'Métadonnées canoniques, sociales et structurées sur le portail public'
+);
 emergencyhouseContract(
 	strpos($setup, 'ErrorPublicBaseUrlInvalid') !== false
 		&& strpos($setup, "rtrim(\$publicBaseUrl, '/').'/'") !== false

@@ -35,7 +35,17 @@ if (!is_array($requests)) {
 	$requests = array();
 }
 
-emergencyhousePublicRenderHeader($pageTitle, $account, 'requests');
+emergencyhousePublicRenderHeader(
+	$pageTitle,
+	$account,
+	'requests',
+	false,
+	false,
+	array(
+		'description' => $langs->trans($mine ? 'MyRequestsIntroduction' : 'PublicRequestsIntroduction'),
+		'robots' => $mine ? 'noindex,nofollow' : 'noindex,follow',
+	)
+);
 print '<section class="eh-shell eh-section">';
 print '<div class="eh-section-heading"><div><p class="eh-eyebrow">'.$langs->trans($mine ? 'MySpace' : 'SolidarityAccommodation').'</p>';
 print '<h1>'.$pageTitle.'</h1><p>'.$langs->trans($mine ? 'MyRequestsIntroduction' : 'PublicRequestsIntroduction').'</p></div>';
@@ -99,4 +109,3 @@ if (empty($requests)) {
 }
 print '</section>';
 emergencyhousePublicRenderFooter();
-

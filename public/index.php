@@ -23,7 +23,19 @@ if ($resql) {
 	}
 }
 
-emergencyhousePublicRenderHeader($langs->trans('EmergencyHousePublicHome'), $emergencyhousePublicAccount, 'campaigns');
+$homeCanonical = emergencyhousePublicAbsoluteUrl();
+emergencyhousePublicRenderHeader(
+	$langs->trans('EmergencyHousePublicHome'),
+	$emergencyhousePublicAccount,
+	'campaigns',
+	true,
+	false,
+	array(
+		'description' => $langs->trans('PublicHeroDescription'),
+		'canonical' => $homeCanonical,
+		'structured_data' => emergencyhousePublicHomeStructuredData($homeCanonical),
+	)
+);
 print '<section class="eh-hero"><div class="eh-shell eh-hero-grid"><div>';
 print '<p class="eh-eyebrow">'.$langs->trans('SolidarityAccommodation').'</p>';
 print '<h1>'.$langs->trans('PublicHeroTitle').'</h1>';

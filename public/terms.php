@@ -14,7 +14,17 @@ if (!emergencyhousePublicHtmlHasContent($termsHtml)) {
 	exit;
 }
 
-emergencyhousePublicRenderHeader($langs->trans('TermsOfUse'), $emergencyhousePublicAccount);
+emergencyhousePublicRenderHeader(
+	$langs->trans('TermsOfUse'),
+	$emergencyhousePublicAccount,
+	'',
+	true,
+	false,
+	array(
+		'description' => $langs->trans('PublicTermsDescription'),
+		'canonical' => emergencyhousePublicAbsoluteUrl('terms.php'),
+	)
+);
 print '<section class="eh-shell eh-section">';
 print '<div class="eh-page-title"><h1>'.$langs->trans('TermsOfUse').'</h1></div>';
 print '<article class="eh-card eh-legal-content">'.dolPrintHTML($termsHtml).'</article>';

@@ -85,6 +85,44 @@ feuilles de style, le script public et le logo sont également servis sous
 `/assets/` depuis cette même racine. Si la constante est vide, le portail
 conserve son URL interne Dolibarr pour faciliter une recette locale.
 
+### Référencement public et robots IA
+
+L’accueil, la page de contact, la déclaration d’accessibilité et les conditions
+d’utilisation publiées sont indexables. Une campagne est indexable uniquement
+si l’option **Autoriser l’indexation par les moteurs de recherche** est active,
+si la campagne est publiée et en cours, et si sa description publique et ses
+consignes officielles sont renseignées.
+
+Les offres, demandes, formulaires, comptes, sollicitations et allocations
+restent exclus de l’index. Les moteurs peuvent suivre les liens des offres et
+demandes publiques, mais ne doivent pas conserver ces fiches temporaires dans
+leurs résultats. Les données privées ne sont jamais ajoutées aux métadonnées,
+au sitemap ou à l’index destiné aux LLM.
+
+Le répertoire `public/` fournit les points de découverte suivants :
+
+- `/robots.php`, exposé aussi comme `/robots.txt` avec la réécriture Apache
+  fournie ;
+- `/sitemap.php`, exposé aussi comme `/sitemap.xml` ;
+- `/llms.php`, exposé aussi comme `/llms.txt`.
+
+Sur Nginx ou lorsque les règles `.htaccess` sont désactivées, le serveur doit
+faire pointer les trois URL usuelles vers les scripts PHP correspondants. Le
+sitemap peut aussi être soumis directement avec son URL `/sitemap.php` dans les
+outils pour webmasters.
+
+`OAI-SearchBot` et `ChatGPT-User` sont autorisés afin que les pages publiques
+puissent être découvertes et citées. `GPTBot`, qui concerne l’entraînement et
+non la recherche ChatGPT, reste bloqué par défaut. L’administrateur peut
+l’autoriser avec l’interrupteur `EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED` dans
+l’onglet **Portail**.
+
+Les pages indexables publient une URL canonique, une description, les
+métadonnées Open Graph/Twitter et des données structurées `WebSite`,
+`Organization`, `Service`, `WebPage` et `BreadcrumbList` selon le contexte.
+`EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL` permet de fournir une image HTTPS de
+partage, idéalement au format 1 200 × 630 pixels et sans donnée personnelle.
+
 Les conditions générales d’utilisation sont saisies dans
 `EMERGENCYHOUSE_PUBLIC_TERMS_HTML` depuis l’onglet **Portail**. Dolibarr utilise
 son éditeur WYSIWYG natif lorsque ce module est actif, avec repli sur une zone

@@ -31,7 +31,18 @@ $criteria = is_array($criteria) ? $criteria : array();
 $campaign = new EmergencyHouseCampaign($db);
 $campaignLoaded = $campaign->fetch((int) $request->fk_campaign) > 0;
 
-emergencyhousePublicRenderHeader($request->title, $emergencyhousePublicAccount, 'requests');
+emergencyhousePublicRenderHeader(
+	$request->title,
+	$emergencyhousePublicAccount,
+	'requests',
+	false,
+	false,
+	array(
+		'description' => (string) $request->description_public,
+		'robots' => $isOwner ? 'noindex,nofollow' : 'noindex,follow',
+		'og_type' => 'article',
+	)
+);
 print '<section class="eh-shell eh-section"><div class="eh-page-title"><p class="eh-eyebrow">'.$langs->trans('AccommodationRequest').'</p>';
 print '<h1>'.dol_escape_htmltag($request->title).'</h1><p>'.dol_escape_htmltag((string) $request->description_public).'</p></div>';
 if ($saved) {
@@ -92,4 +103,3 @@ print '<p class="eh-help">'.$langs->trans('RequestContactProtected').'</p></asid
 print '<div class="eh-actions"><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('report/create.php', array('type' => 'request', 'object' => (int) $request->id))).'">'.$langs->trans('ReportThisRequest').'</a></div>';
 print '</section>';
 emergencyhousePublicRenderFooter();
-

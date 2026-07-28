@@ -158,7 +158,8 @@ print '<tr><td>'.$langs->trans('PrivacyUrl').'</td><td><input class="flat centpe
 print '<div class="opacitymedium">'.$langs->trans('CampaignPrivacyUrlFallbackHelp').'</div></td></tr>';
 print '<tr><td>'.$langs->trans('TermsUrl').'</td><td><input class="flat centpercent" name="terms_url" value="'.dol_escape_htmltag((string) $object->terms_url).'">';
 print '<div class="opacitymedium">'.$langs->trans('CampaignTermsUrlFallbackHelp').'</div></td></tr>';
-print '<tr><td>'.$langs->trans('RobotsIndex').'</td><td>'.$form->selectarray('robots_index', $yesNoOptions, (int) $object->robots_index, 0, 0, 0, '', 0, 0, 0, '', 'minwidth150').'</td></tr>';
+print '<tr><td>'.$langs->trans('RobotsIndex').'</td><td>'.$form->selectarray('robots_index', $yesNoOptions, (int) $object->robots_index, 0, 0, 0, '', 0, 0, 0, '', 'minwidth150');
+print '<div class="opacitymedium small">'.$langs->trans('RobotsIndexHelp').'</div></td></tr>';
 print '</table>';
 print '<div class="center"><button class="button button-save" type="submit">'.$langs->trans('Save').'</button> ';
 print '<a class="button button-cancel" href="'.dol_buildpath('/emergencyhouse/campaign/list.php', 1).'">'.$langs->trans('Cancel').'</a></div>';

@@ -338,6 +338,7 @@ class modEmergencyHouse extends DolibarrModules
 				." WHERE NOT EXISTS (SELECT 1 FROM ".MAIN_DB_PREFIX."document_model"
 				." WHERE nom = 'emergencyhouse_agreement' AND type = 'emergencyhouse'"
 				." AND entity = ".((int) $conf->entity).")",
+			$this->buildNotificationTriggerModuleUpdateSql(),
 		);
 		$sql[] = $this->buildCronStatusUpdateSql(1, (int) $conf->entity);
 
@@ -436,6 +437,26 @@ class modEmergencyHouse extends DolibarrModules
 	}
 
 	/**
+	 * Normalize native notification trigger ownership for existing installs.
+	 *
+	 * Dolibarr 20 to 23 checks c_action_trigger.elementtype directly against
+	 * the enabled module key on the Notifications setup page. Agenda accepts
+	 * both an object element and a module key, while Notifications requires
+	 * the latter for external modules.
+	 *
+	 * @return string SQL update
+	 */
+	private function buildNotificationTriggerModuleUpdateSql()
+	{
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'c_action_trigger';
+		$sql .= " SET elementtype = 'emergencyhouse'";
+		$sql .= " WHERE LEFT(code, 15) = 'EMERGENCYHOUSE_'";
+		$sql .= " AND elementtype <> 'emergencyhouse'";
+
+		return $sql;
+	}
+
+	/**
 	 * Create missing defaults without overwriting configured values.
 	 *
 	 * @param int $entity Entity
@@ -452,7 +473,9 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL' => array('', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_OFFER_PUBLICATION_POLICY' => array('operator_validation', 'chaine'),
 			'EMERGENCYHOUSE_OSM_TILES_ENABLED' => array('1', 'yesno'),
 			'EMERGENCYHOUSE_OSM_TILE_URL' => array('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'chaine'),
