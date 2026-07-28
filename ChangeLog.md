@@ -2,6 +2,21 @@
 
 ## Non publié
 
+- Remplacement de la sélection manuelle de vérification par une file FIFO
+  commune aux comptes confirmés, offres soumises et demandes actives, avec
+  cible imposée par `queue_id` et registre historique conservé dans une vue
+  distincte.
+- Ajout d’une attribution tournante, persistante et verrouillée par entité aux
+  utilisateurs internes actifs disposant explicitement du droit de
+  vérification, directement ou par groupe, avec réaffectation automatique sans
+  perte d’ancienneté et supervision administrateur.
+- Ajout du compteur temps réel **À vérifier depuis HH:MM:SS**, des alertes
+  orange et rouge configurables par entité à 10 et 30 minutes par défaut, et
+  de la migration idempotente des objets existants encore éligibles.
+- Ajout de `verification_status` aux comptes publics et clôture
+  transactionnelle de la file, de l’objet et du registre ; les objets vérifiés
+  ou refusés sont refusés côté serveur, y compris lors d’une décision
+  concurrente.
 - Création et validation immédiates d’un adhérent natif lors de chaque
   inscription publique, avec type configuré par entité, rapprochement strict
   par e-mail et transaction empêchant tout compte ou adhérent orphelin.

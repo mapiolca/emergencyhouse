@@ -48,6 +48,33 @@ chemin interne Dolibarr reste le fallback de recette.
 11. API, webhooks et adaptateurs optionnels.
 12. Audit, conservation et purge.
 
+## File de vérification
+
+`EmergencyHouseVerificationService` est l’unique frontière métier de la file.
+Il expose l’entrée ou la réactivation d’une cible, la réconciliation des
+affectations et l’enregistrement d’une décision depuis un `queue_id`. Les
+comptes confirmés, offres en attente et demandes actives partagent le même tri
+FIFO.
+
+Chaque entité possède un curseur de rotation verrouillé. La recherche des
+opérateurs lit les attributions natives `user_rights` et
+`usergroup_rights` du droit `emergencyhouse/verification/write`, tout en
+excluant les utilisateurs externes et désactivés. Les droits administrateur
+restent gérés par le helper central pour la supervision, sans modifier
+l’éligibilité à la rotation.
+
+La création ou réactivation d’une ligne verrouille le curseur et s’appuie sur
+la contrainte unique `(entity, object_type, fk_object)`. La décision verrouille
+la ligne de file puis la source, revalide son état `< 1`, écrit le registre,
+met à jour la source et clôt la file dans la même transaction. La
+réconciliation conserve `date_queued` lorsqu’elle remplace un attributaire ;
+elle annule uniquement les lignes dont la source n’est plus éligible.
+
+L’interface sépare la file active du registre historique. Le serveur calcule
+l’ancienneté et les seuils propres à l’entité ; JavaScript actualise seulement
+le compteur et les classes d’urgence, sans porter de règle d’accès ou de
+décision.
+
 ## Intégrations Dolibarr
 
 - objets `CommonObject` lorsque le contrat natif est pertinent ;

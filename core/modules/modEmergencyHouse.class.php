@@ -326,6 +326,9 @@ class modEmergencyHouse extends DolibarrModules
 		if (!$this->ensureMemberLinkSchema()) {
 			return -1;
 		}
+		if (!$this->ensureVerificationQueueSchema((int) $conf->entity)) {
+			return -1;
+		}
 		$this->ensureDefaultConstants((int) $conf->entity);
 		if (!$this->migrateLegacyNumberingModels((int) $conf->entity)) {
 			return -1;
@@ -492,6 +495,8 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_TOKEN_TTL_MINUTES' => array('30', 'chaine'),
 			'EMERGENCYHOUSE_MAX_LOGIN_ATTEMPTS' => array('5', 'chaine'),
 			'EMERGENCYHOUSE_MESSAGE_MAX_LENGTH' => array('4000', 'chaine'),
+			'EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES' => array('10', 'chaine'),
+			'EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES' => array('30', 'chaine'),
 			'EMERGENCYHOUSE_SOLICITATION_EXPIRY_DAYS' => array('7', 'chaine'),
 			'EMERGENCYHOUSE_SOLICITATION_DAILY_LIMIT' => array('20', 'chaine'),
 			'EMERGENCYHOUSE_FREE_TEXT' => array('', 'chaine'),
@@ -564,6 +569,119 @@ class modEmergencyHouse extends DolibarrModules
 		if (!$indexFound) {
 			$sql = 'ALTER TABLE '.$table;
 			$sql .= ' ADD UNIQUE KEY uk_emergencyhouse_account_member (entity, fk_member)';
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Upgrade existing installations and seed the unified verification queue.
+	 *
+	 * Existing final decisions are copied to the public-account status before
+	 * pending objects are inserted. The unique queue key makes this migration
+	 * idempotent and prevents a completed queue row from being reactivated.
+	 *
+	 * @param int $entity Entity being activated
+	 * @return bool
+	 */
+	private function ensureVerificationQueueSchema($entity)
+	{
+		$accountTable = MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$resql = $this->db->query("SHOW COLUMNS FROM ".$accountTable." LIKE 'verification_status'");
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+		if ($this->db->num_rows($resql) === 0) {
+			$sql = 'ALTER TABLE '.$accountTable;
+			$sql .= ' ADD COLUMN verification_status integer DEFAULT 0 NOT NULL AFTER manual_verification_level';
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+
+		$indexFound = false;
+		$resql = $this->db->query('SHOW INDEX FROM '.$accountTable);
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+		while (is_object($obj = $this->db->fetch_object($resql))) {
+			if (isset($obj->Key_name) && (string) $obj->Key_name === 'idx_emergencyhouse_account_verification') {
+				$indexFound = true;
+				break;
+			}
+		}
+		if (!$indexFound) {
+			$sql = 'ALTER TABLE '.$accountTable;
+			$sql .= ' ADD KEY idx_emergencyhouse_account_verification (entity, verification_status, date_creation)';
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+
+		$sql = 'UPDATE '.$accountTable.' AS account';
+		$sql .= ' INNER JOIN (';
+		$sql .= ' SELECT decision.entity, decision.fk_object, decision.status, decision.fk_verification_level';
+		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_verification AS decision';
+		$sql .= ' INNER JOIN (SELECT entity, fk_object, MAX(rowid) AS rowid';
+		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_verification';
+		$sql .= " WHERE object_type = 'account' AND status IN (1, 2)";
+		$sql .= ' GROUP BY entity, fk_object) AS latest ON latest.rowid = decision.rowid';
+		$sql .= ') AS verification ON verification.entity = account.entity AND verification.fk_object = account.rowid';
+		$sql .= ' SET account.verification_status = verification.status,';
+		$sql .= ' account.manual_verification_level = CASE WHEN verification.status = 1';
+		$sql .= ' THEN verification.fk_verification_level ELSE 0 END';
+		$sql .= ' WHERE account.entity = '.((int) $entity).' AND account.verification_status = 0';
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+
+		$sql = 'UPDATE '.$accountTable;
+		$sql .= ' SET verification_status = 1';
+		$sql .= ' WHERE entity = '.((int) $entity);
+		$sql .= ' AND verification_status = 0 AND manual_verification_level > 0';
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+
+		$queueTable = MAIN_DB_PREFIX.'emergencyhouse_verification_queue';
+		$backfills = array(
+			array(
+				'table' => 'emergencyhouse_public_account',
+				'type' => 'account',
+				'condition' => 'source.status = 1 AND source.email_verified = 1 AND source.verification_status = 0',
+			),
+			array(
+				'table' => 'emergencyhouse_offer',
+				'type' => 'offer',
+				'condition' => 'source.status = 1 AND source.verification_status = 0',
+			),
+			array(
+				'table' => 'emergencyhouse_request',
+				'type' => 'request',
+				'condition' => 'source.status = 1 AND source.verification_status = 0',
+			),
+		);
+		foreach ($backfills as $backfill) {
+			$sql = 'INSERT INTO '.$queueTable;
+			$sql .= ' (entity, object_type, fk_object, queue_status, date_queued)';
+			$sql .= ' SELECT source.entity, \''.$this->db->escape($backfill['type']).'\', source.rowid, 0,';
+			$sql .= ' COALESCE(source.tms, source.date_creation)';
+			$sql .= ' FROM '.MAIN_DB_PREFIX.$backfill['table'].' AS source';
+			$sql .= ' WHERE source.entity = '.((int) $entity).' AND '.$backfill['condition'];
+			$sql .= ' AND NOT EXISTS (SELECT 1 FROM '.$queueTable.' AS queue';
+			$sql .= ' WHERE queue.entity = source.entity';
+			$sql .= " AND queue.object_type = '".$this->db->escape($backfill['type'])."'";
+			$sql .= ' AND queue.fk_object = source.rowid)';
 			if (!$this->db->query($sql)) {
 				$this->error = $this->db->lasterror();
 				return false;

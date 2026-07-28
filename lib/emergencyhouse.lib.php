@@ -15,6 +15,7 @@ function emergencyhouseAdminPrepareHead()
 		'general' => 'Settings',
 		'portal' => 'PublicPortal',
 		'authentication' => 'Authentication',
+		'verification' => 'Verification',
 		'matching' => 'Matching',
 		'notifications' => 'Notifications',
 		'providers' => 'Providers',
@@ -40,6 +41,29 @@ function emergencyhouseAdminPrepareHead()
 	$head[] = array(dol_buildpath('/emergencyhouse/admin/about.php', 1), $langs->trans('About'), 'about');
 
 	return $head;
+}
+
+/**
+ * Prepare the queue and immutable-history tabs.
+ *
+ * @return array<int, array{0:string,1:string,2:string}>
+ */
+function emergencyhouseVerificationPrepareHead()
+{
+	global $langs;
+
+	return array(
+		array(
+			dol_buildpath('/emergencyhouse/verification/list.php', 1).'?view=queue',
+			$langs->trans('VerificationQueue'),
+			'queue',
+		),
+		array(
+			dol_buildpath('/emergencyhouse/verification/list.php', 1).'?view=history',
+			$langs->trans('VerificationHistory'),
+			'history',
+		),
+	);
 }
 
 /**
@@ -258,4 +282,78 @@ function emergencyhouseEntityBadge($entityId, $options)
 		.'<span class="fa fa-globe"></span>'
 		.'<span class="multiselect-selected-title-text">'.dol_escape_htmltag($label).'</span>'
 		.'</div>';
+}
+
+/**
+ * Read entity-specific verification alert thresholds.
+ *
+ * This direct read is required for shared queues because getDolGlobalInt()
+ * resolves only the current entity.
+ *
+ * @param DoliDB $db     Database handler
+ * @param int    $entity Entity
+ * @return array{warning:int,critical:int}
+ */
+function emergencyhouseVerificationThresholds($db, $entity)
+{
+	$thresholds = array('warning' => 10, 'critical' => 30);
+	if ($entity <= 0) {
+		return $thresholds;
+	}
+
+	$sql = 'SELECT name, value FROM '.MAIN_DB_PREFIX.'const';
+	$sql .= ' WHERE entity = '.((int) $entity);
+	$sql .= " AND name IN ('EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES',";
+	$sql .= " 'EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES')";
+	$resql = $db->query($sql);
+	if ($resql) {
+		while (is_object($constant = $db->fetch_object($resql))) {
+			if ((string) $constant->name === 'EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES') {
+				$thresholds['warning'] = (int) $constant->value;
+			} elseif ((string) $constant->name === 'EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES') {
+				$thresholds['critical'] = (int) $constant->value;
+			}
+		}
+	}
+	if ($thresholds['warning'] < 1 || $thresholds['critical'] <= $thresholds['warning']) {
+		return array('warning' => 10, 'critical' => 30);
+	}
+
+	return $thresholds;
+}
+
+/**
+ * Format an elapsed duration without wrapping after 24 hours.
+ *
+ * @param int $seconds Elapsed seconds
+ * @return string HH:MM:SS
+ */
+function emergencyhouseVerificationFormatDuration($seconds)
+{
+	$seconds = max(0, (int) $seconds);
+	$hours = (int) floor($seconds / 3600);
+	$minutes = (int) floor(($seconds % 3600) / 60);
+	$remainingSeconds = $seconds % 60;
+
+	return sprintf('%02d:%02d:%02d', $hours, $minutes, $remainingSeconds);
+}
+
+/**
+ * Classify an elapsed duration against entity thresholds.
+ *
+ * @param int                           $seconds Elapsed seconds
+ * @param array{warning:int,critical:int} $thresholds Thresholds in minutes
+ * @return string neutral, warning or critical
+ */
+function emergencyhouseVerificationUrgency($seconds, $thresholds)
+{
+	$seconds = max(0, (int) $seconds);
+	if ($seconds >= ((int) $thresholds['critical']) * 60) {
+		return 'critical';
+	}
+	if ($seconds >= ((int) $thresholds['warning']) * 60) {
+		return 'warning';
+	}
+
+	return 'neutral';
 }

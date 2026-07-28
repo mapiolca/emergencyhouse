@@ -35,3 +35,29 @@ photo. Le contenu du fichier reste dans le répertoire documentaire de l’entit
 propriétaire de l’offre. Les fichiers sources ne sont jamais conservés :
 l’image est réencodée afin de supprimer ses métadonnées EXIF et GPS avant
 stockage.
+
+## Vérification
+
+Les comptes publics, offres et demandes portent tous `verification_status` :
+
+- `0` : en attente ;
+- `1` : vérifié ;
+- `2` : refusé.
+
+Pour les comptes publics, `manual_verification_level` conserve le niveau
+obtenu lorsque l’état vaut `1`. Il est remis à zéro lors d’un refus.
+
+`emergencyhouse_verification_queue` contient une seule ligne durable par
+couple `(entity, object_type, fk_object)`. La ligne conserve l’attributaire,
+les dates d’entrée, d’attribution et de traitement, l’état de file et la clé
+`fk_verification` vers la décision finale. Une nouvelle soumission réactive
+cette même ligne : aucun historique concurrent n’est créé dans la file.
+
+`emergencyhouse_verification_rotation` conserve le dernier utilisateur servi
+pour chaque entité. Sa ligne est verrouillée pendant l’attribution afin que
+deux soumissions simultanées ne consomment pas le même tour.
+
+`emergencyhouse_verification` reste le registre immuable des décisions. La
+clôture d’une ligne de file et l’écriture du registre sont transactionnelles ;
+la vue **Historique** continue donc d’exposer les décisions antérieures sans
+dépendre de l’état actif de la file.

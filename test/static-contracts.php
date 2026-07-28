@@ -630,8 +630,9 @@ emergencyhouseContract(
 	strpos($objectList, '$record->getLibStatut(5)') !== false
 		&& strpos($matchList, '$statusCode, 5)') !== false
 		&& strpos($matchList, "(int) \$row->status === 1 ? 'status4' : 'status6'") !== false
-		&& strpos($verificationList, '$verificationStatusType') !== false
-		&& strpos($verificationList, "\t\t5\n") !== false,
+		&& strpos($verificationList, "EmergencyHouseVerificationService::STATUS_VERIFIED ? 'status4'") !== false
+		&& strpos($verificationList, "EmergencyHouseVerificationService::STATUS_REFUSED ? 'status6' : 'status1'") !== false
+		&& strpos($verificationList, "\t\t\t\t5\n") !== false,
 	'Listes du back-office rendues avec les badges de statut natifs'
 );
 $objectCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_card.php');
@@ -797,7 +798,7 @@ preg_match_all(
 	$tableMatches,
 	PREG_SET_ORDER
 );
-emergencyhouseContract(count($tableMatches) === 43, 'Quarante-trois tables InnoDB déclarées');
+emergencyhouseContract(count($tableMatches) === 45, 'Quarante-cinq tables InnoDB déclarées');
 foreach ($tableMatches as $tableMatch) {
 	$tableName = $tableMatch[1];
 	$tableBody = $tableMatch[2];

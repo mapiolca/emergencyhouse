@@ -10,6 +10,7 @@ dol_include_once('/emergencyhouse/class/offer.class.php');
 dol_include_once('/emergencyhouse/class/offerphotoservice.class.php');
 dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
+dol_include_once('/emergencyhouse/class/verificationservice.class.php');
 
 /**
  * Secure boundary for public offers and accommodation requests.
@@ -139,12 +140,22 @@ class EmergencyHouseListingService
 		$this->db->begin();
 		$result = $offer->createInsideServiceTransaction($triggerUser);
 		$photoService = new EmergencyHouseOfferPhotoService($this->db);
+		$verificationService = new EmergencyHouseVerificationService($this->db);
 		if ($result <= 0
 			|| !$this->replaceOfferFeatures($offer, $features)
-			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)) {
+			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)
+			|| ($submit && $verificationService->enqueueTarget(
+				(int) $offer->entity,
+				'offer',
+				(int) $offer->id,
+				dol_now(),
+				false
+			) <= 0)) {
 			$this->error = !empty($offer->error)
 				? $offer->error
-				: ($photoService->error !== '' ? $photoService->error : $this->error);
+				: ($photoService->error !== ''
+					? $photoService->error
+					: ($verificationService->error !== '' ? $verificationService->error : $this->error));
 			$this->errors = $offer->errors;
 			$this->db->rollback();
 			return false;
@@ -241,10 +252,20 @@ class EmergencyHouseListingService
 
 		$this->db->begin();
 		$result = $request->createInsideServiceTransaction($triggerUser);
+		$verificationService = new EmergencyHouseVerificationService($this->db);
 		if ($result <= 0
 			|| !$this->replaceRequestHousingTypes($request, $housingTypes)
-			|| !$this->replaceRequestCriteria($request, $criteria)) {
-			$this->error = !empty($request->error) ? $request->error : $this->error;
+			|| !$this->replaceRequestCriteria($request, $criteria)
+			|| ($submit && $verificationService->enqueueTarget(
+				(int) $request->entity,
+				'request',
+				(int) $request->id,
+				dol_now(),
+				false
+			) <= 0)) {
+			$this->error = !empty($request->error)
+				? $request->error
+				: ($verificationService->error !== '' ? $verificationService->error : $this->error);
 			$this->errors = $request->errors;
 			$this->db->rollback();
 			return false;
@@ -351,6 +372,7 @@ class EmergencyHouseListingService
 			&& (int) $account->entity === (int) $request->entity
 			&& (int) $account->id === (int) $request->fk_account;
 		$isPublic = $request->visibility === 'public'
+			&& (int) $request->verification_status === EmergencyHouseVerificationService::STATUS_VERIFIED
 			&& in_array(
 				(int) $request->status,
 				array(EmergencyHouseRequest::STATUS_ACTIVE, EmergencyHouseRequest::STATUS_PARTIALLY_ALLOCATED),
@@ -589,14 +611,32 @@ class EmergencyHouseListingService
 
 		$this->db->begin();
 		$photoService = new EmergencyHouseOfferPhotoService($this->db);
-		if (!$this->lockRow('emergencyhouse_offer', (int) $offer->entity, (int) $offer->id)
+		$verificationService = new EmergencyHouseVerificationService($this->db);
+		if (!$verificationService->lockSubmissionTarget((int) $offer->entity, 'offer', (int) $offer->id)
+			|| !$this->lockRow('emergencyhouse_offer', (int) $offer->entity, (int) $offer->id)
 			|| $offer->updateInsideServiceTransaction($triggerUser) <= 0
 			|| !$this->deleteRelations('emergencyhouse_offer_feature', 'fk_offer', (int) $offer->entity, (int) $offer->id)
 			|| !$this->replaceOfferFeatures($offer, $features)
-			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)) {
+			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)
+			|| ($submit
+				? $verificationService->enqueueTarget(
+					(int) $offer->entity,
+					'offer',
+					(int) $offer->id,
+					dol_now(),
+					false
+				) <= 0
+				: $verificationService->cancelTarget(
+					(int) $offer->entity,
+					'offer',
+					(int) $offer->id,
+					false
+				) <= 0)) {
 			$this->error = !empty($offer->error)
 				? $offer->error
-				: ($photoService->error !== '' ? $photoService->error : $this->error);
+				: ($photoService->error !== ''
+					? $photoService->error
+					: ($verificationService->error !== '' ? $verificationService->error : $this->error));
 			$this->db->rollback();
 			return false;
 		}
@@ -623,7 +663,10 @@ class EmergencyHouseListingService
 
 		$photoService = new EmergencyHouseOfferPhotoService($this->db);
 		$this->db->begin();
-		if (!$this->lockRow('emergencyhouse_offer', (int) $offer->entity, (int) $offer->id)) {
+		$verificationService = new EmergencyHouseVerificationService($this->db);
+		if (!$verificationService->lockSubmissionTarget((int) $offer->entity, 'offer', (int) $offer->id)
+			|| !$this->lockRow('emergencyhouse_offer', (int) $offer->entity, (int) $offer->id)) {
+			$this->error = $verificationService->error !== '' ? $verificationService->error : $this->error;
 			$this->db->rollback();
 			return false;
 		}
@@ -639,8 +682,14 @@ class EmergencyHouseListingService
 		$offer->context['public_account_id'] = (int) $account->id;
 		$offer->context['trigger_reason'] = 'photo_change';
 		$offer->context['changed_fields'] = array('photos', 'verification_status', 'status');
-		if ($offer->updateInsideServiceTransaction($triggerUser) <= 0) {
-			$this->error = $offer->error;
+		if ($offer->updateInsideServiceTransaction($triggerUser) <= 0
+			|| $verificationService->cancelTarget(
+				(int) $offer->entity,
+				'offer',
+				(int) $offer->id,
+				false
+			) <= 0) {
+			$this->error = !empty($offer->error) ? $offer->error : $verificationService->error;
 			$this->errors = $offer->errors;
 			$this->db->rollback();
 			return false;
@@ -693,6 +742,7 @@ class EmergencyHouseListingService
 			array('private', 'public'),
 			'private'
 		);
+		$request->verification_status = 0;
 		$request->status = $submit ? EmergencyHouseRequest::STATUS_ACTIVE : EmergencyHouseRequest::STATUS_DRAFT;
 		$request->context['public_account_id'] = (int) $account->id;
 		$request->context['trigger_reason'] = $submit ? 'public_resubmission' : 'public_edit';
@@ -722,13 +772,31 @@ class EmergencyHouseListingService
 		}
 
 		$this->db->begin();
-		if (!$this->lockRow('emergencyhouse_request', (int) $request->entity, (int) $request->id)
+		$verificationService = new EmergencyHouseVerificationService($this->db);
+		if (!$verificationService->lockSubmissionTarget((int) $request->entity, 'request', (int) $request->id)
+			|| !$this->lockRow('emergencyhouse_request', (int) $request->entity, (int) $request->id)
 			|| $request->updateInsideServiceTransaction($triggerUser) <= 0
 			|| !$this->deleteRelations('emergencyhouse_request_housing_type', 'fk_request', (int) $request->entity, (int) $request->id)
 			|| !$this->deleteRelations('emergencyhouse_request_criterion', 'fk_request', (int) $request->entity, (int) $request->id)
 			|| !$this->replaceRequestHousingTypes($request, $housingTypes)
-			|| !$this->replaceRequestCriteria($request, $criteria)) {
-			$this->error = !empty($request->error) ? $request->error : $this->error;
+			|| !$this->replaceRequestCriteria($request, $criteria)
+			|| ($submit
+				? $verificationService->enqueueTarget(
+					(int) $request->entity,
+					'request',
+					(int) $request->id,
+					dol_now(),
+					false
+				) <= 0
+				: $verificationService->cancelTarget(
+					(int) $request->entity,
+					'request',
+					(int) $request->id,
+					false
+				) <= 0)) {
+			$this->error = !empty($request->error)
+				? $request->error
+				: ($verificationService->error !== '' ? $verificationService->error : $this->error);
 			$this->db->rollback();
 			return false;
 		}
@@ -851,6 +919,7 @@ class EmergencyHouseListingService
 		$sql .= ' WHERE r.entity = '.((int) $conf->entity);
 		$sql .= ' AND r.fk_campaign = '.((int) $campaignId);
 		$sql .= ' AND r.visibility = \'public\'';
+		$sql .= ' AND r.verification_status = '.EmergencyHouseVerificationService::STATUS_VERIFIED;
 		$sql .= ' AND r.status IN ('.EmergencyHouseRequest::STATUS_ACTIVE.','.EmergencyHouseRequest::STATUS_PARTIALLY_ALLOCATED.')';
 		$sql .= ' AND r.remaining_count > 0';
 		$sql .= ' ORDER BY r.urgency_level DESC, r.date_start ASC, r.rowid DESC';

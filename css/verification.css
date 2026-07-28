@@ -1,0 +1,19 @@
+.emergencyhouse-verification-age__icon {
+	display: none;
+	margin-right: 0.35em;
+}
+
+.emergencyhouse-verification-age--warning {
+	color: #b45309;
+	font-weight: 600;
+}
+
+.emergencyhouse-verification-age--critical {
+	color: #b91c1c;
+	font-weight: 700;
+}
+
+.emergencyhouse-verification-age--warning .emergencyhouse-verification-age__icon,
+.emergencyhouse-verification-age--critical .emergencyhouse-verification-age__icon {
+	display: inline-block;
+}

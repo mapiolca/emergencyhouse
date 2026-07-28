@@ -89,6 +89,10 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_SOLICITATION_EXPIRY_DAYS' => array('type' => 'int', 'default' => '7'),
 		'EMERGENCYHOUSE_SOLICITATION_DAILY_LIMIT' => array('type' => 'int', 'default' => '20'),
 	),
+	'verification' => array(
+		'EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES' => array('type' => 'int', 'default' => '10'),
+		'EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES' => array('type' => 'int', 'default' => '30'),
+	),
 	'matching' => array(
 		'EMERGENCYHOUSE_MATCH_DISTANCE_WEIGHT' => array('type' => 'int', 'default' => '30'),
 		'EMERGENCYHOUSE_MATCH_CAPACITY_WEIGHT' => array('type' => 'int', 'default' => '25'),
@@ -275,6 +279,14 @@ if ($action === 'reconcile_members' && $tab === 'integrations') {
 		if ($sum !== 100) {
 			$error++;
 			setEventMessages($langs->trans('MatchingWeightsMustEqual100'), null, 'errors');
+		}
+	}
+	if ($tab === 'verification') {
+		$warningMinutes = (int) $values['EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES'];
+		$criticalMinutes = (int) $values['EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES'];
+		if ($warningMinutes < 1 || $criticalMinutes <= $warningMinutes) {
+			$error++;
+			setEventMessages($langs->trans('VerificationThresholdsInvalid'), null, 'errors');
 		}
 	}
 	if ($tab === 'integrations') {
@@ -595,7 +607,9 @@ if (isset($settingsByTab[$tab])) {
 			print $form->selectarray($name, $options, $value, 0, 0, 0, $selectAttributes, 0, 0, 0, '', 'minwidth300');
 			print ajax_combobox($name);
 		} elseif ($definition['type'] === 'int') {
-			print '<input class="flat minwidth100" type="number" min="0" name="'.dol_escape_htmltag($name).'" value="'.((int) $value).'">';
+			$minimum = strpos($name, 'EMERGENCYHOUSE_VERIFICATION_') === 0 ? 1 : 0;
+			print '<input class="flat minwidth100" type="number" min="'.((int) $minimum).'"';
+			print ' name="'.dol_escape_htmltag($name).'" value="'.((int) $value).'">';
 		} elseif (in_array($name, array('EMERGENCYHOUSE_PUBLIC_BASE_URL', 'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL'), true)) {
 			print '<input class="flat minwidth500" type="url" inputmode="url" placeholder="https://emergencyhouse.example.org/"';
 			print ' name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';

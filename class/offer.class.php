@@ -228,22 +228,46 @@ class EmergencyHouseOffer extends EmergencyHouseCommonObject
 			$this->error = 'ErrorInvalidStatusTransition';
 			return -1;
 		}
-		if ($newStatus === self::STATUS_PUBLISHED && ($this->verification_status <= 0 || !$this->validateBusinessRules())) {
+		if ($newStatus === self::STATUS_PUBLISHED && ((int) $this->verification_status !== 1 || !$this->validateBusinessRules())) {
 			$this->error = 'ErrorOfferCannotBePublished';
 			return -1;
 		}
 
 		$oldStatus = (int) $this->status;
 		$this->status = $newStatus;
+		if ($oldStatus === self::STATUS_DRAFT && $newStatus === self::STATUS_PENDING) {
+			$this->verification_status = 0;
+		}
 		$this->context['trigger_reason'] = $reason;
-		$this->context['changed_fields'] = array('status');
+		$this->context['changed_fields'] = $oldStatus === self::STATUS_DRAFT && $newStatus === self::STATUS_PENDING
+			? array('status', 'verification_status')
+			: array('status');
 		$this->context['old_status'] = $oldStatus;
 		$this->context['new_status'] = $newStatus;
 		if ($newStatus === self::STATUS_PUBLISHED) {
 			$this->date_last_confirmation = dol_now();
 		}
 
-		return parent::update($user);
+		$this->db->begin();
+		dol_include_once('/emergencyhouse/class/verificationservice.class.php');
+		$verificationService = new EmergencyHouseVerificationService($this->db);
+		if (!$verificationService->lockSubmissionTarget((int) $this->entity, 'offer', (int) $this->id)
+			|| $this->updateInsideServiceTransaction($user) <= 0) {
+			$this->error = $verificationService->error !== '' ? $verificationService->error : $this->error;
+			$this->db->rollback();
+			return -1;
+		}
+		$queueResult = $oldStatus === self::STATUS_DRAFT && $newStatus === self::STATUS_PENDING
+			? $verificationService->enqueueTarget((int) $this->entity, 'offer', (int) $this->id, dol_now(), false)
+			: $verificationService->cancelTarget((int) $this->entity, 'offer', (int) $this->id, false);
+		if ($queueResult <= 0) {
+			$this->error = $verificationService->error;
+			$this->db->rollback();
+			return -1;
+		}
+		$this->db->commit();
+
+		return 1;
 	}
 
 	/**

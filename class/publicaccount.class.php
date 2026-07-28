@@ -52,6 +52,8 @@ class EmergencyHousePublicAccount
 	/** @var int */
 	public $manual_verification_level = 0;
 	/** @var int */
+	public $verification_status = 0;
+	/** @var int */
 	public $adult_confirmed = 0;
 	/** @var int */
 	public $failed_login_count = 0;
@@ -144,7 +146,7 @@ class EmergencyHousePublicAccount
 
 		$this->db->begin();
 		$sql = 'INSERT INTO '.MAIN_DB_PREFIX.'emergencyhouse_public_account (';
-		$sql .= 'entity, public_uuid, firstname_encrypted, lastname_encrypted, email_encrypted, email_hash, phone_encrypted, phone_hash, password_hash, lang, preferred_contact, email_verified, adult_confirmed, status, date_creation, last_activity';
+		$sql .= 'entity, public_uuid, firstname_encrypted, lastname_encrypted, email_encrypted, email_hash, phone_encrypted, phone_hash, password_hash, lang, preferred_contact, email_verified, verification_status, adult_confirmed, status, date_creation, last_activity';
 		$sql .= ') VALUES (';
 		$sql .= ((int) $this->entity).',';
 		$sql .= "'".$this->db->escape($this->public_uuid)."',";
@@ -157,7 +159,7 @@ class EmergencyHousePublicAccount
 		$sql .= "'".$this->db->escape($passwordHash)."',";
 		$sql .= "'".$this->db->escape($this->lang)."',";
 		$sql .= "'".$this->db->escape($this->preferred_contact)."',";
-		$sql .= '0,'.((int) $this->adult_confirmed).','.self::STATUS_PENDING.',';
+		$sql .= '0,0,'.((int) $this->adult_confirmed).','.self::STATUS_PENDING.',';
 		$sql .= "'".$this->db->idate(dol_now())."',";
 		$sql .= "'".$this->db->idate(dol_now())."')";
 
@@ -312,13 +314,37 @@ class EmergencyHousePublicAccount
 	 */
 	public function markEmailVerified()
 	{
-		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_public_account SET email_verified = 1, status = '.self::STATUS_ACTIVE;
+		dol_include_once('/emergencyhouse/class/verificationservice.class.php');
+
+		$this->db->begin();
+		$verificationService = new EmergencyHouseVerificationService($this->db);
+		if (!$verificationService->lockSubmissionTarget((int) $this->entity, 'account', (int) $this->id)) {
+			$this->error = $verificationService->error;
+			$this->db->rollback();
+			return -1;
+		}
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql .= ' SET email_verified = 1, verification_status = 0, status = '.self::STATUS_ACTIVE;
 		$sql .= ' WHERE rowid = '.((int) $this->id).' AND entity = '.((int) $this->entity);
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
+			$this->db->rollback();
 			return -1;
 		}
+		if ($verificationService->enqueueTarget(
+			(int) $this->entity,
+			'account',
+			(int) $this->id,
+			dol_now(),
+			false
+		) <= 0) {
+			$this->error = $verificationService->error;
+			$this->db->rollback();
+			return -1;
+		}
+		$this->db->commit();
 		$this->email_verified = 1;
+		$this->verification_status = 0;
 		$this->status = self::STATUS_ACTIVE;
 		return 1;
 	}
@@ -579,6 +605,7 @@ class EmergencyHousePublicAccount
 			} elseif (property_exists($this, $property)) {
 				if (in_array($property, array(
 					'entity', 'fk_member', 'email_verified', 'phone_verification_level', 'manual_verification_level',
+					'verification_status',
 					'adult_confirmed', 'failed_login_count', 'status',
 				), true)) {
 					$this->{$property} = (int) $value;

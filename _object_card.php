@@ -38,6 +38,7 @@ dol_include_once('/emergencyhouse/class/report.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
 dol_include_once('/emergencyhouse/class/sensitivedataservice.class.php');
 dol_include_once('/emergencyhouse/class/solicitation.class.php');
+dol_include_once('/emergencyhouse/class/verificationservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 
@@ -613,9 +614,36 @@ if (!$ficheHeadClosed) {
 }
 if ($tab === 'card' && $permissionToWrite) {
 	$allowedStatuses = emergencyhouseCardAllowedStatuses($object);
+	$permissionToVerify = emergencyhouseCanDo($user, 'verification', 'write', $object);
+	$queueObjectType = '';
+	if ($object instanceof EmergencyHouseOffer
+		&& (int) $object->status === EmergencyHouseOffer::STATUS_PENDING
+		&& (int) $object->verification_status <= 0) {
+		$queueObjectType = 'offer';
+	} elseif ($object instanceof EmergencyHouseRequest
+		&& (int) $object->status === EmergencyHouseRequest::STATUS_ACTIVE
+		&& (int) $object->verification_status <= 0) {
+		$queueObjectType = 'request';
+	}
+	$verificationQueueId = 0;
+	if ($permissionToVerify && $queueObjectType !== '') {
+		$verificationService = new EmergencyHouseVerificationService($db);
+		$verificationQueueId = $verificationService->findQueueId(
+			(int) $object->entity,
+			$queueObjectType,
+			(int) $object->id,
+			true
+		);
+		if ($verificationQueueId > 0 && !emergencyhouseUserIsFullAdmin($user)) {
+			$verificationQueue = $verificationService->fetchQueueItem($verificationQueueId);
+			if (!is_object($verificationQueue) || (int) $verificationQueue->fk_assigned_user !== (int) $user->id) {
+				$verificationQueueId = 0;
+			}
+		}
+	}
 	if (!empty($allowedStatuses)
 		|| $object instanceof EmergencyHouseCampaign
-		|| ($object instanceof EmergencyHouseOffer && (int) $object->verification_status <= 0)) {
+		|| $verificationQueueId > 0) {
 		print '<div class="tabsAction">';
 		if ($object instanceof EmergencyHouseCampaign) {
 			print dolGetButtonAction(
@@ -626,12 +654,12 @@ if ($tab === 'card' && $permissionToWrite) {
 				''
 			);
 		}
-		if ($object instanceof EmergencyHouseOffer && (int) $object->verification_status <= 0) {
+		if ($verificationQueueId > 0) {
 			print dolGetButtonAction(
 				'',
 				$langs->trans('RecordVerification'),
 				'default',
-				dol_buildpath('/emergencyhouse/verification/list.php', 1).'?object_type=offer&amp;fk_object='.((int) $object->id),
+				dol_buildpath('/emergencyhouse/verification/card.php', 1).'?queue_id='.((int) $verificationQueueId),
 				''
 			);
 		}

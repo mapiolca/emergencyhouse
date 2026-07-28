@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS llx_emergencyhouse_public_account (
 	email_verified integer DEFAULT 0 NOT NULL,
 	phone_verification_level integer DEFAULT 0 NOT NULL,
 	manual_verification_level integer DEFAULT 0 NOT NULL,
+	verification_status integer DEFAULT 0 NOT NULL,
 	adult_confirmed integer DEFAULT 0 NOT NULL,
 	failed_login_count integer DEFAULT 0 NOT NULL,
 	locked_until datetime NULL,
@@ -131,6 +132,7 @@ CREATE TABLE IF NOT EXISTS llx_emergencyhouse_public_account (
 	UNIQUE KEY uk_emergencyhouse_account_member (entity, fk_member),
 	KEY idx_emergencyhouse_account_phone (entity, phone_hash),
 	KEY idx_emergencyhouse_account_status (entity, status),
+	KEY idx_emergencyhouse_account_verification (entity, verification_status, date_creation),
 	KEY idx_emergencyhouse_account_activity (entity, last_activity)
 ) ENGINE=innodb;
 
@@ -528,6 +530,32 @@ CREATE TABLE IF NOT EXISTS llx_emergencyhouse_verification (
 	KEY idx_emergencyhouse_verification_object (entity, object_type, fk_object),
 	KEY idx_emergencyhouse_verification_queue (entity, status, date_creation),
 	KEY idx_emergencyhouse_verification_operator (fk_operator)
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_emergencyhouse_verification_queue (
+	rowid integer AUTO_INCREMENT PRIMARY KEY,
+	entity integer DEFAULT 1 NOT NULL,
+	object_type varchar(64) NOT NULL,
+	fk_object integer NOT NULL,
+	queue_status integer DEFAULT 0 NOT NULL,
+	fk_assigned_user integer NULL,
+	date_queued datetime NOT NULL,
+	date_assigned datetime NULL,
+	date_completed datetime NULL,
+	fk_verification integer NULL,
+	tms timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	UNIQUE KEY uk_emergencyhouse_verification_queue_object (entity, object_type, fk_object),
+	KEY idx_emergencyhouse_verification_queue_fifo (entity, queue_status, date_queued, rowid),
+	KEY idx_emergencyhouse_verification_queue_user (entity, queue_status, fk_assigned_user, date_queued),
+	KEY idx_emergencyhouse_verification_queue_result (fk_verification)
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_emergencyhouse_verification_rotation (
+	rowid integer AUTO_INCREMENT PRIMARY KEY,
+	entity integer DEFAULT 1 NOT NULL,
+	fk_last_user integer NULL,
+	tms timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	UNIQUE KEY uk_emergencyhouse_verification_rotation_entity (entity)
 ) ENGINE=innodb;
 
 CREATE TABLE IF NOT EXISTS llx_emergencyhouse_report (

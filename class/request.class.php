@@ -229,11 +229,36 @@ class EmergencyHouseRequest extends EmergencyHouseCommonObject
 
 		$oldStatus = (int) $this->status;
 		$this->status = $newStatus;
+		if ($oldStatus === self::STATUS_DRAFT && $newStatus === self::STATUS_ACTIVE) {
+			$this->verification_status = 0;
+		}
 		$this->context['trigger_reason'] = $reason;
-		$this->context['changed_fields'] = array('status');
+		$this->context['changed_fields'] = $oldStatus === self::STATUS_DRAFT && $newStatus === self::STATUS_ACTIVE
+			? array('status', 'verification_status')
+			: array('status');
 		$this->context['old_status'] = $oldStatus;
 		$this->context['new_status'] = $newStatus;
-		return parent::update($user);
+
+		$this->db->begin();
+		dol_include_once('/emergencyhouse/class/verificationservice.class.php');
+		$verificationService = new EmergencyHouseVerificationService($this->db);
+		if (!$verificationService->lockSubmissionTarget((int) $this->entity, 'request', (int) $this->id)
+			|| $this->updateInsideServiceTransaction($user) <= 0) {
+			$this->error = $verificationService->error !== '' ? $verificationService->error : $this->error;
+			$this->db->rollback();
+			return -1;
+		}
+		$queueResult = $oldStatus === self::STATUS_DRAFT && $newStatus === self::STATUS_ACTIVE
+			? $verificationService->enqueueTarget((int) $this->entity, 'request', (int) $this->id, dol_now(), false)
+			: $verificationService->cancelTarget((int) $this->entity, 'request', (int) $this->id, false);
+		if ($queueResult <= 0) {
+			$this->error = $verificationService->error;
+			$this->db->rollback();
+			return -1;
+		}
+		$this->db->commit();
+
+		return 1;
 	}
 
 	/**

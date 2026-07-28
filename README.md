@@ -18,7 +18,8 @@ utilisateurs Dolibarr pour les particuliers.
   réinitialisation de mot de passe, avec création immédiate d’un adhérent
   Dolibarr validé ;
 - offres d’hébergement et demandes privées par défaut ;
-- vérification opérateur avant publication des offres ;
+- file FIFO commune de vérification des comptes, offres et demandes, avec
+  attribution tournante aux opérateurs habilités ;
 - moteur de correspondance pondéré et file de recalcul ;
 - sollicitations, consentement mutuel et messagerie chiffrée ;
 - allocations, capacité, séjours, incidents et signalements ;
@@ -73,7 +74,10 @@ Après copie ou clonage :
    l’extension PHP GD est disponible ;
 9. lancer, si nécessaire, la reprise des comptes publics actifs et vérifiés
    depuis l’onglet **Intégrations** ;
-10. réaliser la recette de sécurité, de droits et Multicompany avant
+10. attribuer explicitement le droit **Vérifier les comptes et annonces** aux
+    utilisateurs ou groupes qui participent à la rotation, puis vérifier les
+    seuils orange et rouge dans l’onglet **Vérification** ;
+11. réaliser la recette de sécurité, de droits et Multicompany avant
    l’ouverture publique.
 
 La désactivation est non destructive : les travaux planifiés Emergency House
@@ -186,6 +190,36 @@ suppression remet l’offre dans le circuit de vérification. Les fichiers sont
 servis par des contrôleurs qui revérifient l’offre, l’entité, le propriétaire
 et le statut de chaque photo, jamais directement depuis le répertoire
 documentaire.
+
+## File de vérification
+
+`verification/list.php` regroupe les comptes publics confirmés, les offres
+soumises et les demandes activées dans une file unique triée de la soumission
+la plus ancienne à la plus récente. La vue **Ma file** est celle des
+opérateurs ; les administrateurs disposent en plus d’une vue globale
+filtrable, incluant les éléments temporairement **Non attribués**.
+
+L’attribution est persistante et circulaire par entité. Seuls les utilisateurs
+Dolibarr internes, actifs et porteurs explicitement du droit
+**Vérifier les comptes et annonces**, directement ou par groupe, participent à
+la rotation. L’élévation administrateur permet de superviser et de traiter une
+ligne, mais n’inscrit pas automatiquement l’administrateur dans la rotation.
+Un attributaire désactivé, privé du droit ou sorti du périmètre est remplacé
+avant l’affichage et avant la décision, sans remettre à zéro l’ancienneté.
+
+Le compteur **À vérifier depuis HH:MM:SS** ne revient pas à zéro après
+24 heures. Il devient orange puis rouge selon les constantes par entité
+`EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES` et
+`EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES`, initialisées respectivement à
+10 et 30 minutes. Le serveur calcule l’état initial et le script de la page ne
+fait qu’actualiser l’affichage chaque seconde.
+
+Une soumission réactive la ligne unique de l’objet, remet son état de
+vérification à zéro, redémarre le compteur et applique une nouvelle
+attribution. Une décision finale **Vérifié** ou **Refusé** met à jour l’objet,
+écrit le registre historique et clôt la ligne de file dans une seule
+transaction. Un objet déjà vérifié ou refusé n’est jamais proposé et une URL
+directe vers sa décision est refusée côté serveur.
 
 ## Aperçu privé du portail
 
