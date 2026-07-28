@@ -3,6 +3,8 @@
 
 require dirname(__DIR__).'/_init.php';
 
+dol_include_once('/emergencyhouse/class/memberservice.class.php');
+
 $account = emergencyhousePublicRequireAccount($emergencyhousePublicAccount);
 $action = GETPOST('action', 'aZ09');
 $errorKey = '';
@@ -10,9 +12,11 @@ $successKey = '';
 
 if ($action === 'export' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhousePublicAuth, 'account_export')) {
 	$profile = $account->getDecryptedProfile();
+	$memberService = new EmergencyHouseMemberService($db);
 	$export = array(
 		'exported_at' => dol_print_date(dol_now(), 'dayhourrfc'),
 		'account' => is_array($profile) ? $profile : array(),
+		'member' => $account->fk_member > 0 ? $memberService->getMemberExportMetadata($account) : array(),
 		'verification' => array(
 			'email_verified' => (bool) $account->email_verified,
 			'phone_level' => (int) $account->phone_verification_level,

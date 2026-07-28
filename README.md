@@ -15,7 +15,8 @@ utilisateurs Dolibarr pour les particuliers.
 
 - campagnes territorialisées et consignes officielles ;
 - comptes publics, vérification d’adresse électronique, sessions et
-  réinitialisation de mot de passe ;
+  réinitialisation de mot de passe, avec création immédiate d’un adhérent
+  Dolibarr validé ;
 - offres d’hébergement et demandes privées par défaut ;
 - vérification opérateur avant publication des offres ;
 - moteur de correspondance pondéré et file de recalcul ;
@@ -34,8 +35,10 @@ utilisateurs Dolibarr pour les particuliers.
 - extension PHP Sodium obligatoire pour ouvrir le portail public ;
 - HTTPS obligatoire en production.
 
-Les intégrations Data Policy, Adhérents et Ressources sont optionnelles. Leur
-indisponibilité ne bloque pas le socle du module.
+Le module natif **Adhérents** est une dépendance obligatoire. Chaque entité
+doit sélectionner un type d’adhérent actif acceptant les personnes physiques
+avant l’ouverture des inscriptions. Les intégrations Data Policy et Ressources
+restent optionnelles.
 
 L’onglet de réglages **Multicompany** est affiché uniquement lorsque le module
 Multicompany est actif et qu’un partage multi-entité est effectivement
@@ -53,20 +56,24 @@ Dolibarr sans créer de répertoire imbriqué
 Après copie ou clonage :
 
 1. activer Emergency House dans la liste des modules ;
-2. ouvrir les réglages et vérifier les onglets **Compatibilité** et
+2. dans l’onglet **Intégrations**, sélectionner le type d’adhérent créé à
+   chaque inscription et vérifier l’état de l’intégration ;
+3. ouvrir les réglages et vérifier les onglets **Compatibilité** et
    **Diagnostic** ;
-3. vérifier dans l’onglet **Sécurité** que les clés gérées automatiquement sont
+4. vérifier dans l’onglet **Sécurité** que les clés gérées automatiquement sont
    disponibles ;
-4. renseigner les textes juridiques, les coordonnées officielles et l’URL
+5. renseigner les textes juridiques, les coordonnées officielles et l’URL
    racine qui expose directement le répertoire `public/`, ainsi que l’e-mail
    et le téléphone du support ;
-5. vérifier les travaux planifiés Emergency House, automatiquement activés en
+6. vérifier les travaux planifiés Emergency House, automatiquement activés en
    même temps que le module ;
-6. configurer les notifications back-office dans la page native
+7. configurer les notifications back-office dans la page native
    `/admin/notification.php` ;
-7. activer le captcha natif dans les réglages de sécurité et vérifier que
+8. activer le captcha natif dans les réglages de sécurité et vérifier que
    l’extension PHP GD est disponible ;
-8. réaliser la recette de sécurité, de droits et Multicompany avant
+9. lancer, si nécessaire, la reprise des comptes publics actifs et vérifiés
+   depuis l’onglet **Intégrations** ;
+10. réaliser la recette de sécurité, de droits et Multicompany avant
    l’ouverture publique.
 
 La désactivation est non destructive : les travaux planifiés Emergency House

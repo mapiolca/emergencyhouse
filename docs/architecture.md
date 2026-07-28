@@ -58,7 +58,8 @@ chemin interne Dolibarr reste le fallback de recette.
 - modèles de numérotation et de documents natifs ;
 - fichiers déterminés avec `getMultidirOutput()` ;
 - hooks Multicompany et partage explicitement configurable ;
-- adaptateurs Data Policy, Adhérents et Ressources optionnels.
+- intégration native Adhérents obligatoire, avec type configuré par entité ;
+- adaptateurs Data Policy et Ressources optionnels.
 
 ## Notifications
 

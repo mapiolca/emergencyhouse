@@ -16,3 +16,10 @@ Les valeurs initiales de conservation sont :
 Un gel documenté lié à un incident suspend la purge des seules données
 concernées.
 
+À l’inscription, l’identité et les coordonnées sont également enregistrées
+dans une fiche d’adhérent native afin d’assurer la gestion associative. La
+suppression ou l’anonymisation du compte public détache cette liaison, mais ne
+supprime pas automatiquement la fiche d’adhérent : ses cotisations, pièces ou
+obligations administratives peuvent imposer un cycle de conservation distinct.
+Cette fiche doit être traitée séparément lorsqu’une demande d’effacement porte
+aussi sur le registre des adhérents.

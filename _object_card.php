@@ -29,6 +29,7 @@ dol_include_once('/emergencyhouse/class/campaign.class.php');
 dol_include_once('/emergencyhouse/class/capacityservice.class.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/class/messageservice.class.php');
+dol_include_once('/emergencyhouse/class/memberservice.class.php');
 dol_include_once('/emergencyhouse/class/moderationservice.class.php');
 dol_include_once('/emergencyhouse/class/offer.class.php');
 dol_include_once('/emergencyhouse/class/offerphotoservice.class.php');
@@ -40,7 +41,7 @@ dol_include_once('/emergencyhouse/class/solicitation.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 
-$langs->loadLangs(array('emergencyhouse@emergencyhouse', 'other'));
+$langs->loadLangs(array('emergencyhouse@emergencyhouse', 'members', 'other'));
 
 /**
  * @var array<string, array{
@@ -818,7 +819,18 @@ function emergencyhouseCardRenderPublicAccount($db, $object, $accountId)
 		return '<span class="opacitymedium">'.$langs->trans('PublicAccountUnavailable').'</span>';
 	}
 
-	return img_picto('', 'user', 'class="pictofixedwidth"').dol_escape_htmltag($displayName);
+	$output = img_picto('', 'user', 'class="pictofixedwidth"').dol_escape_htmltag($displayName);
+	if ($account->fk_member > 0
+		&& isModEnabled('member')
+		&& (emergencyhouseUserIsFullAdmin($user) || $user->hasRight('adherent', 'lire'))) {
+		$memberService = new EmergencyHouseMemberService($db);
+		$member = $memberService->fetchMemberForAccount($account);
+		if ($member instanceof Adherent) {
+			$output .= '<br><span class="opacitymedium">'.$langs->trans('LinkedMember').':</span> '.$member->getNomUrl(1);
+		}
+	}
+
+	return $output;
 }
 
 /**

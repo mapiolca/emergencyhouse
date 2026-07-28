@@ -1,6 +1,8 @@
 <?php
 /* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
 
+dol_include_once('/emergencyhouse/class/memberservice.class.php');
+
 /**
  * Central compatibility registry.
  *
@@ -44,6 +46,8 @@ class EmergencyHouseCompatibility
 	 */
 	public static function getCompatibilityFeatures()
 	{
+		global $conf, $db;
+
 		$sodium = extension_loaded('sodium');
 		$curl = function_exists('curl_init');
 		$cron = function_exists('isModEnabled');
@@ -56,6 +60,15 @@ class EmergencyHouseCompatibility
 			&& function_exists('imagewebp')
 			&& function_exists('imagealphablending')
 			&& function_exists('imagesavealpha');
+		$memberReady = false;
+		$memberReason = 'CompatibilityRequiresMemberModule';
+		if (is_object($db) && is_object($conf) && isset($conf->entity)) {
+			$memberService = new EmergencyHouseMemberService($db);
+			$memberReady = $memberService->isReady((int) $conf->entity);
+			if ($memberService->error === 'ErrorMemberTypeNotConfigured' || $memberService->error === 'ErrorMemberTypeUnavailable') {
+				$memberReason = 'CompatibilityRequiresMemberType';
+			}
+		}
 
 		return array(
 			'core_module' => array(
@@ -111,8 +124,8 @@ class EmergencyHouseCompatibility
 				'description' => 'CompatibilityAdherentDescription',
 				'min_dolibarr' => '20.0.0',
 				'min_php' => '8.0.0',
-				'available' => isModEnabled('adherent'),
-				'reason' => 'CompatibilityOptionalModuleDisabled',
+				'available' => $memberReady,
+				'reason' => $memberReason,
 			),
 			'resource' => array(
 				'label' => 'CompatibilityResource',

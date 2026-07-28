@@ -144,6 +144,12 @@ emergencyhouseContract(
 	'Point de configuration unique setup.php'
 );
 emergencyhouseContract(
+	strpos($descriptor, "\$this->depends = array('modAdherent');") !== false
+		&& strpos($descriptor, 'ensureMemberLinkSchema()') !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_ADHERENT_TYPE_ID' => array('0', 'chaine')") !== false,
+	'Module Adhérents obligatoire, migration de liaison et type par entité'
+);
+emergencyhouseContract(
 	strpos($descriptor, '$this->rights[$r][0] = $this->numero * 100 + $r;') !== false,
 	'Formule native des identifiants de permissions'
 );
@@ -293,6 +299,43 @@ emergencyhouseContract(
 		&& strpos($setup, "\$options = array('disabled' => \$langs->trans('Disabled'));") !== false,
 	'SMS non activable sans connecteur implémenté'
 );
+$memberService = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'memberservice.class.php'
+);
+emergencyhouseContract(
+	strpos($memberService, "require_once DOL_DOCUMENT_ROOT.'/adherents/class/adherent.class.php';") !== false
+		&& strpos($memberService, "isModEnabled('member')") !== false
+		&& strpos($memberService, 'new Adherent($this->db)') !== false
+		&& strpos($memberService, '$member->create($user)') !== false
+		&& strpos($memberService, '$member->validate($user)') !== false
+		&& strpos($memberService, 'call_trigger(') === false,
+	'Création et validation des adhérents confiées exclusivement à l’objet natif'
+);
+emergencyhouseContract(
+	strpos($memberService, "LOWER(TRIM(email))") !== false
+		&& strpos($memberService, "AND entity = '.((int) \$entity)") !== false
+		&& strpos($memberService, "'ErrorMemberMultipleMatches'") !== false
+		&& strpos($memberService, 'Adherent::STATUS_RESILIATED') === false
+		&& strpos($memberService, 'Adherent::STATUS_EXCLUDED') === false,
+	'Rapprochement strict par e-mail et entité avec refus des statuts non admis'
+);
+emergencyhouseContract(
+	strpos($memberService, "\$member->login = 'eh_'.\$account->public_uuid;") !== false
+		&& strpos($memberService, '$member->pass =') === false
+		&& strpos($memberService, 'new User(') === false
+		&& strpos($memberService, 'new Societe(') === false
+		&& strpos($memberService, 'new Subscription(') === false,
+	'Identifiant membre opaque sans mot de passe, utilisateur, tiers ni cotisation'
+);
+emergencyhouseContract(
+	strpos($setup, "'EMERGENCYHOUSE_ADHERENT_TYPE_ID' => array('type' => 'int', 'default' => '0')") !== false
+		&& strpos($setup, "getAvailableMemberTypes((int) \$conf->entity)") !== false
+		&& strpos($setup, "ajax_combobox(\$name)") !== false
+		&& strpos($setup, "name=\"action\" value=\"reconcile_members\"") !== false
+		&& strpos($setup, "name=\"token\" value=\"'.newToken().'\"") !== false
+		&& strpos($setup, "'EMERGENCYHOUSE_ADHERENT_MODE' =>") === false,
+	'Type d’adhérent en Select2 et reprise CSRF sans réutiliser l’ancien mode'
+);
 
 $preview = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'public-preview.php');
 emergencyhouseContract(
@@ -312,6 +355,14 @@ $publicRequestEditor = emergencyhouseReadRequired(
 );
 $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
+);
+emergencyhouseContract(
+	strpos($registerController, '$db->begin();') !== false
+		&& strpos($registerController, '$memberService->provisionForAccount($account, $triggerUser)') !== false
+		&& strpos($registerController, '$db->commit();') !== false
+		&& strpos($registerController, '$notification->sendForAccount(') > strpos($registerController, '$db->commit();')
+		&& strpos($registerController, 'PublicMemberRegistrationUnavailable') !== false,
+	'Inscription atomique avec adhérent validé avant l’envoi du courriel'
 );
 $termsController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'terms.php'
@@ -760,6 +811,20 @@ foreach ($tableMatches as $tableMatch) {
 emergencyhouseContract(
 	strpos($schemaSql, 'UNIQUE KEY uk_emergencyhouse_sequence (entity, object_type, period_code)') !== false,
 	'Compteurs de numérotation isolés par entité, objet et période'
+);
+emergencyhouseContract(
+	strpos($schemaSql, 'fk_member integer NULL') !== false
+		&& strpos($schemaSql, 'UNIQUE KEY uk_emergencyhouse_account_member (entity, fk_member)') !== false,
+	'Liaison membre nullable et unique par entité sur les comptes publics'
+);
+$publicAccountClass = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'publicaccount.class.php'
+);
+emergencyhouseContract(
+	strpos($publicAccountClass, 'public $fk_member = 0;') !== false
+		&& strpos($publicAccountClass, 'public function linkMember($memberId)') !== false
+		&& strpos($publicAccountClass, 'password_hash = NULL, fk_member = NULL') !== false,
+	'Liaison membre persistée et détachée sans supprimer l’adhérent lors de l’anonymisation'
 );
 emergencyhouseContract(stripos($schemaSql, 'ON DELETE CASCADE') === false, 'Pas de cascade SQL métier');
 emergencyhouseContract(!preg_match('/\bCREATE\s+TRIGGER\b/i', $schemaSql), 'Pas de trigger SQL');

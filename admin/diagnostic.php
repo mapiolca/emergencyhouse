@@ -13,6 +13,7 @@ if (!$res) {
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/memberservice.class.php');
 
 $langs->loadLangs(array('admin', 'emergencyhouse@emergencyhouse'));
 if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'configuration', 'write')) {
@@ -26,6 +27,7 @@ if ($senderEmail === '') {
 	$senderEmail = trim(getDolGlobalString('MAIN_INFO_SOCIETE_MAIL', ''));
 }
 $senderEmailAvailable = filter_var($senderEmail, FILTER_VALIDATE_EMAIL) !== false;
+$memberService = new EmergencyHouseMemberService($db);
 $checks = array(
 	'DiagnosticDolibarrVersion' => version_compare(DOL_VERSION, '20.0.0', '>='),
 	'DiagnosticPhpVersion' => version_compare(PHP_VERSION, '8.0.0', '>='),
@@ -37,6 +39,8 @@ $checks = array(
 	'DiagnosticHttps' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
 	'DiagnosticCronModule' => isModEnabled('cron'),
 	'DiagnosticNotificationsModule' => isModEnabled('notification'),
+	'DiagnosticMemberModule' => isModEnabled('member'),
+	'DiagnosticMemberType' => $memberService->isReady((int) $conf->entity),
 	'DiagnosticMailSender' => $senderEmailAvailable,
 );
 

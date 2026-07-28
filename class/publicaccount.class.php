@@ -21,6 +21,8 @@ class EmergencyHousePublicAccount
 	public $id = 0;
 	/** @var int */
 	public $entity = 1;
+	/** @var int */
+	public $fk_member = 0;
 	/** @var string */
 	public $public_uuid = '';
 	/** @var string */
@@ -371,6 +373,62 @@ class EmergencyHousePublicAccount
 	}
 
 	/**
+	 * Link this public account to one native Dolibarr member.
+	 *
+	 * @param int $memberId Native member ID
+	 * @return int
+	 */
+	public function linkMember($memberId)
+	{
+		if ($this->id <= 0 || $this->entity <= 0 || $memberId <= 0) {
+			$this->error = 'ErrorMemberLinkInvalid';
+			return -1;
+		}
+
+		$conflictSql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$conflictSql .= ' WHERE entity = '.((int) $this->entity);
+		$conflictSql .= ' AND fk_member = '.((int) $memberId);
+		$conflictSql .= ' AND rowid <> '.((int) $this->id);
+		$conflictResult = $this->db->query($conflictSql);
+		if (!$conflictResult) {
+			$this->error = $this->db->lasterror();
+			return -1;
+		}
+		if ($this->db->num_rows($conflictResult) > 0) {
+			$this->error = 'ErrorMemberLinkConflict';
+			return -1;
+		}
+
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql .= ' SET fk_member = '.((int) $memberId);
+		$sql .= ' WHERE rowid = '.((int) $this->id).' AND entity = '.((int) $this->entity);
+		$sql .= ' AND (fk_member IS NULL OR fk_member = '.((int) $memberId).')';
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			$updateError = $this->db->lasterror();
+			$conflictResult = $this->db->query($conflictSql);
+			$this->error = $conflictResult && $this->db->num_rows($conflictResult) > 0
+				? 'ErrorMemberLinkConflict'
+				: $updateError;
+			return -1;
+		}
+
+		if ((int) $this->db->affected_rows($resql) === 0) {
+			$checkSql = 'SELECT fk_member FROM '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+			$checkSql .= ' WHERE rowid = '.((int) $this->id).' AND entity = '.((int) $this->entity);
+			$checkResult = $this->db->query($checkSql);
+			$check = $checkResult ? $this->db->fetch_object($checkResult) : false;
+			if (!is_object($check) || (int) $check->fk_member !== $memberId) {
+				$this->error = 'ErrorMemberLinkConflict';
+				return -1;
+			}
+		}
+
+		$this->fk_member = $memberId;
+		return 1;
+	}
+
+	/**
 	 * Return only the decrypted identity fields.
 	 *
 	 * @return array{firstname:string, lastname:string}|false
@@ -444,7 +502,7 @@ class EmergencyHousePublicAccount
 		$sql .= " lastname_encrypted = '".$this->db->escape($encryptedLast)."',";
 		$sql .= " email_encrypted = '".$this->db->escape($encryptedEmail)."',";
 		$sql .= " email_hash = '".$this->db->escape($randomHash)."',";
-		$sql .= ' phone_encrypted = NULL, phone_hash = NULL, password_hash = NULL,';
+		$sql .= ' phone_encrypted = NULL, phone_hash = NULL, password_hash = NULL, fk_member = NULL,';
 		$sql .= ' status = '.self::STATUS_ANONYMIZED.',';
 		$sql .= " date_anonymized = '".$this->db->idate(dol_now())."'";
 		$sql .= ' WHERE rowid = '.((int) $this->id).' AND entity = '.((int) $this->entity);
@@ -453,6 +511,7 @@ class EmergencyHousePublicAccount
 			return -1;
 		}
 		$this->status = self::STATUS_ANONYMIZED;
+		$this->fk_member = 0;
 		return 1;
 	}
 
@@ -519,7 +578,7 @@ class EmergencyHousePublicAccount
 				$this->id = (int) $value;
 			} elseif (property_exists($this, $property)) {
 				if (in_array($property, array(
-					'entity', 'email_verified', 'phone_verification_level', 'manual_verification_level',
+					'entity', 'fk_member', 'email_verified', 'phone_verification_level', 'manual_verification_level',
 					'adult_confirmed', 'failed_login_count', 'status',
 				), true)) {
 					$this->{$property} = (int) $value;
