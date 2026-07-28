@@ -543,6 +543,11 @@ class EmergencyHouseListingService
 			$this->error = 'ErrorObjectNotEditable';
 			return false;
 		}
+		$campaign = $this->fetchPublishedCampaign((int) $account->entity, (int) ($data['fk_campaign'] ?? 0));
+		if (!$campaign instanceof EmergencyHouseCampaign) {
+			return false;
+		}
+		$offer->fk_campaign = (int) $campaign->id;
 		$allocated = max(0, (int) $offer->capacity_total - (int) $offer->capacity_available);
 		$newCapacity = max(0, (int) ($data['capacity_total'] ?? 0));
 		if ($newCapacity < $allocated) {
@@ -581,7 +586,7 @@ class EmergencyHouseListingService
 		$offer->status = $submit ? EmergencyHouseOffer::STATUS_PENDING : EmergencyHouseOffer::STATUS_DRAFT;
 		$offer->context['public_account_id'] = (int) $account->id;
 		$offer->context['trigger_reason'] = $submit ? 'public_resubmission' : 'public_edit';
-		$offer->context['changed_fields'] = array('content', 'capacity', 'availability');
+		$offer->context['changed_fields'] = array('campaign', 'content', 'capacity', 'availability');
 		if (EmergencyHouseOfferPhotoService::hasUploadedFiles($uploadedPhotos)) {
 			$offer->context['changed_fields'][] = 'photos';
 		}

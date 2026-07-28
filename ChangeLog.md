@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Correction de l’édition publique d’une offre : la campagne cible est
+  désormais validée comme publiée, ouverte et rattachée à la même entité avant
+  d’être enregistrée dans la transaction de mise à jour.
 - Correction de l’exposition des demandes publiques pour les campagnes
   configurées en mode **Offres et demandes** ; la publication reste
   conditionnée à la vérification opérateur, désormais explicitée dans le

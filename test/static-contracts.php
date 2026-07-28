@@ -227,6 +227,44 @@ foreach ($notificationSqlCodes as $notificationSqlCode) {
 $notificationService = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php'
 );
+$listingService = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'listingservice.class.php'
+);
+$updateOwnedOfferStart = strpos($listingService, 'public function updateOwnedOffer(');
+$updateOwnedOfferEnd = $updateOwnedOfferStart === false
+	? false
+	: strpos($listingService, "\n\tpublic function deleteOwnedOfferPhoto(", $updateOwnedOfferStart);
+$updateOwnedOffer = $updateOwnedOfferStart !== false && $updateOwnedOfferEnd !== false
+	? substr($listingService, $updateOwnedOfferStart, $updateOwnedOfferEnd - $updateOwnedOfferStart)
+	: '';
+$campaignValidationPosition = strpos(
+	$updateOwnedOffer,
+	'$campaign = $this->fetchPublishedCampaign((int) $account->entity, (int) ($data[\'fk_campaign\'] ?? 0));'
+);
+$campaignAssignmentPosition = strpos($updateOwnedOffer, '$offer->fk_campaign = (int) $campaign->id;');
+$offerTransactionPosition = strpos($updateOwnedOffer, '$this->db->begin();');
+emergencyhouseContract(
+	$campaignValidationPosition !== false
+		&& strpos($updateOwnedOffer, 'if (!$campaign instanceof EmergencyHouseCampaign)') !== false
+		&& $campaignAssignmentPosition !== false
+		&& $offerTransactionPosition !== false
+		&& $campaignValidationPosition < $campaignAssignmentPosition
+		&& $campaignAssignmentPosition < $offerTransactionPosition,
+	'Changement de campagne validé et affecté avant la transaction de mise à jour publique'
+);
+$fetchPublishedCampaignStart = strpos($listingService, 'private function fetchPublishedCampaign(');
+$fetchPublishedCampaignEnd = $fetchPublishedCampaignStart === false
+	? false
+	: strpos($listingService, "\n\tprivate function replaceOfferFeatures(", $fetchPublishedCampaignStart);
+$fetchPublishedCampaign = $fetchPublishedCampaignStart !== false && $fetchPublishedCampaignEnd !== false
+	? substr($listingService, $fetchPublishedCampaignStart, $fetchPublishedCampaignEnd - $fetchPublishedCampaignStart)
+	: '';
+emergencyhouseContract(
+	strpos($fetchPublishedCampaign, '(int) $campaign->entity !== $entity') !== false
+		&& strpos($fetchPublishedCampaign, 'EmergencyHouseCampaign::STATUS_PUBLISHED') !== false
+		&& strpos($fetchPublishedCampaign, '(int) $campaign->date_end < dol_now()') !== false,
+	'Campagne cible limitée à l’entité du compte et à une publication encore ouverte'
+);
 emergencyhouseContract(
 	strpos($notificationService, "require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';") !== false
 		&& strpos($notificationService, 'new CMailFile(') !== false
