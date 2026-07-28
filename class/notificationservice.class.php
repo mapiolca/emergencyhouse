@@ -9,13 +9,25 @@ dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
 
 /**
- * Transactional notification queue for public identities.
+ * Public email delivery and transactional business notification queue.
  *
- * Back-office user notifications remain exposed through Dolibarr's native
- * Notifications module and CRUD triggers.
+ * Account access emails are sent synchronously. Deferred business messages use
+ * the queue. Back-office user notifications remain exposed through Dolibarr's
+ * native Notifications module and CRUD triggers.
  */
 class EmergencyHouseNotificationService
 {
+	/**
+	 * Email templates that must never enter or be sent from the scheduled queue.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SYNCHRONOUS_ACCESS_EMAILS = array(
+		'account_verification',
+		'password_reset',
+		'magic_login',
+	);
+
 	/** @var DoliDB */
 	private $db;
 	/** @var EmergencyHouseEncryptionService */
@@ -37,6 +49,43 @@ class EmergencyHouseNotificationService
 	}
 
 	/**
+	 * Send an account access email immediately through Dolibarr mail transport.
+	 *
+	 * Account verification, password reset and temporary sign-in links never
+	 * enter the scheduled notification queue.
+	 *
+	 * @param EmergencyHousePublicAccount $account Account
+	 * @param int|null                    $campaignId Campaign ID
+	 * @param string                      $templateCode Template code
+	 * @param array<string, scalar|null>   $payload Template values
+	 * @param string                      $trackId Non-sensitive mail tracking ID
+	 * @return int 1 on success, -1 on failure
+	 */
+	public function sendForAccount($account, $campaignId, $templateCode, array $payload, $trackId)
+	{
+		$profile = $account->getDecryptedProfile();
+		if (!is_array($profile)) {
+			$this->error = $account->error;
+			return -1;
+		}
+
+		$result = $this->sendNativeEmail(
+			(int) $account->entity,
+			$campaignId,
+			(string) $profile['email'],
+			(string) $account->lang,
+			$templateCode,
+			$payload,
+			$trackId
+		);
+		if ($result < 0) {
+			dol_syslog(__METHOD__.': '.$this->error, LOG_ERR);
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Queue an email to a public account.
 	 *
 	 * @param EmergencyHousePublicAccount $account Account
@@ -46,10 +95,9 @@ class EmergencyHouseNotificationService
 	 * @param array<string, scalar|null>   $payload Template values
 	 * @param string                      $idempotencyKey Idempotency source
 	 * @param int                         $priority Priority
-	 * @param bool                        $sendImmediately Send now through Dolibarr mail transport
 	 * @return int
 	 */
-	public function queueForAccount($account, $campaignId, $eventCode, $templateCode, array $payload, $idempotencyKey, $priority = 50, $sendImmediately = false)
+	public function queueForAccount($account, $campaignId, $eventCode, $templateCode, array $payload, $idempotencyKey, $priority = 50)
 	{
 		$profile = $account->getDecryptedProfile();
 		if (!is_array($profile)) {
@@ -66,8 +114,7 @@ class EmergencyHouseNotificationService
 			$templateCode,
 			$payload,
 			$idempotencyKey,
-			$priority,
-			$sendImmediately
+			$priority
 		);
 	}
 
@@ -84,11 +131,17 @@ class EmergencyHouseNotificationService
 	 * @param array<string, scalar|null> $payload Template values
 	 * @param string                    $idempotencySource Idempotency source
 	 * @param int                       $priority Priority
-	 * @param bool                      $sendImmediately Send now through Dolibarr mail transport
 	 * @return int
 	 */
-	public function queueEmail($entity, $campaignId, $accountId, $recipient, $locale, $eventCode, $templateCode, array $payload, $idempotencySource, $priority = 50, $sendImmediately = false)
+	public function queueEmail($entity, $campaignId, $accountId, $recipient, $locale, $eventCode, $templateCode, array $payload, $idempotencySource, $priority = 50)
 	{
+		if (
+			in_array($eventCode, self::SYNCHRONOUS_ACCESS_EMAILS, true)
+			|| in_array($templateCode, self::SYNCHRONOUS_ACCESS_EMAILS, true)
+		) {
+			$this->error = 'ErrorSynchronousAccessEmailRequired';
+			return -1;
+		}
 		if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
 			$this->error = 'ErrorInvalidEmail';
 			return -1;
@@ -119,9 +172,6 @@ class EmergencyHouseNotificationService
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
 			return -1;
-		}
-		if ($sendImmediately) {
-			return $this->sendPendingByIdempotencyKey((int) $entity, $idempotencyKey);
 		}
 		return 1;
 	}
@@ -257,7 +307,7 @@ class EmergencyHouseNotificationService
 	 * Process pending queue records.
 	 *
 	 * @param int $limit Batch limit
-	 * @return int Number sent
+	 * @return int Number sent, -1 on failure
 	 */
 	public function processQueue($limit = 25)
 	{
@@ -265,6 +315,9 @@ class EmergencyHouseNotificationService
 
 		$sent = 0;
 		$limit = min(100, max(1, $limit));
+		if (!$this->discardLegacyQueuedAccessEmails((int) $conf->entity)) {
+			return -1;
+		}
 		for ($i = 0; $i < $limit; $i++) {
 			$record = $this->claimNext((int) $conf->entity);
 			if (!is_array($record)) {
@@ -278,43 +331,56 @@ class EmergencyHouseNotificationService
 	}
 
 	/**
-	 * Send one freshly queued record through Dolibarr's native mail transport.
+	 * Invalidate access emails queued by an older module version.
 	 *
-	 * The queue remains the retry ledger when the transport reports a failure.
+	 * These rows are deliberately not sent: their tokens may be stale and access
+	 * emails must only be delivered synchronously from the initiating request.
 	 *
-	 * @param int    $entity Entity
-	 * @param string $idempotencyKey Queue idempotency key
-	 * @return int 1 when sent or already processed, -1 on failure
+	 * @param int $entity Entity
+	 * @return bool
 	 */
-	private function sendPendingByIdempotencyKey($entity, $idempotencyKey)
+	private function discardLegacyQueuedAccessEmails($entity)
 	{
-		$record = $this->claimNext($entity, $idempotencyKey);
-		if (!is_array($record)) {
-			return $this->error === '' ? 1 : -1;
+		$codes = array();
+		foreach (self::SYNCHRONOUS_ACCESS_EMAILS as $code) {
+			$codes[] = "'".$this->db->escape($code)."'";
+		}
+		$sqlCodes = implode(', ', $codes);
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_notification SET';
+		$sql .= ' status = 3, locked_at = NULL, lock_token = NULL,';
+		$sql .= " last_error_code = 'ErrorSynchronousAccessEmailRequired'";
+		$sql .= ' WHERE entity = '.((int) $entity).' AND status = 0';
+		$sql .= ' AND (event_code IN ('.$sqlCodes.') OR template_code IN ('.$sqlCodes.'))';
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
 		}
 
-		return $this->sendClaimed($record) ? 1 : -1;
+		return true;
 	}
 
 	/**
 	 * Claim one queue row.
 	 *
-	 * @param int    $entity Entity
-	 * @param string $idempotencyKey Optional exact queue key
+	 * @param int $entity Entity
 	 * @return array<string, int|string|null>|false
 	 */
-	private function claimNext($entity, $idempotencyKey = '')
+	private function claimNext($entity)
 	{
 		$lockToken = bin2hex(random_bytes(16));
+		$excludedCodes = array();
+		foreach (self::SYNCHRONOUS_ACCESS_EMAILS as $code) {
+			$excludedCodes[] = "'".$this->db->escape($code)."'";
+		}
+		$sqlExcludedCodes = implode(', ', $excludedCodes);
 		$this->db->begin();
 		$sql = 'SELECT rowid, fk_campaign, fk_account, event_code, template_code, recipient_encrypted, locale, payload_encrypted, idempotency_key, attempt_count';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_notification';
 		$sql .= ' WHERE entity = '.((int) $entity).' AND status = 0';
+		$sql .= ' AND event_code NOT IN ('.$sqlExcludedCodes.')';
+		$sql .= ' AND template_code NOT IN ('.$sqlExcludedCodes.')';
 		$sql .= " AND next_attempt <= '".$this->db->idate(dol_now())."'";
 		$sql .= ' AND (locked_at IS NULL OR locked_at < \''.$this->db->idate(dol_time_plus_duree(dol_now(), -15, 'i')).'\')';
-		if ($idempotencyKey !== '') {
-			$sql .= " AND idempotency_key = '".$this->db->escape($idempotencyKey)."'";
-		}
 		$sql .= ' ORDER BY priority ASC, date_creation ASC';
 		$sql .= $this->db->plimit(1);
 		$sql .= ' FOR UPDATE';
@@ -375,15 +441,52 @@ class EmergencyHouseNotificationService
 			$this->markFailure($record, 'ErrorJsonDecoding');
 			return false;
 		}
-		$template = $this->fetchTemplate(
+		$sendResult = $this->sendNativeEmail(
 			(int) $record['entity'],
 			$record['fk_campaign'] === null ? null : (int) $record['fk_campaign'],
+			$recipient,
+			(string) $record['locale'],
 			(string) $record['template_code'],
-			(string) $record['locale']
+			$payload,
+			'emergencyhouse-notification-'.((int) $record['id'])
 		);
-		if (!is_array($template)) {
-			$this->markFailure($record, $this->error);
+		if ($sendResult < 0) {
+			$this->markFailure($record, $this->error !== '' ? $this->error : 'ErrorMailSend');
 			return false;
+		}
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_notification SET';
+		$sql .= " status = 2, date_sent = '".$this->db->idate(dol_now())."',";
+		$sql .= ' locked_at = NULL, lock_token = NULL, last_error_code = NULL';
+		$sql .= ' WHERE rowid = '.((int) $record['id']);
+		$sql .= " AND lock_token = '".$this->db->escape((string) $record['lock_token'])."'";
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Send one email with Dolibarr's standard mail configuration.
+	 *
+	 * @param int                       $entity Entity
+	 * @param int|null                  $campaignId Campaign ID
+	 * @param string                    $recipient Recipient email
+	 * @param string                    $locale Locale
+	 * @param string                    $templateCode Template code
+	 * @param array<string, scalar|null> $payload Template values
+	 * @param string                    $trackId Non-sensitive mail tracking ID
+	 * @return int 1 on success, -1 on failure
+	 */
+	private function sendNativeEmail($entity, $campaignId, $recipient, $locale, $templateCode, array $payload, $trackId)
+	{
+		if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+			$this->error = 'ErrorInvalidEmail';
+			return -1;
+		}
+		$template = $this->fetchTemplate($entity, $campaignId, $templateCode, $locale);
+		if (!is_array($template)) {
+			return -1;
 		}
 		$subject = $this->render((string) $template['subject'], $payload);
 		$body = $this->render((string) $template['body'], $payload);
@@ -392,9 +495,13 @@ class EmergencyHouseNotificationService
 			$from = getDolGlobalString('MAIN_INFO_SOCIETE_MAIL', '');
 		}
 		if ($from === '') {
-			$this->markFailure($record, 'ErrorSenderEmailMissing');
-			return false;
+			$this->error = 'ErrorSenderEmailMissing';
+			return -1;
 		}
+		$safeTrackId = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $trackId);
+		$safeTrackId = is_string($safeTrackId) && $safeTrackId !== ''
+			? substr($safeTrackId, 0, 128)
+			: 'emergencyhouse-public';
 
 		// CMailFile applies the native SMTP/send mode, mail hooks, forced
 		// recipients and MAIN_MAIL_AUTOCOPY_TO permanent BCC configuration.
@@ -412,25 +519,16 @@ class EmergencyHouseNotificationService
 			-1,
 			'',
 			'',
-			'emergencyhouse-notification-'.((int) $record['id']),
+			$safeTrackId,
 			'',
 			'standard'
 		);
 		if (!empty($mail->error) || !$mail->sendfile()) {
-			$errorCode = !empty($mail->error) ? 'ErrorMailTransport' : 'ErrorMailSend';
-			$this->markFailure($record, $errorCode);
-			return false;
+			$this->error = !empty($mail->error) ? 'ErrorMailTransport' : 'ErrorMailSend';
+			return -1;
 		}
-		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_notification SET';
-		$sql .= " status = 2, date_sent = '".$this->db->idate(dol_now())."',";
-		$sql .= ' locked_at = NULL, lock_token = NULL, last_error_code = NULL';
-		$sql .= ' WHERE rowid = '.((int) $record['id']);
-		$sql .= " AND lock_token = '".$this->db->escape((string) $record['lock_token'])."'";
-		if (!$this->db->query($sql)) {
-			$this->error = $this->db->lasterror();
-			return false;
-		}
-		return true;
+
+		return 1;
 	}
 
 	/**

@@ -210,20 +210,32 @@ $publicAuthenticationMailControllers = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'login.php'
 );
 preg_match_all(
-	'/queueForAccount\\([\\s\\S]*?\\n\\s*10,\\s*\\n\\s*true\\s*\\n\\s*\\)/',
+	'/sendForAccount\\(/',
 	$publicAuthenticationMailControllers,
-	$immediateMailMatches
+	$directMailMatches
 );
 emergencyhouseContract(
-	isset($immediateMailMatches[0]) && count($immediateMailMatches[0]) === 4,
-	'Quatre courriels d’accès au compte envoyés immédiatement'
+	isset($directMailMatches[0]) && count($directMailMatches[0]) === 4
+		&& strpos($publicAuthenticationMailControllers, 'queueForAccount(') === false
+		&& strpos($publicAuthenticationMailControllers, 'queueEmail(') === false,
+	'Quatre courriels d’accès au compte envoyés sans file planifiée'
 );
 emergencyhouseContract(
-	strpos($notificationService, 'private function sendPendingByIdempotencyKey(') !== false
-		&& strpos($notificationService, '$this->markFailure($record, $errorCode);') !== false
+	strpos($notificationService, 'public function sendForAccount(') !== false
+		&& strpos($notificationService, 'private const SYNCHRONOUS_ACCESS_EMAILS') !== false
+		&& strpos($notificationService, "'account_verification'") !== false
+		&& strpos($notificationService, "'password_reset'") !== false
+		&& strpos($notificationService, "'magic_login'") !== false
+		&& strpos($notificationService, 'ErrorSynchronousAccessEmailRequired') !== false
+		&& strpos($notificationService, 'private function discardLegacyQueuedAccessEmails(') !== false
+		&& strpos($notificationService, 'event_code NOT IN (') !== false
+		&& strpos($notificationService, 'template_code NOT IN (') !== false
+		&& strpos($notificationService, 'private function sendPendingByIdempotencyKey(') === false
+		&& strpos($notificationService, 'if ($sendImmediately)') === false
+		&& strpos($notificationService, '$this->markFailure($record, $this->error') !== false
 		&& strpos($notificationService, 'next_attempt = ') !== false
 		&& strpos($descriptor, "'method' => 'processNotificationQueue'") !== false,
-	'File de reprise conservée après un échec du transport natif'
+	'File planifiée réservée aux notifications métier différées'
 );
 
 $setupPath = $root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'setup.php';

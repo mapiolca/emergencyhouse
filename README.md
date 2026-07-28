@@ -130,10 +130,12 @@ configuration native des notifications back-office.
 
 Le transport des courriels reste entièrement celui de Dolibarr via
 `CMailFile` : mode d’envoi, serveur SMTP, expéditeur, hooks de messagerie,
-destinataires forcés et copie cachée permanente. Les courriels indispensables
-à l’accès au compte sont envoyés immédiatement ; la file transactionnelle et
-le travail planifié natif assurent uniquement les reprises sur erreur et les
-notifications métier différées.
+destinataires forcés et copie cachée permanente. Les courriels d’inscription,
+de vérification, de réinitialisation et de connexion temporaire sont envoyés
+directement et ne sont jamais enregistrés dans la file ni confiés à un travail
+planifié. La file transactionnelle est réservée aux notifications métier
+différées. Après mise à jour, les anciennes entrées d’accès encore en attente
+sont invalidées sans être envoyées.
 
 ## Secrets
 

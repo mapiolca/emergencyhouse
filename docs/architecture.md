@@ -64,9 +64,12 @@ traités comme tels par le module Notifications.
 
 Cette file ne remplace pas le transport de messagerie : chaque envoi passe par
 `CMailFile` et hérite des réglages globaux Dolibarr, notamment du serveur SMTP,
-de l’expéditeur et de la copie cachée permanente. Les messages d’accès au
-compte sont tentés immédiatement ; les échecs restent en file pour reprise par
-le travail planifié natif.
+de l’expéditeur et de la copie cachée permanente. Les messages d’inscription,
+de vérification, de réinitialisation et de connexion temporaire sont envoyés
+directement, sans écriture dans la file et sans travail planifié. La file et son
+travail planifié sont réservés aux notifications métier différées. Les anciennes
+lignes d’accès créées par une version antérieure sont exclues du traitement puis
+invalidées sans envoi.
 
 ## Cartographie
 

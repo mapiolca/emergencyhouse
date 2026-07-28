@@ -22,19 +22,16 @@ if ($action === 'resend' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUE
 			if (is_string($verificationToken)) {
 				$profile = $account->getDecryptedProfile();
 				$notification = new EmergencyHouseNotificationService($db);
-				$notification->queueForAccount(
+				$notification->sendForAccount(
 					$account,
 					null,
-					'account_verification',
 					'account_verification',
 					array(
 						'FIRSTNAME' => is_array($profile) ? $profile['firstname'] : '',
 						'VERIFY_URL' => emergencyhousePublicAbsoluteUrl('auth/verify.php', array('verification' => $verificationToken)),
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
-					'account-verification-resend|'.$account->id.'|'.$verificationToken,
-					10,
-					true
+					'account-verification-resend-'.$account->id
 				);
 			}
 		}

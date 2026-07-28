@@ -1008,6 +1008,7 @@ ErrorSolicitationNotCreated=La sollicitation n'a pas pu être créée.
 ErrorTokenInvalid=Le lien est invalide ou expiré.
 ErrorUnknownDocumentModel=Modèle de document inconnu.
 ErrorVerificationEmailQueue=L'e-mail de vérification n'a pas pu être placé dans la file d'envoi.
+ErrorVerificationEmailSend=L'e-mail de vérification n'a pas pu être envoyé.
 
 # Additional public labels and formatted messages
 AccommodationRequest=Demande d'hébergement

@@ -22,19 +22,16 @@ if ($action === 'request' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQU
 			if (is_string($resetToken)) {
 				$profile = $account->getDecryptedProfile();
 				$notification = new EmergencyHouseNotificationService($db);
-				$notification->queueForAccount(
+				$notification->sendForAccount(
 					$account,
 					null,
-					'password_reset',
 					'password_reset',
 					array(
 						'FIRSTNAME' => is_array($profile) ? $profile['firstname'] : '',
 						'RESET_URL' => emergencyhousePublicAbsoluteUrl('auth/reset.php', array('reset_token' => $resetToken)),
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
-					'password-reset|'.$account->id.'|'.$resetToken,
-					10,
-					true
+					'password-reset-'.$account->id
 				);
 			}
 		}

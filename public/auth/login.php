@@ -40,19 +40,16 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' &
 			if (is_string($magicToken)) {
 				$profile = $account->getDecryptedProfile();
 				$notification = new EmergencyHouseNotificationService($db);
-				$notification->queueForAccount(
+				$notification->sendForAccount(
 					$account,
 					null,
-					'magic_login',
 					'magic_login',
 					array(
 						'FIRSTNAME' => is_array($profile) ? $profile['firstname'] : '',
 						'LOGIN_URL' => emergencyhousePublicAbsoluteUrl('auth/magic.php', array('login_token' => $magicToken)),
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
-					'magic-login|'.$account->id.'|'.$magicToken,
-					10,
-					true
+					'magic-login-'.$account->id
 				);
 			}
 		}

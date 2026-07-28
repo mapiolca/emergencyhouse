@@ -1008,6 +1008,7 @@ ErrorSolicitationNotCreated=The solicitation could not be created.
 ErrorTokenInvalid=The link is invalid or expired.
 ErrorUnknownDocumentModel=Unknown document model.
 ErrorVerificationEmailQueue=The verification email could not be queued.
+ErrorVerificationEmailSend=The verification email could not be sent.
 
 # Additional public labels and formatted messages
 AccommodationRequest=Accommodation request

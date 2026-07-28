@@ -65,22 +65,19 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 			} else {
 				$notification = new EmergencyHouseNotificationService($db);
 				$link = emergencyhousePublicAbsoluteUrl('auth/verify.php', array('verification' => $verificationToken));
-				$queued = $notification->queueForAccount(
+				$mailResult = $notification->sendForAccount(
 					$account,
 					null,
-					'account_verification',
 					'account_verification',
 					array(
 						'FIRSTNAME' => $firstname,
 						'VERIFY_URL' => $link,
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
-					'account-verification|'.$account->id.'|'.$verificationToken,
-					10,
-					true
+					'account-verification-'.$account->id
 				);
-				if ($queued <= 0) {
-					$errorKey = 'ErrorVerificationEmailQueue';
+				if ($mailResult <= 0) {
+					$errorKey = 'ErrorVerificationEmailSend';
 				} else {
 					header('Location: '.emergencyhousePublicUrl('auth/register.php', array('registered' => 1)));
 					exit;

@@ -40,11 +40,16 @@
 - La demande de connexion par lien temporaire affiche désormais sa confirmation
   générique bilingue au lieu d’être remplacée par une erreur interne.
 - Les courriels de vérification, réinitialisation et connexion temporaire sont
-  désormais envoyés immédiatement par `CMailFile`, avec le transport,
-  l’expéditeur et la copie cachée permanente configurés dans Dolibarr ; la file
-  et le travail planifié natif restent disponibles pour les reprises sur erreur.
+  désormais envoyés directement par `CMailFile`, avec le transport,
+  l’expéditeur et la copie cachée permanente configurés dans Dolibarr, sans
+  insertion dans la file et sans dépendance à un travail planifié.
+- La file transactionnelle et son travail planifié sont maintenant réservés
+  exclusivement aux notifications métier différées.
+- Les anciennes entrées d’accès encore en attente sont invalidées sans envoi,
+  et toute nouvelle tentative de les mettre en file est refusée.
 - Les erreurs du transport de messagerie sont maintenant visibles dans le
-  résultat du travail planifié et journalisées sans adresse ni contenu sensible.
+  résultat du travail planifié pour les notifications métier différées et
+  journalisées sans adresse ni contenu sensible.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des
