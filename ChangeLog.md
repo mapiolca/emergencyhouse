@@ -2,6 +2,22 @@
 
 ## Non publié
 
+- Ajout de quinze langues communes au module et au portail public : français,
+  anglais, espagnol, allemand, italien, portugais, néerlandais, polonais,
+  roumain, ukrainien, russe, arabe, turc, chinois simplifié et japonais.
+- Détection de la langue publique selon le paramètre d’URL, la préférence du
+  compte, le cookie fonctionnel, l’en-tête `Accept-Language`, puis la langue
+  publique par défaut configurée par entité ; ajout d’un sélecteur accessible
+  qui conserve la préférence dans le compte public et la fiche Adhérent liée.
+- Localisation des URL publiques et des courriels transactionnels, ajout des
+  balises `hreflang`, des variantes localisées au sitemap, de
+  `Content-Language` et du rendu RTL pour l’arabe.
+- Ajout de l’édition par langue des politiques de confidentialité et
+  conditions d’utilisation, avec repli conservateur sur la langue publique
+  par défaut puis sur les anciens contenus non suffixés.
+- Ajout de contrats autonomes vérifiant le registre des langues, la
+  négociation navigateur, la parité des 15 catalogues et l’intégrité des
+  variables de traduction.
 - Remplacement de la note de confidentialité par un projet complet de politique
   RGPD à personnaliser avant publication : responsable du traitement, données,
   finalités et bases légales, destinataires, publications, correspondance

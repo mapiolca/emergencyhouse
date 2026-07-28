@@ -23,6 +23,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/doc/pdf_emergencyhouse_agreement.modules.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/languageservice.class.php');
 dol_include_once('/emergencyhouse/class/memberservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
@@ -42,6 +43,10 @@ $tab = GETPOST('tab', 'aZ09');
 $memberReconciliationResult = null;
 $memberReconciliationAfterId = max(0, GETPOSTINT('member_after_id'));
 $memberService = new EmergencyHouseMemberService($db);
+$contentLocale = EmergencyHouseLanguageService::normalizeLocale(GETPOST('content_lang', 'alphanohtml'));
+if ($contentLocale === '') {
+	$contentLocale = EmergencyHouseLanguageService::getDefaultLocale((string) $langs->defaultlang);
+}
 if (empty($tab)) {
 	$tab = 'general';
 }
@@ -71,6 +76,7 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_FREE_TEXT' => array('type' => 'string', 'default' => ''),
 	),
 	'portal' => array(
+		'EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG' => array('type' => 'string', 'default' => 'fr_FR'),
 		'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY' => array('type' => 'string', 'default' => 'private'),
 		'EMERGENCYHOUSE_PUBLIC_BASE_URL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_ORGANISATION_NAME' => array('type' => 'string', 'default' => ''),
@@ -78,8 +84,6 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => array('type' => 'string', 'default' => ''),
-		'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('type' => 'string', 'default' => ''),
-		'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => ''),
 	),
 	'authentication' => array(
 		'EMERGENCYHOUSE_SESSION_IDLE_MINUTES' => array('type' => 'int', 'default' => '120'),
@@ -157,8 +161,6 @@ $settingHelpKeys = array(
 	'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => 'HelpPublicSupportEmail',
 	'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => 'HelpPublicSupportPhone',
 	'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => 'HelpPublicSocialImageUrl',
-	'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => 'HelpPublicPrivacyHtml',
-	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => 'HelpPublicTermsHtml',
 	'EMERGENCYHOUSE_OSM_TILE_URL' => 'HelpOsmTileUrl',
 	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
 	'EMERGENCYHOUSE_GEOCODING_ENDPOINT' => 'HelpGeocodingEndpoint',
@@ -261,6 +263,21 @@ if ($action === 'reconcile_members' && $tab === 'integrations') {
 	}
 	header('Location: '.$_SERVER['PHP_SELF'].'?tab=security');
 	exit;
+} elseif ($action === 'save_legal' && $tab === 'portal') {
+	$privacyConstant = emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', $contentLocale);
+	$termsConstant = emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', $contentLocale);
+	$privacyHtml = GETPOST('privacy_html', 'restricthtml');
+	$termsHtml = GETPOST('terms_html', 'restricthtml');
+	$db->begin();
+	$privacyResult = dolibarr_set_const($db, $privacyConstant, $privacyHtml, 'chaine', 0, '', (int) $conf->entity);
+	$termsResult = dolibarr_set_const($db, $termsConstant, $termsHtml, 'chaine', 0, '', (int) $conf->entity);
+	if ($privacyResult > 0 && $termsResult > 0) {
+		$db->commit();
+		setEventMessages($langs->trans('LocalizedLegalContentSaved'), null, 'mesgs');
+	} else {
+		$db->rollback();
+		setEventMessages($langs->trans('ErrorSetupNotSaved'), null, 'errors');
+	}
 } elseif ($action === 'save' && isset($settingsByTab[$tab])) {
 	$error = 0;
 	$values = array();
@@ -327,6 +344,11 @@ if ($action === 'reconcile_members' && $tab === 'integrations') {
 		$supportPhone = trim(dol_string_nohtmltag($values['EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE']));
 		$values['EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL'] = $supportEmail;
 		$values['EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE'] = $supportPhone;
+		$publicDefaultLocale = EmergencyHouseLanguageService::normalizeLocale($values['EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG']);
+		if ($publicDefaultLocale === '' || $publicDefaultLocale !== $values['EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG']) {
+			$error++;
+			setEventMessages($langs->trans('ErrorInvalidLanguage'), null, 'errors');
+		}
 		if ($publicBaseUrl !== '') {
 			$publicBaseUrlParts = parse_url($publicBaseUrl);
 			if (
@@ -592,8 +614,10 @@ if (isset($settingsByTab[$tab])) {
 			foreach (DateTimeZone::listIdentifiers() as $timezoneIdentifier) {
 				$options[$timezoneIdentifier] = $timezoneIdentifier;
 			}
-		} elseif ($name === 'EMERGENCYHOUSE_DEFAULT_LANGUAGE') {
-			$options = array('fr_FR' => $langs->trans('LanguageFrench'), 'en_US' => $langs->trans('LanguageEnglish'));
+		} elseif (in_array($name, array('EMERGENCYHOUSE_DEFAULT_LANGUAGE', 'EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG'), true)) {
+			foreach (EmergencyHouseLanguageService::getSupportedLocales() as $locale => $metadata) {
+				$options[$locale] = $metadata['label'];
+			}
 		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY') {
 			$options = array('private' => $langs->trans('VisibilityPrivate'), 'public' => $langs->trans('VisibilityPublic'));
 		} elseif ($name === 'EMERGENCYHOUSE_GEOCODING_PROVIDER') {
@@ -618,22 +642,7 @@ if (isset($settingsByTab[$tab])) {
 			);
 		}
 
-		if (in_array($name, array('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', 'EMERGENCYHOUSE_PUBLIC_TERMS_HTML'), true)) {
-			$editor = new DolEditor(
-				$name,
-				$value,
-				'',
-				300,
-				'dolibarr_notes',
-				'',
-				false,
-				false,
-				isModEnabled('fckeditor'),
-				12,
-				'100%'
-			);
-			$editor->Create();
-		} elseif ($name === 'EMERGENCYHOUSE_FREE_TEXT') {
+		if ($name === 'EMERGENCYHOUSE_FREE_TEXT') {
 			print '<textarea class="flat centpercent" rows="5" name="'.dol_escape_htmltag($name).'">'.dol_escape_htmltag($value).'</textarea>';
 		} elseif (!empty($options)) {
 			$selectAttributes = $name === 'EMERGENCYHOUSE_ADHERENT_TYPE_ID' ? 'required' : '';
@@ -773,6 +782,89 @@ if ($tab === 'general') {
 }
 
 if ($tab === 'portal') {
+	$localeOptions = array();
+	foreach (EmergencyHouseLanguageService::getSupportedLocales() as $locale => $metadata) {
+		$localeOptions[$locale] = $metadata['label'];
+	}
+	$privacyConstant = emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', $contentLocale);
+	$termsConstant = emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', $contentLocale);
+	$privacyHtml = getDolGlobalString($privacyConstant, '');
+	$termsHtml = getDolGlobalString($termsConstant, '');
+	$publicDefaultLocale = EmergencyHouseLanguageService::getDefaultLocale((string) $langs->defaultlang);
+	if ($contentLocale === $publicDefaultLocale) {
+		if (!emergencyhousePublicHtmlHasContent($privacyHtml)) {
+			$privacyHtml = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', '');
+		}
+		if (!emergencyhousePublicHtmlHasContent($termsHtml)) {
+			$termsHtml = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', '');
+		}
+	}
+
+	print '<br>'.load_fiche_titre($langs->trans('LocalizedLegalContent'), '', 'language');
+	print '<form method="GET" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+	print '<input type="hidden" name="tab" value="portal">';
+	print '<label for="content_lang">'.$langs->trans('ContentLanguage').'</label> ';
+	print $form->selectarray('content_lang', $localeOptions, $contentLocale, 0, 0, 0, '', 0, 0, 0, '', 'minwidth300');
+	print ajax_combobox('content_lang');
+	print ' <button class="button" type="submit">'.$langs->trans('Display').'</button></form>';
+
+	print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+	print '<input type="hidden" name="token" value="'.newToken().'">';
+	print '<input type="hidden" name="action" value="save_legal">';
+	print '<input type="hidden" name="tab" value="portal">';
+	print '<input type="hidden" name="content_lang" value="'.dol_escape_htmltag($contentLocale).'">';
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('Content').'</th><th>'.$langs->trans('Value').'</th></tr>';
+	print '<tr class="oddeven"><td class="titlefield">'.$langs->trans('PrivacyPolicy').'</td><td>';
+	$privacyEditor = new DolEditor('privacy_html', $privacyHtml, '', 300, 'dolibarr_notes', '', false, false, isModEnabled('fckeditor'), 12, '100%');
+	$privacyEditor->Create();
+	print '</td></tr><tr class="oddeven"><td>'.$langs->trans('TermsOfUse').'</td><td>';
+	$termsEditor = new DolEditor('terms_html', $termsHtml, '', 300, 'dolibarr_notes', '', false, false, isModEnabled('fckeditor'), 12, '100%');
+	$termsEditor->Create();
+	print '</td></tr></table>';
+	print '<p class="center"><button class="button button-save" type="submit">'.$langs->trans('Save').'</button></p>';
+	print '</form>';
+
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('Language').'</th><th>'.$langs->trans('PrivacyPolicy').'</th><th>'.$langs->trans('TermsOfUse').'</th></tr>';
+	$defaultPrivacyHtml = emergencyhousePublicLocalizedHtml('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', $publicDefaultLocale);
+	$defaultTermsHtml = emergencyhousePublicLocalizedHtml('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', $publicDefaultLocale);
+	foreach ($localeOptions as $locale => $label) {
+		$localePrivacy = getDolGlobalString(
+			emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', $locale),
+			''
+		);
+		$localeTerms = getDolGlobalString(
+			emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', $locale),
+			''
+		);
+		if ($locale === $publicDefaultLocale) {
+			if (!emergencyhousePublicHtmlHasContent($localePrivacy)) {
+				$localePrivacy = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', '');
+			}
+			if (!emergencyhousePublicHtmlHasContent($localeTerms)) {
+				$localeTerms = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', '');
+			}
+		}
+		print '<tr class="oddeven"><td>'.dol_escape_htmltag($label).'</td>';
+		foreach (
+			array(
+				array($localePrivacy, $defaultPrivacyHtml),
+				array($localeTerms, $defaultTermsHtml),
+			) as $contentStatus
+		) {
+			$available = emergencyhousePublicHtmlHasContent($contentStatus[0]);
+			$usesFallback = !$available
+				&& $locale !== $publicDefaultLocale
+				&& emergencyhousePublicHtmlHasContent($contentStatus[1]);
+			$statusKey = $available ? 'Available' : ($usesFallback ? 'LegalContentUsesDefaultLanguage' : 'Unavailable');
+			print '<td>'.img_picto($langs->trans($statusKey), $available ? 'tick' : 'warning');
+			print ' '.$langs->trans($statusKey).'</td>';
+		}
+		print '</tr>';
+	}
+	print '</table>';
+
 	print '<br><table class="noborder centpercent">';
 	print '<tr class="liste_titre"><th>'.$langs->trans('BinaryOptions').'</th><th>'.$langs->trans('Value').'</th></tr>';
 	$binarySettings = array(

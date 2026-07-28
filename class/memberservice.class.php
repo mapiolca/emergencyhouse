@@ -85,6 +85,37 @@ class EmergencyHouseMemberService
 	}
 
 	/**
+	 * Keep the native member language aligned with its public account.
+	 *
+	 * @param EmergencyHousePublicAccount $account Public account
+	 * @param User                        $user Trigger actor
+	 * @return int
+	 */
+	public function updateLanguage($account, $user)
+	{
+		if ($account->fk_member <= 0) {
+			return 0;
+		}
+
+		$member = new Adherent($this->db);
+		if ($member->fetch((int) $account->fk_member) <= 0) {
+			$this->error = 'ErrorMemberNotFound';
+			return -1;
+		}
+		if ((int) $member->entity !== (int) $account->entity) {
+			$this->error = 'ErrorMemberEntityMismatch';
+			return -1;
+		}
+
+		$member->default_lang = (string) $account->lang;
+		if ($member->update($user) <= 0) {
+			$this->error = 'ErrorMemberUpdate';
+			return -1;
+		}
+		return 1;
+	}
+
+	/**
 	 * Load and validate one configured native member type.
 	 *
 	 * @param int $typeId Member type ID

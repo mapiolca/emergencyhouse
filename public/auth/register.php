@@ -49,7 +49,7 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 		$db->begin();
 		$account = new EmergencyHousePublicAccount($db);
 		$account->adult_confirmed = 1;
-		$account->lang = in_array($langs->defaultlang, array('fr_FR', 'en_US'), true) ? $langs->defaultlang : 'fr_FR';
+		$account->lang = emergencyhousePublicCurrentLocale();
 		$result = $account->create($firstname, $lastname, $email, $phone, $password);
 		if ($result <= 0) {
 			$db->rollback();

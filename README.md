@@ -26,6 +26,9 @@ utilisateurs Dolibarr pour les particuliers.
 - révélation contrôlée et auditée des coordonnées et adresses exactes ;
 - espace **Supervision** réunissant statistiques métier et mesure d’audience
   first-party optionnelle, API REST optionnelle et convention PDF ;
+- interface du module, portail public, pages légales et courriels
+  transactionnels disponibles dans quinze langues, avec détection du navigateur
+  et sélecteur de langue ;
 - intégration native Dolibarr des droits, menus, triggers CRUD, Notifications,
   Agenda, travaux planifiés, documents, numérotation et Multicompany.
 
@@ -64,9 +67,10 @@ Après copie ou clonage :
    **Diagnostic** ;
 4. vérifier dans l’onglet **Sécurité** que les clés gérées automatiquement sont
    disponibles ;
-5. renseigner les textes juridiques, les coordonnées officielles et l’URL
-   racine qui expose directement le répertoire `public/`, ainsi que l’e-mail
-   et le téléphone du support ;
+5. choisir la langue publique par défaut, renseigner les textes juridiques
+   nécessaires dans chaque langue, les coordonnées officielles et l’URL racine
+   qui expose directement le répertoire `public/`, ainsi que l’e-mail et le
+   téléphone du support ;
 6. vérifier les travaux planifiés Emergency House, automatiquement activés en
    même temps que le module ;
 7. configurer les notifications back-office dans la page native
@@ -95,16 +99,43 @@ Multicompany sont conservés. Ils sont tous réactivés avec le module.
 `public/`, et non la racine de Dolibarr. Pour une valeur
 `https://emergencyhouse.example.org/`, les liens produits sont par exemple :
 
-- `https://emergencyhouse.example.org/` pour l’accueil ;
-- `https://emergencyhouse.example.org/offer/index.php` pour les offres ;
-- `https://emergencyhouse.example.org/contact.php` pour contacter le support ;
-- `https://emergencyhouse.example.org/account/index.php` pour l’espace
+- `https://emergencyhouse.example.org/?lang=fr_FR` pour l’accueil ;
+- `https://emergencyhouse.example.org/offer/index.php?lang=fr_FR` pour les
+  offres ;
+- `https://emergencyhouse.example.org/contact.php?lang=fr_FR` pour contacter le
+  support ;
+- `https://emergencyhouse.example.org/account/index.php?lang=fr_FR` pour l’espace
   personnel.
 
 Le module n’ajoute jamais `/custom/emergencyhouse/public` à cette valeur. Les
 feuilles de style, le script public et le logo sont également servis sous
 `/assets/` depuis cette même racine. Si la constante est vide, le portail
 conserve son URL interne Dolibarr pour faciliter une recette locale.
+
+### Langues
+
+Les locales prises en charge sont `fr_FR`, `en_US`, `es_ES`, `de_DE`,
+`it_IT`, `pt_PT`, `nl_NL`, `pl_PL`, `ro_RO`, `uk_UA`, `ru_RU`, `ar_SA`,
+`tr_TR`, `zh_CN` et `ja_JP`. L’arabe active automatiquement le sens
+d’écriture RTL.
+
+Pour chaque requête publique, la langue est résolue dans cet ordre :
+
+1. paramètre explicite `lang` de l’URL ;
+2. préférence du compte public authentifié ;
+3. cookie fonctionnel `emergencyhouse_language` ;
+4. en-tête navigateur `Accept-Language` ;
+5. constante par entité `EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG`.
+
+Le sélecteur de l’en-tête conserve le choix pendant un an. Pour un compte
+authentifié, il met également à jour le compte public et la langue par défaut
+de la fiche Adhérent liée. Les pages indexables publient leurs variantes
+`hreflang`, et le sitemap contient une URL par langue.
+
+Les textes juridiques se gèrent dans l’onglet **Portail public**, langue par
+langue. En l’absence d’un texte dans la langue demandée, le portail utilise le
+texte de la langue publique par défaut, puis l’ancien texte non localisé afin
+de préserver les installations existantes.
 
 ### Référencement public et robots IA
 
@@ -280,6 +311,11 @@ directement et ne sont jamais enregistrés dans la file ni confiés à un travai
 planifié. La file transactionnelle est réservée aux notifications métier
 différées. Après mise à jour, les anciennes entrées d’accès encore en attente
 sont invalidées sans être envoyées.
+
+Les modèles transactionnels intégrés sont chargés dans la langue du compte
+public parmi les quinze locales prises en charge. Les modèles personnalisés
+actifs en base restent prioritaires lorsqu’ils existent dans la locale
+recherchée.
 
 ## Secrets
 

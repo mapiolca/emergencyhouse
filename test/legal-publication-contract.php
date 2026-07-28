@@ -45,6 +45,7 @@ function dol_string_nohtmltag($value)
 	return html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
+require dirname(__DIR__).'/class/languageservice.class.php';
 require dirname(__DIR__).'/lib/emergencyhouse_public.lib.php';
 
 /**
@@ -93,6 +94,19 @@ $emergencyhouseTestStrings[$htmlConstant] = '<h2>Conditions publiées</h2><p>Con
 emergencyhouseLegalPublicationAssert(
 	emergencyhousePublicLegalPageIsPublished($enabledConstant, $htmlConstant),
 	'Un interrupteur actif et un contenu visible doivent publier la page.'
+);
+
+$emergencyhouseTestStrings[$htmlConstant.'_FR_FR'] = '<h2>Conditions françaises</h2>';
+emergencyhouseLegalPublicationAssert(
+	emergencyhousePublicLocalizedHtml($htmlConstant, 'fr_FR') === '<h2>Conditions françaises</h2>',
+	'Le contenu localisé exact doit être prioritaire.'
+);
+
+$emergencyhouseTestStrings[$htmlConstant.'_FR_FR'] = '';
+$emergencyhouseTestStrings[$htmlConstant.'_EN_US'] = '<h2>English terms</h2>';
+emergencyhouseLegalPublicationAssert(
+	emergencyhousePublicLocalizedHtml($htmlConstant, 'ja_JP') === '<h2>Conditions publiées</h2><p>Contenu utile.</p>',
+	'Une langue juridique absente doit utiliser le contenu historique de la langue publique par défaut.'
 );
 
 fwrite(STDOUT, "Contrat de publication des pages légales validé.".PHP_EOL);

@@ -8,7 +8,14 @@
  */
 
 $emergencyhouseTestPublicBaseUrl = 'https://emergencyhouse.example.org/';
+$emergencyhouseTestRequestValues = array();
 define('DOL_URL_ROOT', '/dolibarr');
+
+class EmergencyHousePublicAccount
+{
+	/** @var string */
+	public $lang = '';
+}
 
 /**
  * @param string $name Constant name
@@ -20,6 +27,20 @@ function getDolGlobalString($name, $default = '')
 	global $emergencyhouseTestPublicBaseUrl;
 
 	return $name === 'EMERGENCYHOUSE_PUBLIC_BASE_URL' ? $emergencyhouseTestPublicBaseUrl : $default;
+}
+
+/**
+ * @param string $name Input name
+ * @param string $type Input filter
+ * @return string
+ */
+function GETPOST($name, $type = '')
+{
+	global $emergencyhouseTestRequestValues;
+
+	return isset($emergencyhouseTestRequestValues[$name])
+		? (string) $emergencyhouseTestRequestValues[$name]
+		: '';
 }
 
 /**
@@ -60,6 +81,15 @@ function dol_trunc($value, $length)
 	return strlen($value) > $length ? substr($value, 0, $length - 3).'...' : $value;
 }
 
+/**
+ * @return string Test CSRF token
+ */
+function newToken()
+{
+	return 'test-token';
+}
+
+require dirname(__DIR__).'/class/languageservice.class.php';
 require dirname(__DIR__).'/lib/emergencyhouse_public.lib.php';
 
 /**
@@ -75,33 +105,66 @@ function emergencyhousePublicUrlAssert($condition, $message)
 	}
 }
 
+$languageAccount = new EmergencyHousePublicAccount();
+$languageAccount->lang = 'uk_UA';
+$_COOKIE['emergencyhouse_language'] = 'es_ES';
+$_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'ja-JP,fr;q=0.8';
+$emergencyhouseTestRequestValues['lang'] = 'de_DE';
 emergencyhousePublicUrlAssert(
-	emergencyhousePublicUrl() === 'https://emergencyhouse.example.org/',
-	'La page d’accueil doit être la racine configurée.'
+	emergencyhousePublicResolveLocale($languageAccount, 'fr_FR') === 'de_DE',
+	'La langue explicite doit précéder toutes les préférences.'
+);
+unset($emergencyhouseTestRequestValues['lang']);
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicResolveLocale($languageAccount, 'fr_FR') === 'uk_UA',
+	'La préférence du compte doit précéder le cookie et le navigateur.'
 );
 emergencyhousePublicUrlAssert(
-	emergencyhousePublicUrl('offer/index.php') === 'https://emergencyhouse.example.org/offer/index.php',
-	'Le chemin Dolibarr ne doit pas être ajouté à un lien d’offre.'
+	emergencyhousePublicResolveLocale(null, 'fr_FR') === 'es_ES',
+	'Le cookie fonctionnel doit précéder la négociation navigateur.'
+);
+unset($_COOKIE['emergencyhouse_language']);
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicResolveLocale(null, 'fr_FR') === 'ja_JP',
+	'La langue du navigateur doit être utilisée en première visite.'
+);
+
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicUrl() === 'https://emergencyhouse.example.org/?lang=fr_FR',
+	'La page d’accueil doit être la racine configurée avec une langue explicite.'
 );
 emergencyhousePublicUrlAssert(
-	emergencyhousePublicUrl('contact.php') === 'https://emergencyhouse.example.org/contact.php',
-	'La page de contact doit être publiée directement sous la racine configurée.'
+	emergencyhousePublicUrl('offer/index.php') === 'https://emergencyhouse.example.org/offer/index.php?lang=fr_FR',
+	'Le chemin Dolibarr ne doit pas être ajouté à un lien d’offre localisé.'
+);
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicUrl('contact.php') === 'https://emergencyhouse.example.org/contact.php?lang=fr_FR',
+	'La page de contact doit être publiée directement sous la racine configurée et localisée.'
 );
 $emergencyhouseTestPublicBaseUrl = 'https://emergencyhouse.example.org/portal';
 emergencyhousePublicUrlAssert(
-	emergencyhousePublicUrl('offer/index.php') === 'https://emergencyhouse.example.org/portal/offer/index.php',
+	emergencyhousePublicUrl('offer/index.php') === 'https://emergencyhouse.example.org/portal/offer/index.php?lang=fr_FR',
 	'Une racine publique sans barre finale doit être normalisée.'
 );
 $emergencyhouseTestPublicBaseUrl = 'https://emergencyhouse.example.org/';
 emergencyhousePublicUrlAssert(
 	emergencyhousePublicAbsoluteUrl('allocation/view.php', array('id' => 42))
-		=== 'https://emergencyhouse.example.org/allocation/view.php?id=42',
+		=== 'https://emergencyhouse.example.org/allocation/view.php?id=42&lang=fr_FR',
 	'Les notifications doivent utiliser la racine configurée.'
 );
 emergencyhousePublicUrlAssert(
+	emergencyhousePublicUrl('assets/public.css.php') === 'https://emergencyhouse.example.org/assets/public.css.php',
+	'Les ressources statiques ne doivent pas recevoir de paramètre de langue.'
+);
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicUrlWithLocale('https://emergencyhouse.example.org/request/view.php?id=4&lang=fr_FR', 'de_DE')
+		=== 'https://emergencyhouse.example.org/request/view.php?id=4&lang=de_DE',
+	'Le sélecteur doit remplacer la langue sans perdre les autres paramètres.'
+);
+emergencyhousePublicUrlAssert(
 	emergencyhousePublicSafeReturnUrl('https://emergencyhouse.example.org/request/view.php?uuid=abc')
-		=== 'https://emergencyhouse.example.org/request/view.php?uuid=abc',
-	'Une redirection interne sûre doit rester sur le domaine public.'
+		=== 'https://emergencyhouse.example.org/request/view.php?uuid=abc&lang=fr_FR',
+	'Une redirection interne sûre doit rester sur le domaine public et conserver la langue.'
 );
 emergencyhousePublicUrlAssert(
 	emergencyhousePublicSafeReturnUrl('https://attacker.example/request/view.php?uuid=abc') === '',
@@ -109,7 +172,7 @@ emergencyhousePublicUrlAssert(
 );
 emergencyhousePublicUrlAssert(
 	emergencyhousePublicSafeReturnUrl('https://emergencyhouse.example.org/contact.php')
-		=== 'https://emergencyhouse.example.org/contact.php',
+		=== 'https://emergencyhouse.example.org/contact.php?lang=fr_FR',
 	'La page de contact doit être une destination de retour interne sûre.'
 );
 
@@ -131,9 +194,11 @@ emergencyhousePublicRenderHeader('Test');
 $renderedHeader = ob_get_clean();
 emergencyhousePublicUrlAssert(
 	is_string($renderedHeader)
-		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/offer/index.php') !== false
-		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/contact.php') !== false
+		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/offer/index.php?lang=fr_FR') !== false
+		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/contact.php?lang=fr_FR') !== false
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/assets/public.css.php') !== false
+		&& strpos($renderedHeader, 'name="lang"') !== false
+		&& strpos($renderedHeader, 'value="ar_SA"') !== false
 		&& strpos($renderedHeader, 'content="noindex,nofollow"') !== false
 		&& strpos($renderedHeader, '/custom/emergencyhouse') === false,
 	'La navigation et les ressources rendues doivent utiliser la racine publique.'
@@ -165,12 +230,12 @@ emergencyhousePublicUrlAssert(
 
 $emergencyhouseTestPublicBaseUrl = '';
 emergencyhousePublicUrlAssert(
-	emergencyhousePublicUrl('offer/index.php') === '/custom/emergencyhouse/public/offer/index.php',
+	emergencyhousePublicUrl('offer/index.php') === '/custom/emergencyhouse/public/offer/index.php?lang=fr_FR',
 	'Le fallback Dolibarr doit rester disponible sans URL publique configurée.'
 );
 emergencyhousePublicUrlAssert(
 	emergencyhousePublicAbsoluteUrl('offer/index.php')
-		=== 'https://dolibarr.example.org/custom/emergencyhouse/public/offer/index.php',
+		=== 'https://dolibarr.example.org/custom/emergencyhouse/public/offer/index.php?lang=fr_FR',
 	'Le fallback absolu Dolibarr doit rester disponible pour les notifications.'
 );
 

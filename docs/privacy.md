@@ -213,6 +213,7 @@ Le Service utilise les cookies suivants :
 | Nom | Finalité | Durée par défaut | Statut |
 |---|---|---:|---|
 | `EMERGENCYHOUSESESSID` | Authentification, maintien de la session et protection contre les requêtes frauduleuses | 120 minutes après la dernière activité, durée renouvelée pendant l’utilisation | Strictement nécessaire |
+| `emergencyhouse_language` | Mémorisation de la langue choisie pour présenter le service et ses messages | 1 an | Strictement nécessaire à la préférence d’interface |
 | `EH_ANALYTICS` | Mesure d’audience first-party au moyen d’un identifiant aléatoire signé | 13 mois à compter de sa création, sans renouvellement automatique | Optionnel ; activé uniquement selon les conditions indiquées ci-dessous |
 | `EH_ANALYTICS_OPTOUT` | Mémorisation du refus de la mesure d’audience | 13 mois | Strictement nécessaire au respect du choix |
 

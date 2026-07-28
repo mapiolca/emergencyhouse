@@ -3,7 +3,7 @@
 
 require __DIR__.'/_init.php';
 
-$privacyHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML', ''));
+$privacyHtml = emergencyhousePublicLocalizedHtml('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML');
 if (!emergencyhousePublicLegalPageIsPublished(
 	'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED',
 	'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML'

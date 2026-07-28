@@ -17,6 +17,14 @@ uniquement le chemin relatif de la page ou de la ressource publique ; il
 n’ajoute aucun chemin d’installation Dolibarr. Sans valeur configurée, le
 chemin interne Dolibarr reste le fallback de recette.
 
+La résolution linguistique est centralisée dans
+`EmergencyHouseLanguageService`. Le paramètre explicite de l’URL précède la
+préférence du compte, le cookie fonctionnel, `Accept-Language` et la langue par
+défaut de l’entité. Tous les liens de contenu conservent une locale explicite ;
+les ressources statiques et contrôleurs techniques en sont exclus. Les textes
+juridiques utilisent des constantes suffixées par locale et conservent un repli
+sur les anciennes constantes non suffixées.
+
 ## Frontières de sécurité
 
 - Une session publique dédiée authentifie les particuliers.
@@ -47,6 +55,8 @@ chemin interne Dolibarr reste le fallback de recette.
 10. Supervision, mesure d’audience, exports et documents.
 11. API, webhooks et adaptateurs optionnels.
 12. Audit, conservation et purge.
+13. Registre des langues, négociation publique, contenus légaux et modèles de
+    courriels localisés.
 
 ## Supervision de l’activité publique
 

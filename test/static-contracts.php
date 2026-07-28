@@ -536,13 +536,23 @@ emergencyhouseContract(
 );
 emergencyhouseContract(
 	strpos($setup, "require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';") !== false
-		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('type' => 'string', 'default' => '')") !== false
-		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => '')") !== false
+		&& strpos($setup, "\$action === 'save_legal'") !== false
+		&& strpos($setup, "emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML'") !== false
+		&& strpos($setup, "emergencyhousePublicLocalizedConstantName('EMERGENCYHOUSE_PUBLIC_TERMS_HTML'") !== false
+		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG' => array('type' => 'string'") !== false
 		&& strpos($setup, "isModEnabled('fckeditor')") !== false
-		&& strpos($setup, '$editor = new DolEditor(') !== false
+		&& strpos($setup, "\$privacyEditor = new DolEditor(") !== false
+		&& strpos($setup, "\$termsEditor = new DolEditor(") !== false
 		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('', 'chaine')") !== false
 		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine')") !== false,
-	'Pages légales administrables avec l’éditeur WYSIWYG natif et repli textarea'
+	'Pages légales localisées administrables avec l’éditeur WYSIWYG natif et repli textarea'
+);
+emergencyhouseContract(
+	strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG' => array(\$publicDefaultLocale, 'chaine')") !== false
+		&& strpos($publicLibrary, 'EmergencyHouseLanguageService::negotiateAcceptLanguage(') !== false
+		&& strpos($publicLibrary, "setcookie('emergencyhouse_language'") !== false
+		&& strpos($publicLibrary, 'EmergencyHouseLanguageService::getSupportedLocales()') !== false,
+	'Langue publique par défaut conservée par entité, négociation navigateur et sélecteur persistant'
 );
 emergencyhouseContract(
 	strpos($publicLibrary, 'function emergencyhousePublicLegalPageIsPublished(') !== false
@@ -558,6 +568,12 @@ emergencyhouseContract(
 		&& strpos($publicLibrary, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL') === false
 		&& strpos($setup, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL') === false,
 	'Pages, liens et consentements légaux publiés uniquement avec interrupteur et contenu'
+);
+emergencyhouseContract(
+	strpos($notificationService, 'EmergencyHouseLanguageService::getFallbackChain($locale)') !== false
+		&& strpos($notificationService, 'private function fetchBuiltInTemplate(') !== false
+		&& substr_count($notificationService, '$this->localizePublicPayloadUrls($payload, (string) $account->lang)') === 2,
+	'Courriels transactionnels et liens publics localisés selon la langue du destinataire'
 );
 emergencyhouseContract(
 	strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED' => array('0', 'yesno')") !== false

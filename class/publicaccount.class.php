@@ -4,6 +4,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/languageservice.class.php');
 
 /**
  * Public portal identity, deliberately separate from Dolibarr users.
@@ -395,6 +396,31 @@ class EmergencyHousePublicAccount
 			return -1;
 		}
 		$this->date_deletion_requested = $now;
+		return 1;
+	}
+
+	/**
+	 * Persist a supported interface and notification language.
+	 *
+	 * @param string $locale Supported locale
+	 * @return int
+	 */
+	public function updateLanguage($locale)
+	{
+		$locale = EmergencyHouseLanguageService::normalizeLocale($locale);
+		if ($this->id <= 0 || $this->entity <= 0 || $locale === '') {
+			$this->error = 'ErrorInvalidLanguage';
+			return -1;
+		}
+
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql .= " SET lang = '".$this->db->escape($locale)."'";
+		$sql .= ' WHERE rowid = '.((int) $this->id).' AND entity = '.((int) $this->entity);
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return -1;
+		}
+		$this->lang = $locale;
 		return 1;
 	}
 

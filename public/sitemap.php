@@ -51,13 +51,25 @@ if ($resql) {
 }
 
 print '<?xml version="1.0" encoding="UTF-8"?>'."\n";
-print '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+print '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'."\n";
 foreach ($urls as $url) {
-	print "\t<url>\n";
-	print "\t\t<loc>".htmlspecialchars($url['loc'], ENT_XML1 | ENT_QUOTES, 'UTF-8')."</loc>\n";
-	if (isset($url['lastmod'])) {
-		print "\t\t<lastmod>".htmlspecialchars($url['lastmod'], ENT_XML1 | ENT_QUOTES, 'UTF-8')."</lastmod>\n";
+	foreach (array_keys(EmergencyHouseLanguageService::getSupportedLocales()) as $locale) {
+		$localizedUrl = emergencyhousePublicUrlWithLocale($url['loc'], $locale);
+		print "\t<url>\n";
+		print "\t\t<loc>".htmlspecialchars($localizedUrl, ENT_XML1 | ENT_QUOTES, 'UTF-8')."</loc>\n";
+		if (isset($url['lastmod'])) {
+			print "\t\t<lastmod>".htmlspecialchars($url['lastmod'], ENT_XML1 | ENT_QUOTES, 'UTF-8')."</lastmod>\n";
+		}
+		foreach (EmergencyHouseLanguageService::getSupportedLocales() as $alternateLocale => $alternateMetadata) {
+			$alternateUrl = emergencyhousePublicUrlWithLocale($url['loc'], $alternateLocale);
+			print "\t\t".'<xhtml:link rel="alternate" hreflang="'
+				.htmlspecialchars($alternateMetadata['tag'], ENT_XML1 | ENT_QUOTES, 'UTF-8')
+				.'" href="'.htmlspecialchars($alternateUrl, ENT_XML1 | ENT_QUOTES, 'UTF-8').'" />'."\n";
+		}
+		print "\t\t".'<xhtml:link rel="alternate" hreflang="x-default" href="'
+			.htmlspecialchars(emergencyhousePublicUrlWithoutLocale($url['loc']), ENT_XML1 | ENT_QUOTES, 'UTF-8')
+			.'" />'."\n";
+		print "\t</url>\n";
 	}
-	print "\t</url>\n";
 }
 print "</urlset>\n";

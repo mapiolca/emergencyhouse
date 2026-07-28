@@ -20,6 +20,8 @@ php test/agenda-element-contract.php
 php test/numbering-model-contract.php
 php test/security-key-contract.php
 php test/public-url-contract.php
+php test/language-service-contract.php
+php test/language-contract.php
 php test/multicompany-visibility-contract.php
 php test/analytics-contract.php
 php test/verification-queue-contract.php
@@ -67,9 +69,13 @@ Le script vérifie notamment :
 - la présence des guides Sécurité et fournisseurs ;
 - la publication conditionnelle des CGU et l’utilisation de l’éditeur WYSIWYG
   natif ;
-- la traduction bilingue de chaque message littéral affiché par les alertes
-  publiques ;
-- l’unicité et la parité des traductions `fr_FR` et `en_US`.
+- la traduction de chaque message littéral affiché par les alertes publiques ;
+- l’unicité, la parité des clés et la conservation des variables dans les
+  quinze catalogues ;
+- le registre des langues, les variantes navigateur, les priorités de
+  négociation et le sens RTL de l’arabe ;
+- les URL localisées, le sélecteur, les redirections internes et l’exclusion
+  des ressources statiques ;
 - le caractère désactivé par défaut de la collecte, les trois tables
   multientités, le cookie fixe, l’opposition, le verrouillage concurrent, les
   codes contrôlés, l’absence de données personnelles dans le schéma et le
@@ -80,8 +86,8 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 
 Résultats de la passe finale du 28 juillet 2026 :
 
-- lint PHP 8.5.7 : `130` fichiers PHP valides ;
-- contrats statiques : `716 contrats validés` ;
+- lint PHP 8.5.7 : tous les fichiers PHP valides ;
+- contrats statiques : `737 contrats validés` ;
 - mesure d’audience : tables sans donnée personnelle, collecte désactivée,
   cookie fixe, opposition, engagement, verrouillage, agrégation, rétention,
   filtres exacts, parcours ordonné, menu et conversions contrôlés validés ;
@@ -92,11 +98,13 @@ Résultats de la passe finale du 28 juillet 2026 :
 - file de vérification : `8 contrats` validés ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
-- URL publique : racine configurée, liens de pages, lien de notification,
-  redirection interne et fallback Dolibarr validés ;
+- URL publique : racine configurée, variantes avec `lang`, sélecteur, lien de
+  notification, redirection interne et fallback Dolibarr validés ;
 - ressources publiques autonomes : sorties CSS, JavaScript et SVG identiques
   aux sources canoniques du module ;
-- catalogues `fr_FR` et `en_US` : parité et unicité validées ;
+- quinze catalogues : `1518` clés identiques, sans doublon ni variable perdue ;
+- langues : 15 locales enregistrées, négociation `Accept-Language`, fallback
+  et RTL arabe validés ;
 - clés : deux valeurs de 32 octets acceptées, valeurs identiques et valeur
   courte refusées ; chargement prioritaire par les constantes sensibles
   Dolibarr, repli historique sur l’environnement, chiffrement authentifié et
@@ -126,6 +134,8 @@ Résultats de la passe finale du 28 juillet 2026 :
 - domaine public dont la racine documentaire pointe sur `public/` : accueil,
   ressources `/assets/`, navigation, formulaires, redirections et liens
   reçus par courriel ;
+- parcours navigateur dans les quinze langues, dont arabe RTL, et contrôle par
+  locuteurs natifs des traductions fonctionnelles et juridiques ;
 - correspondances et réservations concurrentes ;
 - Agenda, Notifications et travaux planifiés natifs ;
 - génération, aperçu et téléchargement du PDF multipage ;

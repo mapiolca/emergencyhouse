@@ -18,6 +18,7 @@ include_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
 
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/languageservice.class.php');
 
 /**
  * Module descriptor.
@@ -471,6 +472,11 @@ class modEmergencyHouse extends DolibarrModules
 	 */
 	private function ensureDefaultConstants($entity)
 	{
+		global $langs;
+
+		$publicDefaultLocale = EmergencyHouseLanguageService::getDefaultLocale(
+			isset($langs) && is_object($langs) ? (string) $langs->defaultlang : ''
+		);
 		$termsEnabledDefault = '0';
 		if ($this->constantExists('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', $entity)) {
 			$existingTermsHtml = getDolGlobalString(
@@ -485,6 +491,7 @@ class modEmergencyHouse extends DolibarrModules
 		$defaults = array(
 			'EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY' => array('private', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG' => array($publicDefaultLocale, 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_BASE_URL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_ORGANISATION_NAME' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_OFFICIAL_PHONE' => array('', 'chaine'),

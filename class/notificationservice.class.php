@@ -2,9 +2,11 @@
 /* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/translate.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/languageservice.class.php');
 dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
 
@@ -68,6 +70,7 @@ class EmergencyHouseNotificationService
 			$this->error = $account->error;
 			return -1;
 		}
+		$payload = $this->localizePublicPayloadUrls($payload, (string) $account->lang);
 
 		$result = $this->sendNativeEmail(
 			(int) $account->entity,
@@ -104,6 +107,7 @@ class EmergencyHouseNotificationService
 			$this->error = $account->error;
 			return -1;
 		}
+		$payload = $this->localizePublicPayloadUrls($payload, (string) $account->lang);
 		return $this->queueEmail(
 			(int) $account->entity,
 			$campaignId,
@@ -301,6 +305,34 @@ class EmergencyHouseNotificationService
 			$count += $result;
 		}
 		return $count;
+	}
+
+	/**
+	 * Keep controlled public links aligned with the recipient language.
+	 *
+	 * @param array<string, scalar|null> $payload Template data
+	 * @param string                     $locale Recipient locale
+	 * @return array<string, scalar|null>
+	 */
+	private function localizePublicPayloadUrls(array $payload, $locale)
+	{
+		$urlKeys = array(
+			'VERIFY_URL',
+			'RESET_URL',
+			'LOGIN_URL',
+			'SOLICITATION_URL',
+			'ALLOCATION_URL',
+		);
+		foreach ($urlKeys as $key) {
+			if (!isset($payload[$key]) || !is_string($payload[$key])) {
+				continue;
+			}
+			$localizedUrl = emergencyhousePublicUrlWithLocale($payload[$key], $locale);
+			if ($localizedUrl !== '') {
+				$payload[$key] = $localizedUrl;
+			}
+		}
+		return $payload;
 	}
 
 	/**
@@ -542,10 +574,7 @@ class EmergencyHouseNotificationService
 	 */
 	private function fetchTemplate($entity, $campaignId, $code, $locale)
 	{
-		$locales = array($locale);
-		if ($locale !== 'fr_FR') {
-			$locales[] = 'fr_FR';
-		}
+		$locales = EmergencyHouseLanguageService::getFallbackChain($locale);
 		foreach ($locales as $candidateLocale) {
 			$sql = 'SELECT subject_template, body_template FROM '.MAIN_DB_PREFIX.'emergencyhouse_notification_template';
 			$sql .= ' WHERE entity = '.((int) $entity);
@@ -567,9 +596,51 @@ class EmergencyHouseNotificationService
 			if (is_object($obj)) {
 				return array('subject' => (string) $obj->subject_template, 'body' => (string) $obj->body_template);
 			}
+			$builtInTemplate = $this->fetchBuiltInTemplate($code, $candidateLocale);
+			if (is_array($builtInTemplate)) {
+				return $builtInTemplate;
+			}
 		}
 		$this->error = 'ErrorNotificationTemplateMissing';
 		return false;
+	}
+
+	/**
+	 * Load a translated default template from the module catalogue.
+	 *
+	 * @param string $code Template code
+	 * @param string $locale Supported locale
+	 * @return array{subject:string, body:string}|false
+	 */
+	private function fetchBuiltInTemplate($code, $locale)
+	{
+		global $conf;
+
+		$keys = array(
+			'account_verification' => array('EmergencyHouseEmailAccountVerificationSubject', 'EmergencyHouseEmailAccountVerificationBody'),
+			'password_reset' => array('EmergencyHouseEmailPasswordResetSubject', 'EmergencyHouseEmailPasswordResetBody'),
+			'magic_login' => array('EmergencyHouseEmailMagicLoginSubject', 'EmergencyHouseEmailMagicLoginBody'),
+			'solicitation_create' => array('EmergencyHouseEmailSolicitationCreateSubject', 'EmergencyHouseEmailSolicitationCreateBody'),
+			'solicitation_update' => array('EmergencyHouseEmailSolicitationUpdateSubject', 'EmergencyHouseEmailSolicitationUpdateBody'),
+			'message_created' => array('EmergencyHouseEmailMessageCreatedSubject', 'EmergencyHouseEmailMessageCreatedBody'),
+			'allocation_create' => array('EmergencyHouseEmailAllocationCreateSubject', 'EmergencyHouseEmailAllocationCreateBody'),
+			'allocation_update' => array('EmergencyHouseEmailAllocationUpdateSubject', 'EmergencyHouseEmailAllocationUpdateBody'),
+			'offer_confirmation_due' => array('EmergencyHouseEmailOfferConfirmationDueSubject', 'EmergencyHouseEmailOfferConfirmationDueBody'),
+			'stay_reminder' => array('EmergencyHouseEmailStayReminderSubject', 'EmergencyHouseEmailStayReminderBody'),
+		);
+		if (!isset($keys[$code])) {
+			return false;
+		}
+
+		$outputlangs = new Translate('', $conf);
+		$outputlangs->setDefaultLang($locale);
+		$outputlangs->load('emergencyhouse@emergencyhouse');
+		$subject = $outputlangs->trans($keys[$code][0]);
+		$body = $outputlangs->trans($keys[$code][1]);
+		if ($subject === $keys[$code][0] || $body === $keys[$code][1]) {
+			return false;
+		}
+		return array('subject' => $subject, 'body' => $body);
 	}
 
 	/**

@@ -65,11 +65,18 @@ function emergencyhousePublicNormalizePath($path)
  *
  * @param string $path Path relative to public/
  * @param array<string, int|string> $parameters Query parameters
+ * @param bool                      $localized  Add the active public locale
  * @return string
  */
-function emergencyhousePublicUrl($path = 'index.php', array $parameters = array())
+function emergencyhousePublicUrl($path = 'index.php', array $parameters = array(), $localized = true)
 {
 	$relativePath = emergencyhousePublicNormalizePath($path);
+	if ($localized && emergencyhousePublicPathIsLocalized($relativePath)) {
+		$parameterLocale = isset($parameters['lang'])
+			? EmergencyHouseLanguageService::normalizeLocale((string) $parameters['lang'])
+			: '';
+		$parameters['lang'] = $parameterLocale !== '' ? $parameterLocale : emergencyhousePublicCurrentLocale();
+	}
 	$configuredBaseUrl = emergencyhousePublicConfiguredBaseUrl();
 	if ($configuredBaseUrl === '') {
 		$baseUrl = rtrim(dol_buildpath('/emergencyhouse/public/', 1), '/').'/';
@@ -88,21 +95,180 @@ function emergencyhousePublicUrl($path = 'index.php', array $parameters = array(
  *
  * @param string $path Relative public path
  * @param array<string, scalar> $parameters Query parameters
+ * @param bool                  $localized Add the active public locale
  * @return string
  */
-function emergencyhousePublicAbsoluteUrl($path = 'index.php', array $parameters = array())
+function emergencyhousePublicAbsoluteUrl($path = 'index.php', array $parameters = array(), $localized = true)
 {
+	$relativePath = emergencyhousePublicNormalizePath($path);
+	if ($localized && emergencyhousePublicPathIsLocalized($relativePath)) {
+		$parameterLocale = isset($parameters['lang'])
+			? EmergencyHouseLanguageService::normalizeLocale((string) $parameters['lang'])
+			: '';
+		$parameters['lang'] = $parameterLocale !== '' ? $parameterLocale : emergencyhousePublicCurrentLocale();
+	}
 	$baseUrl = emergencyhousePublicConfiguredBaseUrl();
 	if ($baseUrl !== '') {
-		$relativePath = emergencyhousePublicNormalizePath($path);
 		$url = $baseUrl.($relativePath === 'index.php' ? '' : $relativePath);
 	} else {
-		$url = rtrim(dol_buildpath('/emergencyhouse/public/', 2), '/').'/'.emergencyhousePublicNormalizePath($path);
+		$url = rtrim(dol_buildpath('/emergencyhouse/public/', 2), '/').'/'.$relativePath;
 	}
 	if (!empty($parameters)) {
 		$url .= '?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
 	}
 	return $url;
+}
+
+/**
+ * Return whether a public path represents localized content.
+ *
+ * @param string $path Normalized relative path
+ * @return bool
+ */
+function emergencyhousePublicPathIsLocalized($path)
+{
+	return strpos($path, 'assets/') !== 0
+		&& !in_array($path, array('captcha.php', 'robots.php', 'sitemap.php'), true);
+}
+
+/**
+ * Return the active supported locale.
+ *
+ * @return string
+ */
+function emergencyhousePublicCurrentLocale()
+{
+	global $langs;
+
+	$current = isset($langs) && is_object($langs)
+		? EmergencyHouseLanguageService::normalizeLocale((string) $langs->defaultlang)
+		: '';
+	return $current !== '' ? $current : 'fr_FR';
+}
+
+/**
+ * Resolve the locale for one public request.
+ *
+ * @param EmergencyHousePublicAccount|null $account Authenticated account
+ * @param string                           $dolibarrLocale Locale selected before public negotiation
+ * @return string
+ */
+function emergencyhousePublicResolveLocale($account = null, $dolibarrLocale = '')
+{
+	$requested = EmergencyHouseLanguageService::normalizeLocale(GETPOST('lang', 'alphanohtml'));
+	if ($requested !== '') {
+		return $requested;
+	}
+	if ($account instanceof EmergencyHousePublicAccount) {
+		$accountLocale = EmergencyHouseLanguageService::normalizeLocale((string) $account->lang);
+		if ($accountLocale !== '') {
+			return $accountLocale;
+		}
+	}
+	$cookie = isset($_COOKIE['emergencyhouse_language']) && is_string($_COOKIE['emergencyhouse_language'])
+		? EmergencyHouseLanguageService::normalizeLocale($_COOKIE['emergencyhouse_language'])
+		: '';
+	if ($cookie !== '') {
+		return $cookie;
+	}
+	$acceptLanguage = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) && is_string($_SERVER['HTTP_ACCEPT_LANGUAGE'])
+		? EmergencyHouseLanguageService::negotiateAcceptLanguage($_SERVER['HTTP_ACCEPT_LANGUAGE'])
+		: '';
+	if ($acceptLanguage !== '') {
+		return $acceptLanguage;
+	}
+	return EmergencyHouseLanguageService::getDefaultLocale($dolibarrLocale);
+}
+
+/**
+ * Persist the public language preference cookie.
+ *
+ * @param string $locale Supported locale
+ * @return bool
+ */
+function emergencyhousePublicSetLanguageCookie($locale)
+{
+	$locale = EmergencyHouseLanguageService::normalizeLocale($locale);
+	if ($locale === '' || headers_sent()) {
+		return false;
+	}
+	$baseParts = parse_url(emergencyhousePublicAbsoluteUrl('index.php', array(), false));
+	$path = is_array($baseParts) && isset($baseParts['path']) ? (string) $baseParts['path'] : '/';
+	if (substr($path, -4) === '.php') {
+		$path = dirname($path);
+	}
+	$path = rtrim($path, '/').'/';
+	if ($path === '') {
+		$path = '/';
+	}
+	return setcookie('emergencyhouse_language', $locale, array(
+		'expires' => dol_now() + 31536000,
+		'path' => $path,
+		'secure' => true,
+		'httponly' => true,
+		'samesite' => 'Lax',
+	));
+}
+
+/**
+ * Replace the language parameter of a validated public URL.
+ *
+ * @param string $url Safe public URL
+ * @param string $locale Supported locale
+ * @return string
+ */
+function emergencyhousePublicUrlWithLocale($url, $locale)
+{
+	$locale = EmergencyHouseLanguageService::normalizeLocale($locale);
+	$parts = parse_url($url);
+	if ($locale === '' || !is_array($parts) || empty($parts['path'])) {
+		return '';
+	}
+	$parameters = array();
+	if (!empty($parts['query'])) {
+		parse_str((string) $parts['query'], $parameters);
+	}
+	$parameters['lang'] = $locale;
+	$result = '';
+	if (isset($parts['scheme'], $parts['host'])) {
+		$result = (string) $parts['scheme'].'://'.(string) $parts['host'];
+		if (isset($parts['port'])) {
+			$result .= ':'.((int) $parts['port']);
+		}
+	}
+	$result .= (string) $parts['path'];
+	return $result.'?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
+}
+
+/**
+ * Remove the language parameter from a public URL.
+ *
+ * @param string $url Public URL
+ * @return string
+ */
+function emergencyhousePublicUrlWithoutLocale($url)
+{
+	$parts = parse_url($url);
+	if (!is_array($parts) || empty($parts['path'])) {
+		return '';
+	}
+	$parameters = array();
+	if (!empty($parts['query'])) {
+		parse_str((string) $parts['query'], $parameters);
+		unset($parameters['lang']);
+	}
+	$result = '';
+	if (isset($parts['scheme'], $parts['host'])) {
+		$result = (string) $parts['scheme'].'://'.(string) $parts['host'];
+		if (isset($parts['port'])) {
+			$result .= ':'.((int) $parts['port']);
+		}
+	}
+	$result .= (string) $parts['path'];
+	if (!empty($parameters)) {
+		$result .= '?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
+	}
+	return $result;
 }
 
 /**
@@ -112,11 +278,8 @@ function emergencyhousePublicAbsoluteUrl($path = 'index.php', array $parameters 
  */
 function emergencyhousePublicLanguageTag()
 {
-	global $langs;
-
-	return preg_match('/^[a-z]{2}_[A-Z]{2}$/', $langs->defaultlang)
-		? str_replace('_', '-', $langs->defaultlang)
-		: 'fr';
+	$metadata = EmergencyHouseLanguageService::getLocaleMetadata(emergencyhousePublicCurrentLocale());
+	return $metadata['tag'];
 }
 
 /**
@@ -138,7 +301,7 @@ function emergencyhousePublicOrganizationStructuredData($homeUrl)
 		'@id' => $homeUrl.'#organization',
 		'name' => $name,
 		'url' => $homeUrl,
-		'logo' => emergencyhousePublicAbsoluteUrl('assets/emergencyhouse.svg.php'),
+		'logo' => emergencyhousePublicAbsoluteUrl('assets/emergencyhouse.svg.php', array(), false),
 	);
 	$email = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL', ''));
 	$phone = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE', ''));
@@ -341,7 +504,7 @@ function emergencyhousePublicUserAgent()
  */
 function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false, array $seo = array(), array $analyticsContext = array())
 {
-	global $langs, $emergencyhousePublicAnalytics;
+	global $langs, $emergencyhousePublicAnalytics, $emergencyhousePublicAuth;
 
 	$language = emergencyhousePublicLanguageTag();
 	$cssUrl = $preview
@@ -380,7 +543,7 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	}
 	$hasConfiguredSocialImage = filter_var($socialImage, FILTER_VALIDATE_URL) !== false;
 	if (!$hasConfiguredSocialImage) {
-		$socialImage = emergencyhousePublicAbsoluteUrl('assets/emergencyhouse.svg.php');
+		$socialImage = emergencyhousePublicAbsoluteUrl('assets/emergencyhouse.svg.php', array(), false);
 	}
 	if (!$allowIndex && !headers_sent()) {
 		header('X-Robots-Tag: '.$robots, true);
@@ -410,7 +573,8 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 		$bodyAnalyticsAttributes = $emergencyhousePublicAnalytics->getBodyAttributes(newToken());
 	}
 	print '<!doctype html>';
-	print '<html lang="'.dol_escape_htmltag($language).'"><head>';
+	$direction = EmergencyHouseLanguageService::getLocaleMetadata(emergencyhousePublicCurrentLocale())['direction'];
+	print '<html lang="'.dol_escape_htmltag($language).'" dir="'.dol_escape_htmltag($direction).'"><head>';
 	print '<meta charset="utf-8">';
 	print '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">';
 	print '<meta name="robots" content="'.dol_escape_htmltag($robots).'">';
@@ -420,10 +584,23 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	}
 	if ($canonical !== '') {
 		print '<link rel="canonical" href="'.dol_escape_htmltag($canonical).'">';
+		foreach (EmergencyHouseLanguageService::getSupportedLocales() as $alternateLocale => $alternateMetadata) {
+			$alternateUrl = emergencyhousePublicUrlWithLocale($canonical, $alternateLocale);
+			print '<link rel="alternate" hreflang="'.dol_escape_htmltag($alternateMetadata['tag']).'" href="'
+				.dol_escape_htmltag($alternateUrl).'">';
+		}
+		print '<link rel="alternate" hreflang="x-default" href="'
+			.dol_escape_htmltag(emergencyhousePublicUrlWithoutLocale($canonical)).'">';
 	}
 	print '<meta property="og:type" content="'.dol_escape_htmltag($ogType).'">';
 	print '<meta property="og:site_name" content="'.dol_escape_htmltag($langs->trans('EmergencyHouse')).'">';
 	print '<meta property="og:locale" content="'.dol_escape_htmltag(str_replace('-', '_', $language)).'">';
+	foreach (EmergencyHouseLanguageService::getSupportedLocales() as $alternateMetadata) {
+		if ($alternateMetadata['tag'] !== $language) {
+			print '<meta property="og:locale:alternate" content="'
+				.dol_escape_htmltag(str_replace('-', '_', $alternateMetadata['tag'])).'">';
+		}
+	}
 	print '<meta property="og:title" content="'.dol_escape_htmltag($title).'">';
 	if ($description !== '') {
 		print '<meta property="og:description" content="'.dol_escape_htmltag($description).'">';
@@ -465,6 +642,30 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	print '<img src="'.dol_escape_htmltag($logoUrl).'" alt="" width="38" height="38">';
 	print '<span><strong>'.$langs->trans('EmergencyHouse').'</strong><small>'.$langs->trans('PublicServiceTagline').'</small></span>';
 	print '</a>';
+	if (!$preview) {
+		$returnTo = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])
+			? emergencyhousePublicSafeReturnUrl($_SERVER['REQUEST_URI'])
+			: emergencyhousePublicUrl();
+		if ($returnTo === '') {
+			$returnTo = emergencyhousePublicUrl();
+		}
+		print '<form class="eh-language-form" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('language.php')).'">';
+		print emergencyhousePublicCsrfFields(
+			$account instanceof EmergencyHousePublicAccount ? $emergencyhousePublicAuth : null,
+			$account instanceof EmergencyHousePublicAccount ? 'change_language' : ''
+		);
+		print '<input type="hidden" name="action" value="change_language">';
+		print '<input type="hidden" name="return_to" value="'.dol_escape_htmltag($returnTo).'">';
+		print '<label class="eh-visually-hidden" for="eh-public-language">'.$langs->trans('Language').'</label>';
+		print '<select class="eh-select2" id="eh-public-language" name="lang" aria-label="'.$langs->trans('Language').'">';
+		foreach (EmergencyHouseLanguageService::getSupportedLocales() as $locale => $metadata) {
+			print '<option value="'.dol_escape_htmltag($locale).'"'
+				.($locale === emergencyhousePublicCurrentLocale() ? ' selected' : '').'>'
+				.dol_escape_htmltag($metadata['label']).'</option>';
+		}
+		print '</select><button class="eh-button eh-button-small eh-button-secondary" type="submit">'
+			.$langs->trans('ChangeLanguage').'</button></form>';
+	}
 	print '<nav aria-label="'.$langs->trans('PrimaryNavigation').'"><ul>';
 	print emergencyhousePublicNavItem('campaigns', $active, $preview ? '#preview-campaigns' : emergencyhousePublicUrl(), $langs->trans('Campaigns'));
 	print emergencyhousePublicNavItem('offers', $active, $preview ? '#preview-offers' : emergencyhousePublicUrl('offer/index.php'), $langs->trans('Offers'));
@@ -514,6 +715,56 @@ function emergencyhousePublicHtmlHasContent($html)
 }
 
 /**
+ * Build a per-locale Dolibarr constant name.
+ *
+ * @param string $baseConstant Base constant
+ * @param string $locale Supported locale
+ * @return string
+ */
+function emergencyhousePublicLocalizedConstantName($baseConstant, $locale)
+{
+	$locale = EmergencyHouseLanguageService::normalizeLocale($locale);
+	return $locale === '' ? '' : $baseConstant.'_'.strtoupper($locale);
+}
+
+/**
+ * Return localized administrable public HTML with a conservative fallback.
+ *
+ * Existing unsuffixed constants remain the final source of truth until an
+ * administrator saves their localized replacement.
+ *
+ * @param string $baseConstant Base HTML constant
+ * @param string $locale Requested locale
+ * @return string
+ */
+function emergencyhousePublicLocalizedHtml($baseConstant, $locale = '')
+{
+	global $langs, $emergencyhousePublicDefaultLocale;
+
+	$locale = EmergencyHouseLanguageService::normalizeLocale($locale);
+	if ($locale === '') {
+		$locale = emergencyhousePublicCurrentLocale();
+	}
+	$defaultLocale = isset($emergencyhousePublicDefaultLocale)
+		? EmergencyHouseLanguageService::normalizeLocale((string) $emergencyhousePublicDefaultLocale)
+		: '';
+	if ($defaultLocale === '') {
+		$defaultLocale = EmergencyHouseLanguageService::getDefaultLocale(
+			isset($langs) && is_object($langs) ? (string) $langs->defaultlang : ''
+		);
+	}
+	$candidates = array($locale, $defaultLocale);
+	foreach (array_unique($candidates) as $candidate) {
+		$constantName = emergencyhousePublicLocalizedConstantName($baseConstant, $candidate);
+		$html = $constantName !== '' ? trim(getDolGlobalString($constantName, '')) : '';
+		if (emergencyhousePublicHtmlHasContent($html)) {
+			return $html;
+		}
+	}
+	return trim(getDolGlobalString($baseConstant, ''));
+}
+
+/**
  * Check whether a legal page is explicitly published with meaningful content.
  *
  * @param string $enabledConstant Publication switch constant
@@ -526,7 +777,7 @@ function emergencyhousePublicLegalPageIsPublished($enabledConstant, $htmlConstan
 		return false;
 	}
 
-	return emergencyhousePublicHtmlHasContent(getDolGlobalString($htmlConstant, ''));
+	return emergencyhousePublicHtmlHasContent(emergencyhousePublicLocalizedHtml($htmlConstant));
 }
 
 /**
@@ -691,15 +942,18 @@ function emergencyhousePublicSafeReturnUrl($value)
 		strpos($decodedRelativePath, "\0") !== false
 		|| preg_match('~(?:^|/)\.\.(?:/|$)~', $decodedRelativePath)
 		|| !preg_match(
-				'~^(?:index\.php|campaign\.php|accessibility\.php|audience\.php|contact\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
+				'~^(?:index\.php|campaign\.php|accessibility\.php|audience\.php|contact\.php|language\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
 			$decodedRelativePath
 		)
 	) {
 		return '';
 	}
 
-	$url = emergencyhousePublicUrl($relativePath);
-	return $url.($query !== '' ? '?'.$query : '');
+	$url = emergencyhousePublicUrl($relativePath, array(), false);
+	if ($query !== '') {
+		$url .= '?'.$query;
+	}
+	return emergencyhousePublicUrlWithLocale($url, emergencyhousePublicCurrentLocale());
 }
 
 /**

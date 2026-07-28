@@ -3,7 +3,7 @@
 
 require __DIR__.'/_init.php';
 
-$termsHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''));
+$termsHtml = emergencyhousePublicLocalizedHtml('EMERGENCYHOUSE_PUBLIC_TERMS_HTML');
 if (!emergencyhousePublicLegalPageIsPublished(
 	'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED',
 	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML'
