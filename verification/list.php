@@ -120,8 +120,16 @@ $verificationStatusOptions = array(
 	2 => $langs->trans('StatusRefused'),
 );
 
+$offerEntities = emergencyhouseEntityScope('offer');
+$requestEntities = emergencyhouseEntityScope('request');
+$entities = array_values(array_unique(array_merge(array((int) $conf->entity), $offerEntities, $requestEntities)));
+$showEnvironment = emergencyhouseEntityScopeIsShared($entities);
+
 $sortfield = GETPOST('sortfield', 'aZ09comma');
-$allowedSorts = array('v.date_creation', 'v.status', 'v.object_type', 'v.verification_type', 'v.date_expiration', 'v.entity');
+$allowedSorts = array('v.date_creation', 'v.status', 'v.object_type', 'v.verification_type', 'v.date_expiration');
+if ($showEnvironment) {
+	$allowedSorts[] = 'v.entity';
+}
 if (!in_array($sortfield, $allowedSorts, true)) {
 	$sortfield = 'v.date_creation';
 }
@@ -142,12 +150,13 @@ if (GETPOST('button_removefilter', 'alpha') !== '') {
 	$page = 0;
 	$offset = 0;
 }
-$offerEntities = emergencyhouseEntityScope('offer');
-$requestEntities = emergencyhouseEntityScope('request');
-$entities = array_values(array_unique(array_merge(array((int) $conf->entity), $offerEntities, $requestEntities)));
-$searchEntities = emergencyhouseEntitySelection($searchEntitiesRaw, $entities);
+$searchEntities = $showEnvironment
+	? emergencyhouseEntitySelection($searchEntitiesRaw, $entities)
+	: array();
 $filteredEntities = empty($searchEntities) ? $entities : $searchEntities;
-$entityOptions = emergencyhouseEntityOptionsForScope($db, $entities);
+$entityOptions = $showEnvironment
+	? emergencyhouseEntityOptionsForScope($db, $entities)
+	: array();
 $typeEntityClauses = array();
 if (in_array((int) $conf->entity, $filteredEntities, true)) {
 	$typeEntityClauses[] = "(v.object_type = 'account' AND v.entity = ".((int) $conf->entity).')';
@@ -223,8 +232,10 @@ $listFields = array(
 	'v.fk_operator' => 'Operator',
 	'v.date_creation' => 'DateCreation',
 	'v.date_expiration' => 'ExpirationDate',
-	'v.entity' => 'Environment',
 );
+if ($showEnvironment) {
+	$listFields['v.entity'] = 'Environment';
+}
 print '<form method="GET" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
 print_barre_liste($langs->trans('Verifications'), $page, $_SERVER['PHP_SELF'], $param, $sortfield, $sortorder, '', $num, $totalnboflines, 'check', 0, '', '', $limit, $hasNext ? 0 : 1);
 print '<div class="div-table-responsive"><table class="tagtable liste centpercent">';
@@ -232,9 +243,13 @@ print '<tr class="liste_titre_filter">';
 print '<td>'.$form->selectarray('search_object_type', array('' => '') + $objectTypeOptions, $searchObjectType, 0, 0, 0, '', 0, 0, 0, '', 'maxwidth150').'</td>';
 print '<td></td><td></td><td></td><td>';
 print $form->selectarray('search_status', array('' => '') + $verificationStatusOptions, $searchStatus, 0, 0, 0, '', 0, 0, 0, '', 'maxwidth150');
-print '</td><td></td><td></td><td></td><td>';
-print Form::multiselectarray('search_entity', $entityOptions, $searchEntities, 0, 0, 'minwidth150', 0, 0, '', '', $langs->trans('Environment'));
-print '</td><td class="center">';
+print '</td><td></td><td></td><td></td>';
+if ($showEnvironment) {
+	print '<td>';
+	print Form::multiselectarray('search_entity', $entityOptions, $searchEntities, 0, 0, 'minwidth150', 0, 0, '', '', $langs->trans('Environment'));
+	print '</td>';
+}
+print '<td class="center">';
 print '<button class="liste_titre button_search" name="button_search" value="x">'.img_picto($langs->trans('Search'), 'search').'</button>';
 print '<button class="liste_titre button_removefilter" name="button_removefilter" value="x">'.img_picto($langs->trans('RemoveFilter'), 'searchclear').'</button>';
 print '</td></tr>';
@@ -266,7 +281,10 @@ foreach ($rows as $row) {
 	print '<td>'.($userStatic->fetch((int) $row->fk_operator) > 0 ? $userStatic->getNomUrl(-1) : '<span class="opacitymedium">#'.((int) $row->fk_operator).'</span>').'</td>';
 	print '<td>'.dol_print_date($db->jdate($row->date_creation), 'dayhour').'</td>';
 	print '<td>'.(!empty($row->date_expiration) ? dol_print_date($db->jdate($row->date_expiration), 'day') : '').'</td>';
-	print '<td class="center">'.emergencyhouseEntityBadge((int) $row->entity, $entityOptions).'</td><td></td></tr>';
+	if ($showEnvironment) {
+		print '<td class="center">'.emergencyhouseEntityBadge((int) $row->entity, $entityOptions).'</td>';
+	}
+	print '<td></td></tr>';
 }
 if ($num === 0) {
 	print '<tr class="oddeven"><td colspan="'.(count($listFields) + 1).'"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';

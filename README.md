@@ -37,6 +37,12 @@ utilisateurs Dolibarr pour les particuliers.
 Les intégrations Data Policy, Adhérents et Ressources sont optionnelles. Leur
 indisponibilité ne bloque pas le socle du module.
 
+L’onglet de réglages **Multicompany** est affiché uniquement lorsque le module
+Multicompany est actif et qu’un partage multi-entité est effectivement
+configuré pour au moins un objet. Les filtres et colonnes **Environnement**
+restent limités aux écrans dont le périmètre effectif contient plusieurs
+entités.
+
 ## Installation
 
 Le contenu du dépôt constitue directement la racine du module
@@ -264,6 +270,7 @@ Contrôles autonomes disponibles depuis la racine du module :
 
 ```bash
 php test/static-contracts.php
+php test/multicompany-visibility-contract.php
 ```
 
 La validation complète exige une instance Dolibarr v20+, une base

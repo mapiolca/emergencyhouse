@@ -40,8 +40,13 @@ $campaignId = GETPOSTINT('fk_campaign');
 $dateStart = emergencyhouseStatisticsReadDate('date_start');
 $dateEnd = emergencyhouseStatisticsReadDate('date_end');
 $download = GETPOSTINT('download') === 1;
+$entities = emergencyhouseEntityScope('campaign');
+$showEnvironment = emergencyhouseEntityScopeIsShared($entities);
 $sortfield = GETPOST('sortfield', 'aZ09comma');
-$allowedSorts = array('s.entity', 'c.ref', 's.metric_date', 's.metric_code', 's.dimension_code', 's.metric_value');
+$allowedSorts = array('c.ref', 's.metric_date', 's.metric_code', 's.dimension_code', 's.metric_value');
+if ($showEnvironment) {
+	$allowedSorts[] = 's.entity';
+}
 if (!in_array($sortfield, $allowedSorts, true)) {
 	$sortfield = 's.metric_date';
 }
@@ -61,10 +66,13 @@ if (GETPOST('button_removefilter', 'alpha') !== '') {
 	$page = 0;
 	$offset = 0;
 }
-$entities = emergencyhouseEntityScope('campaign');
-$searchEntities = emergencyhouseEntitySelection($searchEntitiesRaw, $entities);
+$searchEntities = $showEnvironment
+	? emergencyhouseEntitySelection($searchEntitiesRaw, $entities)
+	: array();
 $filteredEntities = empty($searchEntities) ? $entities : $searchEntities;
-$entityOptions = emergencyhouseEntityOptionsForScope($db, $entities);
+$entityOptions = $showEnvironment
+	? emergencyhouseEntityOptionsForScope($db, $entities)
+	: array();
 $where = ' WHERE s.entity IN ('.implode(',', $filteredEntities).')';
 if ($campaignId > 0) {
 	$where .= ' AND s.fk_campaign = '.$campaignId;
@@ -88,24 +96,28 @@ if ($download) {
 	header('Content-Disposition: attachment; filename="emergencyhouse-statistics-'.dol_print_date(dol_now(), '%Y%m%d').'.csv"');
 	print "\xEF\xBB\xBF";
 	$csvHeaders = array(
-		$langs->trans('Environment'),
 		$langs->trans('Campaign'),
 		$langs->trans('Date'),
 		$langs->trans('Metric'),
 		$langs->trans('Dimension'),
 		$langs->trans('Value'),
 	);
+	if ($showEnvironment) {
+		array_unshift($csvHeaders, $langs->trans('Environment'));
+	}
 	print implode(';', array_map('dol_escape_csv', $csvHeaders))."\n";
 	if ($resql) {
 		while (is_object($row = $db->fetch_object($resql))) {
 			$values = array(
-				$entityOptions[(int) $row->entity] ?? (string) $row->entity,
 				(string) $row->campaign_ref,
 				(string) $row->metric_date,
 				emergencyhouseStatisticsMetricLabel($langs, (string) $row->metric_code),
 				emergencyhouseStatisticsDimensionLabel($langs, (string) $row->dimension_code),
 				(string) $row->metric_value,
 			);
+			if ($showEnvironment) {
+				array_unshift($values, $entityOptions[(int) $row->entity] ?? (string) $row->entity);
+			}
 			print implode(';', array_map('dol_escape_csv', $values))."\n";
 		}
 	}
@@ -167,9 +179,11 @@ $buttons = '<a class="butAction" href="'.dol_escape_htmltag($_SERVER['PHP_SELF']
 print load_fiche_titre($langs->trans('Statistics'), $buttons, 'chart-area');
 print '<form method="GET" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'"><table class="border centpercent">';
 print '<tr><td class="titlefield">'.$langs->trans('Campaign').'</td><td>'.$form->selectarray('fk_campaign', $campaignOptions, $campaignId, 0, 0, 0, '', 0, 0, 0, '', 'minwidth300').'</td></tr>';
-print '<tr><td>'.$langs->trans('Environment').'</td><td>';
-print Form::multiselectarray('search_entity', $entityOptions, $searchEntities, 0, 0, 'minwidth300', 0, 0, '', '', $langs->trans('Environment'));
-print '</td></tr>';
+if ($showEnvironment) {
+	print '<tr><td>'.$langs->trans('Environment').'</td><td>';
+	print Form::multiselectarray('search_entity', $entityOptions, $searchEntities, 0, 0, 'minwidth300', 0, 0, '', '', $langs->trans('Environment'));
+	print '</td></tr>';
+}
 print '<tr><td>'.$langs->trans('DateStart').'</td><td>'.$form->selectDate($dateStart ?: -1, 'date_start', 0, 0, 1, '', 1, 0, 0, 0).'</td></tr>';
 print '<tr><td>'.$langs->trans('DateEnd').'</td><td>'.$form->selectDate($dateEnd ?: -1, 'date_end', 0, 0, 1, '', 1, 0, 0, 0).'</td></tr>';
 print '</table><div class="center"><button class="button" type="submit">'.$langs->trans('Filter').'</button> ';
@@ -194,7 +208,9 @@ print_barre_liste(
 );
 print '<div class="div-table-responsive"><table class="tagtable liste centpercent">';
 print '<tr class="liste_titre">';
-print_liste_field_titre($langs->trans('Environment'), $_SERVER['PHP_SELF'], 's.entity', '', $param, '', $sortfield, $sortorder);
+if ($showEnvironment) {
+	print_liste_field_titre($langs->trans('Environment'), $_SERVER['PHP_SELF'], 's.entity', '', $param, '', $sortfield, $sortorder);
+}
 print_liste_field_titre($langs->trans('Campaign'), $_SERVER['PHP_SELF'], 'c.ref', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('Date'), $_SERVER['PHP_SELF'], 's.metric_date', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('Metric'), $_SERVER['PHP_SELF'], 's.metric_code', '', $param, '', $sortfield, $sortorder);
@@ -203,7 +219,11 @@ print_liste_field_titre($langs->trans('Value'), $_SERVER['PHP_SELF'], 's.metric_
 print '</tr>';
 $campaignStatic = new EmergencyHouseCampaign($db);
 foreach ($rows as $row) {
-	print '<tr class="oddeven"><td class="center">'.emergencyhouseEntityBadge((int) $row->entity, $entityOptions).'</td><td>';
+	print '<tr class="oddeven">';
+	if ($showEnvironment) {
+		print '<td class="center">'.emergencyhouseEntityBadge((int) $row->entity, $entityOptions).'</td>';
+	}
+	print '<td>';
 	print $campaignStatic->fetch((int) $row->fk_campaign) > 0 ? $campaignStatic->getNomUrl(1) : '<span class="opacitymedium">#'.((int) $row->fk_campaign).'</span>';
 	print '</td><td>'.dol_escape_htmltag((string) $row->metric_date).'</td>';
 	print '<td>'.dol_escape_htmltag(emergencyhouseStatisticsMetricLabel($langs, (string) $row->metric_code)).'</td>';
@@ -211,7 +231,7 @@ foreach ($rows as $row) {
 	print '<td class="right">'.dol_escape_htmltag((string) $row->metric_value).'</td></tr>';
 }
 if ($num === 0) {
-	print '<tr class="oddeven"><td colspan="6"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
+	print '<tr class="oddeven"><td colspan="'.($showEnvironment ? 6 : 5).'"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
 }
 print '</table></div></form>';
 print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" class="center">';

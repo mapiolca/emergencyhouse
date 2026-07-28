@@ -45,8 +45,17 @@ if ($action === 'recalculate' && emergencyhouseCanDo($user, 'match', 'write')) {
 	);
 }
 
+$entities = array_values(array_intersect(emergencyhouseEntityScope('offer'), emergencyhouseEntityScope('request')));
+if (empty($entities)) {
+	$entities = array((int) $conf->entity);
+}
+$showEnvironment = emergencyhouseEntityScopeIsShared($entities);
+
 $sortfield = GETPOST('sortfield', 'aZ09comma');
-$allowedSorts = array('m.score_total', 'm.score_class', 'm.date_calculation', 'o.ref', 'r.ref', 'm.status', 'm.entity');
+$allowedSorts = array('m.score_total', 'm.score_class', 'm.date_calculation', 'o.ref', 'r.ref', 'm.status');
+if ($showEnvironment) {
+	$allowedSorts[] = 'm.entity';
+}
 if (!in_array($sortfield, $allowedSorts, true)) {
 	$sortfield = 'm.score_total';
 }
@@ -71,13 +80,13 @@ if (GETPOST('button_removefilter', 'alpha') !== '') {
 	$page = 0;
 	$offset = 0;
 }
-$entities = array_values(array_intersect(emergencyhouseEntityScope('offer'), emergencyhouseEntityScope('request')));
-if (empty($entities)) {
-	$entities = array((int) $conf->entity);
-}
-$searchEntities = emergencyhouseEntitySelection($searchEntitiesRaw, $entities);
+$searchEntities = $showEnvironment
+	? emergencyhouseEntitySelection($searchEntitiesRaw, $entities)
+	: array();
 $filteredEntities = empty($searchEntities) ? $entities : $searchEntities;
-$entityOptions = emergencyhouseEntityOptionsForScope($db, $entities);
+$entityOptions = $showEnvironment
+	? emergencyhouseEntityOptionsForScope($db, $entities)
+	: array();
 $where = ' WHERE m.entity IN ('.implode(',', $filteredEntities).')';
 if ($searchText !== '') {
 	$where .= " AND (o.ref LIKE '%".$db->escape($searchText)."%' OR r.ref LIKE '%".$db->escape($searchText)."%')";
@@ -124,8 +133,10 @@ $arrayfields = array(
 	'm.score_dates' => array('label' => 'DateScore', 'checked' => 1, 'position' => 60),
 	'm.date_calculation' => array('label' => 'DateCalculation', 'checked' => 1, 'position' => 70),
 	'm.status' => array('label' => 'Status', 'checked' => 1, 'position' => 80),
-	'm.entity' => array('label' => 'Environment', 'checked' => 1, 'position' => 90),
 );
+if ($showEnvironment) {
+	$arrayfields['m.entity'] = array('label' => 'Environment', 'checked' => 1, 'position' => 90);
+}
 $selectedfields = Form::multiSelectArrayWithCheckbox('selectedfields', $arrayfields, 'emergencyhousematchlist');
 $form = new Form($db);
 $param = '&search_text='.urlencode($searchText).'&search_class='.urlencode($searchClass);

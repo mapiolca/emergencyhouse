@@ -41,6 +41,9 @@ $tab = GETPOST('tab', 'aZ09');
 if (empty($tab)) {
 	$tab = 'general';
 }
+if ($tab === 'multicompany' && !emergencyhouseHasConfiguredObjectSharing()) {
+	$tab = 'general';
+}
 
 /**
  * @var array<string, array{label:string,model:string}>

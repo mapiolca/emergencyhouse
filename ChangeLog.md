@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Masquage de l’onglet de réglages **Multicompany** tant que le module
+  Multicompany est désactivé ou qu’aucun objet Emergency House ne possède de
+  partage multi-entité effectif ; les filtres et colonnes **Environnement**
+  restent propres aux écrans dont le périmètre contient plusieurs entités.
 - Alignement des tuiles d’indicateurs du tableau de bord sur le composant
   statistique natif Dolibarr, avec libellés lisibles et compteurs hiérarchisés.
 - Ajout du référencement contrôlé du portail : accueil et pages de confiance

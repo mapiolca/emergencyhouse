@@ -21,9 +21,11 @@ function emergencyhouseAdminPrepareHead()
 		'security' => 'Security',
 		'retention' => 'Retention',
 		'integrations' => 'Integrations',
-		'multicompany' => 'Multicompany',
-		'advanced' => 'Advanced',
 	);
+	if (emergencyhouseHasConfiguredObjectSharing()) {
+		$tabs['multicompany'] = 'Multicompany';
+	}
+	$tabs['advanced'] = 'Advanced';
 
 	$head = array();
 	foreach ($tabs as $code => $label) {
@@ -123,6 +125,50 @@ function emergencyhouseEntityScope($element)
 	}
 
 	return array_values(array_unique($scope));
+}
+
+/**
+ * Check whether one entity scope is effectively shared through Multicompany.
+ *
+ * @param array<int, int> $scope Entity IDs
+ * @return bool
+ */
+function emergencyhouseEntityScopeIsShared($scope)
+{
+	if (!isModEnabled('multicompany')) {
+		return false;
+	}
+
+	$entities = array();
+	foreach ($scope as $entityId) {
+		$entityId = (int) $entityId;
+		if ($entityId > 0) {
+			$entities[$entityId] = $entityId;
+		}
+	}
+
+	return count($entities) > 1;
+}
+
+/**
+ * Check whether at least one module business object has configured sharing.
+ *
+ * @return bool
+ */
+function emergencyhouseHasConfiguredObjectSharing()
+{
+	if (!isModEnabled('multicompany')) {
+		return false;
+	}
+
+	$elements = array('campaign', 'offer', 'request', 'solicitation', 'allocation', 'report');
+	foreach ($elements as $element) {
+		if (emergencyhouseEntityScopeIsShared(emergencyhouseEntityScope($element))) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**

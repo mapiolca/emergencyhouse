@@ -26,6 +26,7 @@ dol_include_once('/emergencyhouse/class/offer.class.php');
 dol_include_once('/emergencyhouse/class/report.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
 dol_include_once('/emergencyhouse/class/solicitation.class.php');
+dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 
 $langs->loadLangs(array('emergencyhouse@emergencyhouse'));
@@ -197,6 +198,12 @@ if (!emergencyhouseCanDo($user, $configuration['permission_object'], $configurat
 	accessforbidden();
 }
 
+$entityScope = emergencyhouseEntityScope($configuration['element']);
+$showEnvironment = emergencyhouseEntityScopeIsShared($entityScope);
+if (!$showEnvironment) {
+	unset($configuration['fields']['t.entity']);
+}
+
 $sortfield = GETPOST('sortfield', 'aZ09comma');
 $sortorder = strtoupper(GETPOST('sortorder', 'aZ09')) === 'ASC' ? 'ASC' : 'DESC';
 $allowedSorts = array_keys($configuration['fields']);
@@ -212,14 +219,9 @@ $offset = $limit * $page;
 $searchText = trim(GETPOST('search_text', 'restricthtml'));
 $searchStatus = GETPOST('search_status', 'alphanohtml');
 $searchEntitiesRaw = GETPOST('search_entity', 'array');
-$searchEntities = array();
-if (is_array($searchEntitiesRaw)) {
-	foreach ($searchEntitiesRaw as $entityId) {
-		if ((int) $entityId > 0) {
-			$searchEntities[(int) $entityId] = (int) $entityId;
-		}
-	}
-}
+$searchEntities = $showEnvironment
+	? emergencyhouseEntitySelection($searchEntitiesRaw, $entityScope)
+	: array();
 if (GETPOST('button_removefilter', 'alpha') !== '') {
 	$searchText = '';
 	$searchStatus = '';
@@ -228,11 +230,6 @@ if (GETPOST('button_removefilter', 'alpha') !== '') {
 	$offset = 0;
 }
 
-$entityScope = array_filter(array_map('intval', explode(',', (string) getEntity($configuration['element']))));
-if (empty($entityScope)) {
-	$entityScope = array((int) $conf->entity);
-}
-$entityScope = array_values(array_unique($entityScope));
 $filteredEntities = empty($searchEntities)
 	? $entityScope
 	: array_values(array_intersect($entityScope, array_values($searchEntities)));
@@ -282,21 +279,9 @@ if ($hasNext) {
 }
 $num = count($rows);
 
-$entityOptions = array();
-foreach ($entityScope as $entityId) {
-	$entityOptions[$entityId] = $entityId === (int) $conf->entity
-		? getDolGlobalString('MAIN_INFO_SOCIETE_NOM', (string) $entityId)
-		: (string) $entityId;
-}
-if (isModEnabled('multicompany') && count($entityScope) > 1) {
-	$sqlEntity = 'SELECT rowid, label FROM '.MAIN_DB_PREFIX.'entity WHERE rowid IN ('.implode(',', $entityScope).')';
-	$resqlEntity = $db->query($sqlEntity);
-	if ($resqlEntity) {
-		while (is_object($entityObject = $db->fetch_object($resqlEntity))) {
-			$entityOptions[(int) $entityObject->rowid] = (string) $entityObject->label;
-		}
-	}
-}
+$entityOptions = $showEnvironment
+	? emergencyhouseEntityOptionsForScope($db, $entityScope)
+	: array();
 
 /** @var array<string, array{label:string,checked:int,position:int}> $arrayfields */
 $arrayfields = $configuration['fields'];
