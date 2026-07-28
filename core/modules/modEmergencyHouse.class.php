@@ -471,6 +471,17 @@ class modEmergencyHouse extends DolibarrModules
 	 */
 	private function ensureDefaultConstants($entity)
 	{
+		$termsEnabledDefault = '0';
+		if ($this->constantExists('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', $entity)) {
+			$existingTermsHtml = getDolGlobalString(
+				'EMERGENCYHOUSE_PUBLIC_TERMS_HTML',
+				''
+			);
+			$existingTermsText = dol_string_nohtmltag($existingTermsHtml);
+			$existingTermsText = str_replace(array("\xC2\xA0", "\xE2\x80\x8B"), '', $existingTermsText);
+			$termsEnabledDefault = trim($existingTermsText) !== '' ? '1' : '0';
+		}
+
 		$defaults = array(
 			'EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PUBLIC_REQUEST_VISIBILITY' => array('private', 'chaine'),
@@ -479,9 +490,11 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_PUBLIC_OFFICIAL_PHONE' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('', 'chaine'),
-			'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => array('', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine'),
+			'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED' => array($termsEnabledDefault, 'yesno'),
 			'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_ANALYTICS_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_ANALYTICS_SESSION_MINUTES' => array('30', 'chaine'),

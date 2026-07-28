@@ -16,7 +16,10 @@ print "## ".$langs->trans('ReferencePages')."\n\n";
 print '- ['.$langs->trans('Home').']('.emergencyhousePublicAbsoluteUrl().")\n";
 print '- ['.$langs->trans('ContactUs').']('.emergencyhousePublicAbsoluteUrl('contact.php').")\n";
 print '- ['.$langs->trans('Accessibility').']('.emergencyhousePublicAbsoluteUrl('accessibility.php').")\n";
-if (emergencyhousePublicHtmlHasContent(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''))) {
+if (emergencyhousePublicLegalPageIsPublished('EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED', 'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML')) {
+	print '- ['.$langs->trans('PrivacyPolicy').']('.emergencyhousePublicAbsoluteUrl('privacy.php').")\n";
+}
+if (emergencyhousePublicLegalPageIsPublished('EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED', 'EMERGENCYHOUSE_PUBLIC_TERMS_HTML')) {
 	print '- ['.$langs->trans('TermsOfUse').']('.emergencyhousePublicAbsoluteUrl('terms.php').")\n";
 }
 

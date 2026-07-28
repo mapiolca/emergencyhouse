@@ -352,6 +352,7 @@ class EmergencyHousePublicAnalyticsService
 			'/audience.php' => 'audience_privacy',
 			'/campaign.php' => 'campaign_detail',
 			'/contact.php' => 'contact',
+			'/privacy.php' => 'privacy',
 			'/terms.php' => 'terms',
 			'/index.php' => 'home',
 		);
@@ -375,7 +376,7 @@ class EmergencyHousePublicAnalyticsService
 			'email_verification', 'verification_resend', 'account_dashboard',
 			'account_profile', 'account_data', 'solicitation_list',
 			'solicitation_form', 'solicitation_detail', 'allocation_list',
-			'allocation_detail', 'report_form', 'terms', 'accessibility',
+			'allocation_detail', 'report_form', 'privacy', 'terms', 'accessibility',
 			'audience_privacy', 'not_found', 'other',
 		);
 	}

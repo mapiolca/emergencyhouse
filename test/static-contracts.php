@@ -504,6 +504,9 @@ emergencyhouseContract(
 $termsController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'terms.php'
 );
+$privacyController = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'privacy.php'
+);
 $notificationService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php');
 emergencyhouseContract(
 	strpos($publicLibrary, "getDolGlobalString('EMERGENCYHOUSE_PUBLIC_BASE_URL', '')") !== false
@@ -523,31 +526,46 @@ emergencyhouseContract(
 	'Sélecteurs de date natifs regroupés, compacts et accessibles sur le portail'
 );
 emergencyhouseContract(
-	strpos($registerController, "\$dataPolicyEnabled = isModEnabled('datapolicy');") !== false
-		&& strpos($registerController, "\$privacyAccepted = !\$dataPolicyEnabled || GETPOSTINT('privacy_accepted') > 0;") !== false
-		&& strpos($registerController, 'if ($dataPolicyEnabled) {') !== false
+	strpos($registerController, '$privacyPublished = emergencyhousePublicLegalPageIsPublished(') !== false
+		&& strpos($registerController, '$privacyAccepted = !$privacyPublished || GETPOSTINT(\'privacy_accepted\') > 0;') !== false
+		&& strpos($registerController, 'if ($privacyPublished) {') !== false
 		&& strpos($registerController, '$consentResult < $requiredConsentCount') !== false
-		&& strpos($publicLibrary, "\$dataPolicyEnabled = isModEnabled('datapolicy');") !== false
-		&& strpos($publicLibrary, '$dataPolicyEnabled && $privacyUrl !==') !== false,
-	'Politique de confidentialité masquée et non exigée lorsque Data Policy est désactivé'
+		&& strpos($registerController, "emergencyhousePublicUrl('privacy.php')") !== false
+		&& strpos($registerController, "isModEnabled('datapolicy')") === false,
+	'Consentement de confidentialité piloté uniquement par la publication effective de la page'
 );
 emergencyhouseContract(
 	strpos($setup, "require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';") !== false
+		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('type' => 'string', 'default' => '')") !== false
 		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => '')") !== false
 		&& strpos($setup, "isModEnabled('fckeditor')") !== false
 		&& strpos($setup, '$editor = new DolEditor(') !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML' => array('', 'chaine')") !== false
 		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine')") !== false,
-	'CGU administrables avec l’éditeur WYSIWYG natif et repli textarea'
+	'Pages légales administrables avec l’éditeur WYSIWYG natif et repli textarea'
 );
 emergencyhouseContract(
-	strpos($publicLibrary, "emergencyhousePublicUrl('terms.php')") !== false
-		&& strpos($publicLibrary, 'emergencyhousePublicHtmlHasContent($termsHtml)') !== false
-		&& strpos($registerController, '$termsAccepted = !$termsEnabled ||') !== false
-		&& strpos($registerController, 'if ($termsEnabled) {') !== false
+	strpos($publicLibrary, 'function emergencyhousePublicLegalPageIsPublished(') !== false
+		&& strpos($publicLibrary, 'getDolGlobalInt($enabledConstant, 0) !== 1') !== false
+		&& strpos($publicLibrary, "emergencyhousePublicUrl('privacy.php')") !== false
+		&& strpos($publicLibrary, "emergencyhousePublicUrl('terms.php')") !== false
+		&& strpos($registerController, '$termsAccepted = !$termsPublished ||') !== false
+		&& strpos($registerController, 'if ($termsPublished) {') !== false
+		&& strpos($privacyController, 'http_response_code(404);') !== false
+		&& strpos($privacyController, 'dolPrintHTML($privacyHtml)') !== false
 		&& strpos($termsController, 'http_response_code(404);') !== false
 		&& strpos($termsController, 'dolPrintHTML($termsHtml)') !== false
-		&& strpos($publicLibrary, 'EMERGENCYHOUSE_PUBLIC_TERMS_URL') === false,
-	'Page et consentement CGU publiés uniquement lorsqu’un contenu HTML existe'
+		&& strpos($publicLibrary, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL') === false
+		&& strpos($setup, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL') === false,
+	'Pages, liens et consentements légaux publiés uniquement avec interrupteur et contenu'
+);
+emergencyhouseContract(
+	strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED' => array('0', 'yesno')") !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED' => array(\$termsEnabledDefault, 'yesno')") !== false
+		&& strpos($descriptor, "constantExists('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', \$entity)") !== false
+		&& strpos($descriptor, "\$termsEnabledDefault = trim(\$existingTermsText) !== '' ? '1' : '0';") !== false
+		&& strpos($descriptor, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL') === false,
+	'Migration conservative des interrupteurs légaux sans réinitialisation de l’ancienne URL'
 );
 emergencyhouseContract(
 	substr_count($notificationService, 'emergencyhousePublicAbsoluteUrl(') === 2
@@ -575,6 +593,10 @@ emergencyhouseContract(
 	strpos($publicSitemap, 'robots_index = 1') !== false
 		&& strpos($publicSitemap, 'description_public IS NOT NULL') !== false
 		&& strpos($publicSitemap, "emergencyhousePublicAbsoluteUrl('campaign.php'") !== false
+		&& strpos($publicSitemap, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED') !== false
+		&& strpos($publicSitemap, 'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED') !== false
+		&& strpos($publicLlmIndex, 'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED') !== false
+		&& strpos($publicLlmIndex, 'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED') !== false
 		&& strpos($publicLlmIndex, 'LlmIndexPrivacyNotice') !== false,
 	'Sitemap et index LLM limités aux campagnes publiques complètes et autorisées'
 );

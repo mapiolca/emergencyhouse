@@ -144,12 +144,19 @@ métadonnées Open Graph/Twitter et des données structurées `WebSite`,
 `EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL` permet de fournir une image HTTPS de
 partage, idéalement au format 1 200 × 630 pixels et sans donnée personnelle.
 
-Les conditions générales d’utilisation sont saisies dans
+La politique de confidentialité et les conditions générales d’utilisation sont
+saisies respectivement dans `EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML` et
 `EMERGENCYHOUSE_PUBLIC_TERMS_HTML` depuis l’onglet **Portail**. Dolibarr utilise
 son éditeur WYSIWYG natif lorsque ce module est actif, avec repli sur une zone
-de texte standard. Le contenu est publié sur `/terms.php` ; si la constante est
-vide, le lien, la page et le consentement d’inscription correspondants sont
-masqués.
+de texte standard.
+
+Leur publication sur `/privacy.php` et `/terms.php` est pilotée par les
+interrupteurs `EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED` et
+`EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED`. Une page, son lien public et le
+consentement d’inscription correspondant ne sont actifs que si son interrupteur
+est activé et si son contenu contient du texte visible. L’ancienne constante
+`EMERGENCYHOUSE_PUBLIC_PRIVACY_URL` n’est plus utilisée, mais sa valeur
+historique n’est pas supprimée lors d’une mise à jour.
 
 ### Contact public
 
@@ -370,6 +377,7 @@ php test/cron-contract.php
 php test/agenda-element-contract.php
 php test/multicompany-visibility-contract.php
 php test/analytics-contract.php
+php test/legal-publication-contract.php
 ```
 
 La validation complète exige une instance Dolibarr v20+, une base

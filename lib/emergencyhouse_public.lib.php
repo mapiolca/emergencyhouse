@@ -514,6 +514,22 @@ function emergencyhousePublicHtmlHasContent($html)
 }
 
 /**
+ * Check whether a legal page is explicitly published with meaningful content.
+ *
+ * @param string $enabledConstant Publication switch constant
+ * @param string $htmlConstant Rich HTML constant
+ * @return bool
+ */
+function emergencyhousePublicLegalPageIsPublished($enabledConstant, $htmlConstant)
+{
+	if (getDolGlobalInt($enabledConstant, 0) !== 1) {
+		return false;
+	}
+
+	return emergencyhousePublicHtmlHasContent(getDolGlobalString($htmlConstant, ''));
+}
+
+/**
  * Render public footer.
  *
  * @param bool $preview Render private preview footer links
@@ -541,22 +557,28 @@ function emergencyhousePublicRenderFooter($preview = false)
 	}
 	print '</ul></div>';
 	print '<nav aria-label="'.$langs->trans('LegalNavigation').'"><ul>';
-	$privacyUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_URL', '');
-	$termsHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''));
-	$termsEnabled = emergencyhousePublicHtmlHasContent($termsHtml);
-	$dataPolicyEnabled = isModEnabled('datapolicy');
+	$privacyPublished = emergencyhousePublicLegalPageIsPublished(
+		'EMERGENCYHOUSE_PUBLIC_PRIVACY_ENABLED',
+		'EMERGENCYHOUSE_PUBLIC_PRIVACY_HTML'
+	);
+	$termsPublished = emergencyhousePublicLegalPageIsPublished(
+		'EMERGENCYHOUSE_PUBLIC_TERMS_ENABLED',
+		'EMERGENCYHOUSE_PUBLIC_TERMS_HTML'
+	);
 	if ($preview) {
-		if ($dataPolicyEnabled) {
+		if ($privacyPublished) {
 			print '<li><a href="#main">'.$langs->trans('PrivacyPolicy').'</a></li>';
 		}
-		if ($termsEnabled) {
+		if ($termsPublished) {
 			print '<li><a href="#main">'.$langs->trans('TermsOfUse').'</a></li>';
 		}
-	} elseif ($dataPolicyEnabled && $privacyUrl !== '') {
-		print '<li><a href="'.dol_escape_htmltag($privacyUrl).'">'.$langs->trans('PrivacyPolicy').'</a></li>';
-	}
-	if (!$preview && $termsEnabled) {
-		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('terms.php')).'">'.$langs->trans('TermsOfUse').'</a></li>';
+	} else {
+		if ($privacyPublished) {
+			print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('privacy.php')).'">'.$langs->trans('PrivacyPolicy').'</a></li>';
+		}
+		if ($termsPublished) {
+			print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('terms.php')).'">'.$langs->trans('TermsOfUse').'</a></li>';
+		}
 	}
 	if (!$preview && getDolGlobalInt('EMERGENCYHOUSE_ANALYTICS_ENABLED', 0) === 1) {
 		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('audience.php')).'">'.$langs->trans('AudienceMeasurement').'</a></li>';
