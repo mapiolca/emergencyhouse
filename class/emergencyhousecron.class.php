@@ -24,6 +24,8 @@ class EmergencyHouseCron
 	public $error = '';
 	/** @var array<int, string> */
 	public $errors = array();
+	/** @var string */
+	public $output = '';
 
 	/**
 	 * Constructor.
@@ -43,12 +45,15 @@ class EmergencyHouseCron
 	public function processNotificationQueue()
 	{
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$service = new EmergencyHouseNotificationService($this->db);
 		$result = $service->processQueue(getDolGlobalInt('EMERGENCYHOUSE_NOTIFICATION_BATCH_SIZE', 25));
 		$this->error = $service->error;
-		return $result >= 0 && $this->error === '' ? $result : -1;
+		if ($result < 0 || $this->error !== '') {
+			return -1;
+		}
+		return $this->completeWithCount($result);
 	}
 
 	/**
@@ -60,10 +65,11 @@ class EmergencyHouseCron
 	{
 		global $conf;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$limit = max(1, min(100, getDolGlobalInt('EMERGENCYHOUSE_MATCH_BATCH_SIZE', 100)));
 		$processed = 0;
+		$failed = false;
 		for ($i = 0; $i < $limit; $i++) {
 			$job = $this->claimJob((int) $conf->entity, 'matching');
 			if (!is_array($job)) {
@@ -79,13 +85,24 @@ class EmergencyHouseCron
 				$result = $this->recalculateCampaign((int) $job['entity'], (int) $job['fk_campaign'], $service);
 			}
 			if ($result < 0) {
-				$this->releaseJob($job, false, $service->error);
+				$errorCode = $service->error !== '' ? $service->error : 'ErrorCronProcessingFailed';
+				$released = $this->releaseJob($job, false, $errorCode);
+				if ($released) {
+					$this->error = $errorCode;
+				}
+				$failed = true;
 			} else {
-				$this->releaseJob($job, true, '');
+				if (!$this->releaseJob($job, true, '')) {
+					$failed = true;
+					break;
+				}
 				$processed++;
 			}
 		}
-		return $processed;
+		if ($failed || $this->error !== '') {
+			return -1;
+		}
+		return $this->completeWithCount($processed);
 	}
 
 	/**
@@ -97,7 +114,7 @@ class EmergencyHouseCron
 	{
 		global $conf, $user;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$count = 0;
 		$definitions = array(
@@ -123,7 +140,7 @@ class EmergencyHouseCron
 				}
 			}
 		}
-		return $count;
+		return $this->completeWithCount($count);
 	}
 
 	/**
@@ -135,7 +152,7 @@ class EmergencyHouseCron
 	{
 		global $conf;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$intervalDays = max(1, getDolGlobalInt('EMERGENCYHOUSE_AVAILABILITY_CONFIRM_DAYS', 7));
 		$cutoff = dol_time_plus_duree(dol_now(), -$intervalDays, 'd');
@@ -160,7 +177,7 @@ class EmergencyHouseCron
 				$count++;
 			}
 		}
-		return $count;
+		return $this->completeWithCount($count);
 	}
 
 	/**
@@ -172,7 +189,7 @@ class EmergencyHouseCron
 	{
 		global $conf;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$horizon = dol_time_plus_duree(dol_now(), 24, 'h');
 		$sql = 'SELECT a.rowid, a.ref, a.fk_campaign, o.fk_account AS host_account, r.fk_account AS requester_account';
@@ -201,7 +218,7 @@ class EmergencyHouseCron
 				}
 			}
 		}
-		return $count;
+		return $this->completeWithCount($count);
 	}
 
 	/**
@@ -213,7 +230,7 @@ class EmergencyHouseCron
 	{
 		global $conf, $user;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'emergencyhouse_allocation';
 		$sql .= ' WHERE entity = '.((int) $conf->entity);
@@ -233,7 +250,7 @@ class EmergencyHouseCron
 				$count++;
 			}
 		}
-		return $count;
+		return $this->completeWithCount($count);
 	}
 
 	/**
@@ -245,12 +262,15 @@ class EmergencyHouseCron
 	{
 		global $conf;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$service = new EmergencyHouseStatisticsService($this->db);
 		$result = $service->buildDaily((int) $conf->entity);
 		$this->error = $service->error;
-		return $result;
+		if ($result < 0 || $this->error !== '') {
+			return -1;
+		}
+		return $this->completeWithCount($result);
 	}
 
 	/**
@@ -262,12 +282,15 @@ class EmergencyHouseCron
 	{
 		global $conf;
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$service = new EmergencyHouseRetentionService($this->db);
 		$result = $service->apply((int) $conf->entity);
 		$this->error = $service->error;
-		return $result;
+		if ($result < 0 || $this->error !== '') {
+			return -1;
+		}
+		return $this->completeWithCount($result);
 	}
 
 	/**
@@ -277,12 +300,26 @@ class EmergencyHouseCron
 	 */
 	public function checkProviders()
 	{
+		global $langs;
+
 		if (!$this->guardModule()) {
-			return 0;
+			return -1;
 		}
 		$encryption = new EmergencyHouseEncryptionService();
 		if (!$encryption->isAvailable()) {
 			$this->error = $encryption->error;
+			return -1;
+		}
+		$senderEmail = trim(getDolGlobalString('MAIN_MAIL_EMAIL_FROM', ''));
+		if ($senderEmail === '') {
+			$senderEmail = trim(getDolGlobalString('MAIN_INFO_SOCIETE_MAIL', ''));
+		}
+		if ($senderEmail === '') {
+			$this->error = 'ErrorSenderEmailMissing';
+			return -1;
+		}
+		if (filter_var($senderEmail, FILTER_VALIDATE_EMAIL) === false) {
+			$this->error = 'ErrorSenderEmailInvalid';
 			return -1;
 		}
 		$provider = getDolGlobalString('EMERGENCYHOUSE_GEOCODING_PROVIDER', 'disabled');
@@ -306,7 +343,25 @@ class EmergencyHouseCron
 			$this->error = 'ErrorSmsProviderNotImplemented';
 			return -1;
 		}
-		return 1;
+		$this->error = '';
+		$this->output = $langs->trans('EmergencyHouseCronProvidersHealthy');
+		return 0;
+	}
+
+	/**
+	 * Complete a scheduled job successfully while keeping its business count
+	 * out of the native Dolibarr result code.
+	 *
+	 * @param int $count Number of processed records
+	 * @return int Always 0 for the native scheduled-job success contract
+	 */
+	private function completeWithCount($count)
+	{
+		global $langs;
+
+		$this->error = '';
+		$this->output = $langs->trans('EmergencyHouseCronProcessedCount', max(0, $count));
+		return 0;
 	}
 
 	/**
@@ -343,6 +398,7 @@ class EmergencyHouseCron
 		$sql .= ' ORDER BY priority ASC, date_creation ASC'.$this->db->plimit(1).' FOR UPDATE';
 		$resql = $this->db->query($sql);
 		if (!$resql) {
+			$this->error = $this->db->lasterror();
 			$this->db->rollback();
 			return false;
 		}
@@ -355,6 +411,7 @@ class EmergencyHouseCron
 		$sqlUpdate .= " locked_at = '".$this->db->idate(dol_now())."', lock_token = '".$this->db->escape($lockToken)."',";
 		$sqlUpdate .= ' attempt_count = attempt_count + 1 WHERE rowid = '.((int) $obj->rowid);
 		if (!$this->db->query($sqlUpdate)) {
+			$this->error = $this->db->lasterror();
 			$this->db->rollback();
 			return false;
 		}
@@ -376,7 +433,7 @@ class EmergencyHouseCron
 	 * @param array<string, int|string|null> $job Job
 	 * @param bool                          $success Success
 	 * @param string                        $errorCode Error code
-	 * @return void
+	 * @return bool
 	 */
 	private function releaseJob(array $job, $success, $errorCode)
 	{
@@ -389,8 +446,11 @@ class EmergencyHouseCron
 		$sql .= ' WHERE rowid = '.((int) $job['id']);
 		$sql .= " AND lock_token = '".$this->db->escape((string) $job['lock_token'])."'";
 		if (!$this->db->query($sql)) {
-			dol_syslog(__METHOD__.': '.$this->db->lasterror(), LOG_ERR);
+			$this->error = $this->db->lasterror();
+			dol_syslog(__METHOD__.': '.$this->error, LOG_ERR);
+			return false;
 		}
+		return true;
 	}
 
 	/**

@@ -26,6 +26,19 @@ if ($isOwner) {
 }
 $features = $listingService->fetchOfferFeatures($offer);
 $features = is_array($features) ? $features : array();
+$photos = array();
+$publicPhotos = array();
+if (getDolGlobalInt('EMERGENCYHOUSE_PHOTOS_ENABLED', 0)) {
+	$photoService = new EmergencyHouseOfferPhotoService($db);
+	$loadedPublicPhotos = $photoService->fetchPhotos($offer);
+	$publicPhotos = is_array($loadedPublicPhotos) ? $loadedPublicPhotos : array();
+	if ($isOwner) {
+		$loadedOwnerPhotos = $photoService->fetchPhotos($offer, true);
+		$photos = is_array($loadedOwnerPhotos) ? $loadedOwnerPhotos : array();
+	} else {
+		$photos = $publicPhotos;
+	}
+}
 
 $campaign = new EmergencyHouseCampaign($db);
 $campaignLoaded = $campaign->fetch((int) $offer->fk_campaign) > 0;
@@ -38,17 +51,24 @@ if (is_object($housing)) {
 	$housingLabel = $langs->trans((string) $housing->label);
 }
 
+$seo = array(
+	'description' => (string) $offer->description_public,
+	'robots' => $isOwner ? 'noindex,nofollow' : 'noindex,follow',
+	'og_type' => 'article',
+);
+if (!empty($publicPhotos)) {
+	$seo['image'] = emergencyhousePublicAbsoluteUrl('offer/photo.php', array(
+		'offer' => $offer->public_uuid,
+		'photo' => (int) $publicPhotos[0]['id'],
+	));
+}
 emergencyhousePublicRenderHeader(
 	$offer->title,
 	$emergencyhousePublicAccount,
 	'offers',
 	false,
 	false,
-	array(
-		'description' => (string) $offer->description_public,
-		'robots' => $isOwner ? 'noindex,nofollow' : 'noindex,follow',
-		'og_type' => 'article',
-	)
+	$seo
 );
 print '<section class="eh-shell eh-section"><div class="eh-page-title"><p class="eh-eyebrow">'.dol_escape_htmltag($housingLabel).'</p>';
 print '<h1>'.dol_escape_htmltag($offer->title).'</h1><p>'.dol_escape_htmltag((string) $offer->description_public).'</p></div>';
@@ -57,6 +77,30 @@ if ($saved) {
 }
 if ($isOwner) {
 	print '<div class="eh-alert eh-alert-info">'.$langs->trans('OwnerPreviewNotice').' '.emergencyhousePublicListingStatus('offer', (int) $offer->status).'</div>';
+}
+
+if (!empty($photos)) {
+	print '<section class="eh-offer-gallery" aria-labelledby="offer-gallery-title">';
+	print '<div class="eh-section-heading"><div><h2 id="offer-gallery-title">'.$langs->trans('OfferPhotos').'</h2>';
+	if ($isOwner) {
+		print '<p>'.$langs->trans('OwnerOfferPhotosNotice').'</p>';
+	}
+	print '</div></div><div class="eh-photo-grid">';
+	foreach ($photos as $photo) {
+		$photoUrl = emergencyhousePublicUrl('offer/photo.php', array(
+			'offer' => $offer->public_uuid,
+			'photo' => (int) $photo['id'],
+		));
+		print '<figure class="eh-photo-card">';
+		print '<img src="'.dol_escape_htmltag($photoUrl).'" alt="'.dol_escape_htmltag($langs->trans('OfferPhotoAlt', $offer->title)).'" loading="lazy">';
+		if ($isOwner) {
+			print '<figcaption>'.dol_escape_htmltag($langs->trans(
+				EmergencyHouseOfferPhotoService::getStatusTranslationKey((int) $photo['status'])
+			)).'</figcaption>';
+		}
+		print '</figure>';
+	}
+	print '</div></section>';
 }
 
 print '<div class="eh-dashboard-grid"><article class="eh-card">';

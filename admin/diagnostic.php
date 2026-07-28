@@ -21,6 +21,11 @@ if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'configuratio
 
 $encryptionService = new EmergencyHouseEncryptionService();
 $encryptionStatus = $encryptionService->getConfigurationStatus();
+$senderEmail = trim(getDolGlobalString('MAIN_MAIL_EMAIL_FROM', ''));
+if ($senderEmail === '') {
+	$senderEmail = trim(getDolGlobalString('MAIN_INFO_SOCIETE_MAIL', ''));
+}
+$senderEmailAvailable = filter_var($senderEmail, FILTER_VALIDATE_EMAIL) !== false;
 $checks = array(
 	'DiagnosticDolibarrVersion' => version_compare(DOL_VERSION, '20.0.0', '>='),
 	'DiagnosticPhpVersion' => version_compare(PHP_VERSION, '8.0.0', '>='),
@@ -32,6 +37,7 @@ $checks = array(
 	'DiagnosticHttps' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
 	'DiagnosticCronModule' => isModEnabled('cron'),
 	'DiagnosticNotificationsModule' => isModEnabled('notification'),
+	'DiagnosticMailSender' => $senderEmailAvailable,
 );
 
 llxHeader('', $langs->trans('Diagnostic'));
@@ -49,6 +55,12 @@ foreach ($checks as $label => $ok) {
 	print '</td></tr>';
 }
 print '</table>';
+if (!$senderEmailAvailable) {
+	print '<div class="warning">';
+	print $langs->trans('DiagnosticMailSenderMissing').' ';
+	print '<a href="'.DOL_URL_ROOT.'/admin/mails.php">'.$langs->trans('ConfigureNativeMail').'</a>';
+	print '</div>';
+}
 print '<div class="info">'.$langs->trans('DiagnosticSecretsAreNeverDisplayed').'</div>';
 
 print dol_get_fiche_end();

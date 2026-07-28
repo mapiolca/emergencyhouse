@@ -31,6 +31,7 @@ dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/class/messageservice.class.php');
 dol_include_once('/emergencyhouse/class/moderationservice.class.php');
 dol_include_once('/emergencyhouse/class/offer.class.php');
+dol_include_once('/emergencyhouse/class/offerphotoservice.class.php');
 dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/class/report.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
@@ -466,7 +467,39 @@ if ($tab === 'notes' && property_exists($object, 'note_public')) {
 		);
 		print '<tr><td>'.$langs->trans('Description').'</td><td>'.(is_string($description) ? nl2br(dol_escape_htmltag($description)) : $langs->trans('EncryptedValueUnavailable')).'</td></tr>';
 	}
-	print '</table></div><div class="fichehalfright">';
+	print '</table>';
+	if ($object instanceof EmergencyHouseOffer) {
+		$photoService = new EmergencyHouseOfferPhotoService($db);
+		$offerPhotos = $photoService->fetchPhotos($object, true);
+		print '<br>'.load_fiche_titre($langs->trans('OfferPhotos'), '', 'photo');
+		print '<table class="noborder centpercent">';
+		print '<tr class="liste_titre"><th>'.$langs->trans('Photo').'</th><th>'.$langs->trans('Status').'</th></tr>';
+		if (is_array($offerPhotos) && !empty($offerPhotos)) {
+			foreach ($offerPhotos as $offerPhoto) {
+				$photoUrl = dol_buildpath('/emergencyhouse/offer/photo.php', 1).'?id='.((int) $object->id);
+				$photoUrl .= '&photo='.((int) $offerPhoto['id']);
+				$photoStatus = (int) $offerPhoto['status'];
+				$photoStatusLabel = $langs->trans(EmergencyHouseOfferPhotoService::getStatusTranslationKey($photoStatus));
+				$photoStatusClass = $photoStatus === EmergencyHouseOfferPhotoService::STATUS_APPROVED
+					? 'status4'
+					: ($photoStatus === EmergencyHouseOfferPhotoService::STATUS_REJECTED ? 'status6' : 'status1');
+				print '<tr class="oddeven"><td>';
+				print '<a href="'.dol_escape_htmltag($photoUrl).'" target="_blank" rel="noopener">';
+				print '<img src="'.dol_escape_htmltag($photoUrl).'" width="180" alt="'.dol_escape_htmltag($langs->trans('OfferPhotoAlt', $object->title)).'">';
+				print '</a></td><td>'.dolGetStatus(
+					$photoStatusLabel,
+					$photoStatusLabel,
+					'',
+					$photoStatusClass,
+					2
+				).'</td></tr>';
+			}
+		} else {
+			print '<tr class="oddeven"><td colspan="2"><span class="opacitymedium">'.$langs->trans('NoOfferPhoto').'</span></td></tr>';
+		}
+		print '</table>';
+	}
+	print '</div><div class="fichehalfright">';
 	if ($object instanceof EmergencyHouseSolicitation) {
 		$messageService = new EmergencyHouseMessageService($db);
 		$messages = $messageService->fetchMessages($object, null, true, 100);

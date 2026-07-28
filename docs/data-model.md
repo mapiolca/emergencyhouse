@@ -22,3 +22,9 @@ et porte une conversation. Une `allocation` réserve une quantité sur une offre
 pour une demande. Les équipements et critères sont normalisés dans des tables
 de liaison. Les comptes publics portent sessions, jetons et consentements.
 
+`offer_photo` référence une offre par `fk_offer` et conserve le nom technique,
+l’empreinte SHA-256, l’ordre d’affichage et l’état de validation de chaque
+photo. Le contenu du fichier reste dans le répertoire documentaire de l’entité
+propriétaire de l’offre. Les fichiers sources ne sont jamais conservés :
+l’image est réencodée afin de supprimer ses métadonnées EXIF et GPS avant
+stockage.

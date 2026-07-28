@@ -15,6 +15,7 @@ Les contrôles suivants sont exécutables depuis la racine du module :
 
 ```bash
 php test/static-contracts.php
+php test/cron-contract.php
 php test/numbering-model-contract.php
 php test/security-key-contract.php
 php test/public-url-contract.php
@@ -42,6 +43,8 @@ Le script vérifie notamment :
   panne technique, avec journalisation des erreurs internes de session ;
 - l’activation et la désactivation synchronisées des neuf travaux planifiés,
   sans suppression de leur configuration ;
+- le retour natif `0` des neuf travaux planifiés en cas de succès, avec les
+  compteurs métier conservés dans la sortie du travail ;
 - le contrat d’URL racine du répertoire public et l’absence de liens de
   notification contournant le constructeur commun ;
 - la présence des guides Sécurité et fournisseurs ;

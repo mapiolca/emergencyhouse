@@ -2,6 +2,7 @@
 /* Copyright (C) 2026 Pierre Ardoin <developpeur@lesmetiersdubatiment.fr> */
 
 dol_include_once('/emergencyhouse/class/offer.class.php');
+dol_include_once('/emergencyhouse/class/offerphotoservice.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
 
 /**
@@ -101,9 +102,15 @@ class EmergencyHouseVerificationService
 			/** @var EmergencyHouseOffer $linkedObject */
 			$linkedObject->verification_status = $status;
 			$linkedObject->context['trigger_reason'] = 'verification_change';
-			$linkedObject->context['changed_fields'] = array('verification_status');
+			$linkedObject->context['changed_fields'] = array('verification_status', 'photos');
 			if ($linkedObject->updateInsideServiceTransaction($user) <= 0) {
 				$this->error = $linkedObject->error;
+				$this->db->rollback();
+				return -1;
+			}
+			$photoService = new EmergencyHouseOfferPhotoService($this->db);
+			if (!$photoService->updateStatuses($linkedObject, $status)) {
+				$this->error = $photoService->error;
 				$this->db->rollback();
 				return -1;
 			}

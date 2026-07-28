@@ -29,6 +29,9 @@ chemin interne Dolibarr reste le fallback de recette.
 - Les révélations de coordonnées sont explicites, autorisées et auditées.
 - Le formulaire de contact impose le token CSRF, le captcha natif, une limite
   de débit et une validation réelle du type des images jointes.
+- Les photos persistantes des offres sont réencodées avant stockage afin de
+  supprimer les métadonnées EXIF/GPS, puis servies par un contrôleur qui
+  revérifie l’offre, l’entité, le propriétaire et leur état de validation.
 
 ## Composants
 
@@ -79,6 +82,22 @@ images validées à `CMailFile`. L’adresse du visiteur est utilisée comme adr
 de réponse, tandis que l’expéditeur et la copie cachée permanente restent ceux
 de la configuration générale. Aucune ligne de file et aucun document permanent
 ne sont créés. Les fichiers temporaires disparaissent avec la requête PHP.
+
+## Photos des offres
+
+`EmergencyHouseOfferPhotoService` contrôle le type réel, l’extension, la taille,
+le nombre d’images, le résultat antivirus et la charge mémoire prévisible avant
+de décoder les photos. Il les réencode en JPG, PNG ou WebP pour supprimer les
+métadonnées du fichier source, notamment EXIF et GPS. Les fichiers sont rangés
+dans le sous-répertoire `photos/` retourné à partir de
+`getMultidirOutput($offer, 'emergencyhouse', 1)` ; la table
+`emergencyhouse_offer_photo` conserve uniquement le nom technique, l’empreinte,
+la position et le statut de validation.
+
+Le propriétaire et les opérateurs habilités peuvent consulter les photos en
+attente. Le portail anonyme ne reçoit que les photos approuvées d’une offre
+publiée. L’ajout ou la suppression utilise le trigger CRUD `UPDATE` de l’offre
+avec `trigger_reason = photo_change` et remet la vérification à zéro.
 
 ## Contact public et anti-spam
 

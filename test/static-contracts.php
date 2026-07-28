@@ -434,6 +434,63 @@ emergencyhouseContract(
 		&& strpos($publicContactService, 'dol_move_uploaded_file(') === false,
 	'Images contrôlées, envoyées immédiatement et non conservées'
 );
+$publicOfferEditor = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'edit.php'
+);
+$publicOfferView = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'view.php'
+);
+$publicOfferPhoto = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'photo.php'
+);
+$operatorOfferPhoto = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'photo.php'
+);
+$offerPhotoService = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'offerphotoservice.class.php'
+);
+$verificationService = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'verificationservice.class.php'
+);
+emergencyhouseContract(
+	strpos($publicOfferEditor, 'enctype="multipart/form-data"') !== false
+		&& strpos($publicOfferEditor, 'name="offer_photos[]"') !== false
+		&& strpos($publicOfferEditor, "'offer_photo_delete'") !== false
+		&& strpos($publicOfferEditor, "action\" value=\"delete_photo") !== false
+		&& strpos($publicOfferEditor, "trans('OfferPhotoUploadHelp'") !== false,
+	'Ajout et suppression CSRF des photos depuis le formulaire public d’offre'
+);
+emergencyhouseContract(
+	strpos($offerPhotoService, "getDolGlobalInt('EMERGENCYHOUSE_PHOTOS_ENABLED'") !== false
+		&& strpos($offerPhotoService, 'getMaxFileSizeArray()') !== false
+		&& strpos($offerPhotoService, 'getimagesize($tmpName)') !== false
+		&& strpos($offerPhotoService, 'dolCheckVirus($tmpName, $safeName)') !== false
+		&& strpos($offerPhotoService, "getMultidirOutput(\$offer, 'emergencyhouse', 1)") !== false
+		&& strpos($offerPhotoService, '@imagecreatefromjpeg(') !== false
+		&& strpos($offerPhotoService, '@imagecreatefrompng(') !== false
+		&& strpos($offerPhotoService, '@imagecreatefromwebp(') !== false
+		&& strpos($offerPhotoService, '@imagejpeg(') !== false
+		&& strpos($offerPhotoService, '@imagepng(') !== false
+		&& strpos($offerPhotoService, '@imagewebp(') !== false,
+	'Photos validées, réencodées sans métadonnées et stockées dans le répertoire Multicompany'
+);
+emergencyhouseContract(
+	strpos($publicOfferPhoto, 'fetchViewableOffer(') !== false
+		&& strpos($publicOfferPhoto, 'getPhotoFile($offer, $photoId, $isOwner)') !== false
+		&& strpos($publicOfferPhoto, "getDolGlobalInt('EMERGENCYHOUSE_PHOTOS_ENABLED'") !== false
+		&& strpos($publicOfferPhoto, '$publiclyCacheable = !$isOwner') !== false
+		&& strpos($publicOfferPhoto, 'Cache-Control: private, no-store') !== false
+		&& strpos($publicOfferPhoto, 'X-Content-Type-Options: nosniff') !== false
+		&& strpos($operatorOfferPhoto, "emergencyhouseCanDo(\$user, 'listing', 'read', \$offer)") !== false
+		&& strpos($operatorOfferPhoto, 'getPhotoFile($offer, $photoId, true)') !== false,
+	'Diffusion des photos contrôlée séparément pour le public, le propriétaire et les opérateurs'
+);
+emergencyhouseContract(
+	strpos($publicOfferView, '$photoService->fetchPhotos($offer)') !== false
+		&& strpos($publicOfferView, '$photoService->fetchPhotos($offer, true)') !== false
+		&& strpos($verificationService, '$photoService->updateStatuses($linkedObject, $status)') !== false,
+	'Galerie publique limitée aux photos approuvées et statuts synchronisés avec la vérification'
+);
 $publicControllers = '';
 foreach (emergencyhousePhpFiles($root.DIRECTORY_SEPARATOR.'public') as $publicPhpFile) {
 	$publicControllers .= "\n".emergencyhouseReadRequired($publicPhpFile);
@@ -716,6 +773,10 @@ $publicDateTranslationPlaceholders = array(
 	'NeedFromDate' => 1,
 	'UntilDate' => 1,
 	'AllocationSummary' => 2,
+	'OfferPhotosHelp' => 1,
+	'OfferPhotoUploadHelp' => 1,
+	'OfferPhotoCount' => 2,
+	'OfferPhotoAlt' => 1,
 );
 foreach ($publicDateTranslationPlaceholders as $translationKey => $placeholderCount) {
 	emergencyhouseContract(
@@ -815,6 +876,12 @@ $requiredTranslations = array(
 	'ScheduledJobs',
 	'SelectAnOption',
 	'ContactSubject',
+	'OfferPhotos',
+	'OfferPhotoUploadHelp',
+	'OfferPhotoStatusPending',
+	'OfferPhotoStatusApproved',
+	'OfferPhotoStatusRejected',
+	'CompatibilityOfferPhotos',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',
 	'Notify_EMERGENCYHOUSE_REQUEST_DELETE',
@@ -828,6 +895,14 @@ foreach ($requiredTranslations as $translationKey) {
 		'Traduction bilingue : '.$translationKey
 	);
 }
+emergencyhouseContract(
+	isset($frTranslations['OfferPhotoUploadHelp'], $enTranslations['OfferPhotoUploadHelp'])
+		&& strpos($frTranslations['OfferPhotoUploadHelp'], 'EXIF') !== false
+		&& strpos($frTranslations['OfferPhotoUploadHelp'], 'GPS') !== false
+		&& strpos($enTranslations['OfferPhotoUploadHelp'], 'EXIF') !== false
+		&& strpos($enTranslations['OfferPhotoUploadHelp'], 'GPS') !== false,
+	'Suppression des métadonnées EXIF et GPS explicitement annoncée aux utilisateurs'
+);
 emergencyhouseContract(
 	strpos($publicControllers, "trans('Direction')") === false
 		&& strpos($publicControllers, "trans('NextPage')") === false

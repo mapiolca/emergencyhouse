@@ -7,6 +7,7 @@ dol_include_once('/emergencyhouse/class/campaign.class.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/class/geocodingservice.class.php');
 dol_include_once('/emergencyhouse/class/offer.class.php');
+dol_include_once('/emergencyhouse/class/offerphotoservice.class.php');
 dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
 
@@ -49,9 +50,10 @@ class EmergencyHouseListingService
 	 * @param array<int, array{code?:string,number?:float|int|null}> $features Feature values keyed by dictionary ID
 	 * @param User $triggerUser Dolibarr trigger user, anonymous on public pages
 	 * @param bool $submit Submit for operator verification
+	 * @param array<string, mixed> $uploadedPhotos PHP multiple-upload field
 	 * @return EmergencyHouseOffer|false
 	 */
-	public function createOffer($account, array $data, array $features, $triggerUser, $submit)
+	public function createOffer($account, array $data, array $features, $triggerUser, $submit, array $uploadedPhotos = array())
 	{
 		$campaign = $this->fetchPublishedCampaign((int) $account->entity, (int) ($data['fk_campaign'] ?? 0));
 		if (!$campaign instanceof EmergencyHouseCampaign) {
@@ -102,6 +104,9 @@ class EmergencyHouseListingService
 		$offer->date_expiration = $this->listingExpiration($campaign, $offer->date_start);
 		$offer->context['public_account_id'] = (int) $account->id;
 		$offer->context['trigger_reason'] = $submit ? 'public_submission' : 'public_draft';
+		if (EmergencyHouseOfferPhotoService::hasUploadedFiles($uploadedPhotos)) {
+			$offer->context['changed_fields'] = array('photos');
+		}
 
 		$context = $this->offerContext($offer);
 		$address = trim((string) ($data['address'] ?? ''));
@@ -133,8 +138,13 @@ class EmergencyHouseListingService
 
 		$this->db->begin();
 		$result = $offer->createInsideServiceTransaction($triggerUser);
-		if ($result <= 0 || !$this->replaceOfferFeatures($offer, $features)) {
-			$this->error = !empty($offer->error) ? $offer->error : $this->error;
+		$photoService = new EmergencyHouseOfferPhotoService($this->db);
+		if ($result <= 0
+			|| !$this->replaceOfferFeatures($offer, $features)
+			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)) {
+			$this->error = !empty($offer->error)
+				? $offer->error
+				: ($photoService->error !== '' ? $photoService->error : $this->error);
 			$this->errors = $offer->errors;
 			$this->db->rollback();
 			return false;
@@ -501,9 +511,10 @@ class EmergencyHouseListingService
 	 * @param array<int, array{code?:string,number?:float|int|null}> $features Features
 	 * @param User $triggerUser Trigger user
 	 * @param bool $submit Submit for verification
+	 * @param array<string, mixed> $uploadedPhotos PHP multiple-upload field
 	 * @return EmergencyHouseOffer|false
 	 */
-	public function updateOwnedOffer($account, $id, array $data, array $features, $triggerUser, $submit)
+	public function updateOwnedOffer($account, $id, array $data, array $features, $triggerUser, $submit, array $uploadedPhotos = array())
 	{
 		$offer = $this->fetchOwnedOffer($account, $id);
 		if (!$offer instanceof EmergencyHouseOffer || (int) $offer->status === EmergencyHouseOffer::STATUS_CLOSED) {
@@ -549,6 +560,9 @@ class EmergencyHouseListingService
 		$offer->context['public_account_id'] = (int) $account->id;
 		$offer->context['trigger_reason'] = $submit ? 'public_resubmission' : 'public_edit';
 		$offer->context['changed_fields'] = array('content', 'capacity', 'availability');
+		if (EmergencyHouseOfferPhotoService::hasUploadedFiles($uploadedPhotos)) {
+			$offer->context['changed_fields'][] = 'photos';
+		}
 
 		$context = $this->offerContext($offer);
 		$address = trim((string) ($data['address'] ?? ''));
@@ -574,15 +588,66 @@ class EmergencyHouseListingService
 		}
 
 		$this->db->begin();
+		$photoService = new EmergencyHouseOfferPhotoService($this->db);
 		if (!$this->lockRow('emergencyhouse_offer', (int) $offer->entity, (int) $offer->id)
 			|| $offer->updateInsideServiceTransaction($triggerUser) <= 0
 			|| !$this->deleteRelations('emergencyhouse_offer_feature', 'fk_offer', (int) $offer->entity, (int) $offer->id)
-			|| !$this->replaceOfferFeatures($offer, $features)) {
-			$this->error = !empty($offer->error) ? $offer->error : $this->error;
+			|| !$this->replaceOfferFeatures($offer, $features)
+			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)) {
+			$this->error = !empty($offer->error)
+				? $offer->error
+				: ($photoService->error !== '' ? $photoService->error : $this->error);
 			$this->db->rollback();
 			return false;
 		}
 		$this->db->commit();
+		return $offer;
+	}
+
+	/**
+	 * Delete one account-owned offer photo and reset operator verification.
+	 *
+	 * @param EmergencyHousePublicAccount $account Account
+	 * @param int $offerId Offer ID
+	 * @param int $photoId Photo ID
+	 * @param User $triggerUser Trigger user
+	 * @return EmergencyHouseOffer|false
+	 */
+	public function deleteOwnedOfferPhoto($account, $offerId, $photoId, $triggerUser)
+	{
+		$offer = $this->fetchOwnedOffer($account, $offerId);
+		if (!$offer instanceof EmergencyHouseOffer || (int) $offer->status === EmergencyHouseOffer::STATUS_CLOSED) {
+			$this->error = 'ErrorObjectNotEditable';
+			return false;
+		}
+
+		$photoService = new EmergencyHouseOfferPhotoService($this->db);
+		$this->db->begin();
+		if (!$this->lockRow('emergencyhouse_offer', (int) $offer->entity, (int) $offer->id)) {
+			$this->db->rollback();
+			return false;
+		}
+		$photoPath = $photoService->deletePhotoMetadata($offer, $photoId);
+		if (!is_string($photoPath)) {
+			$this->error = $photoService->error;
+			$this->db->rollback();
+			return false;
+		}
+
+		$offer->verification_status = 0;
+		$offer->status = EmergencyHouseOffer::STATUS_DRAFT;
+		$offer->context['public_account_id'] = (int) $account->id;
+		$offer->context['trigger_reason'] = 'photo_change';
+		$offer->context['changed_fields'] = array('photos', 'verification_status', 'status');
+		if ($offer->updateInsideServiceTransaction($triggerUser) <= 0) {
+			$this->error = $offer->error;
+			$this->errors = $offer->errors;
+			$this->db->rollback();
+			return false;
+		}
+
+		$this->db->commit();
+		$photoService->deletePhysicalFile($photoPath);
 		return $offer;
 	}
 

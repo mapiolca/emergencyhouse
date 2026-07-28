@@ -47,6 +47,15 @@ class EmergencyHouseCompatibility
 		$sodium = extension_loaded('sodium');
 		$curl = function_exists('curl_init');
 		$cron = function_exists('isModEnabled');
+		$offerPhotos = function_exists('getimagesize')
+			&& function_exists('imagecreatefromjpeg')
+			&& function_exists('imagecreatefrompng')
+			&& function_exists('imagecreatefromwebp')
+			&& function_exists('imagejpeg')
+			&& function_exists('imagepng')
+			&& function_exists('imagewebp')
+			&& function_exists('imagealphablending')
+			&& function_exists('imagesavealpha');
 
 		return array(
 			'core_module' => array(
@@ -72,6 +81,14 @@ class EmergencyHouseCompatibility
 				'min_php' => '8.0.0',
 				'available' => $curl,
 				'reason' => 'CompatibilityRequiresCurl',
+			),
+			'offer_photos' => array(
+				'label' => 'CompatibilityOfferPhotos',
+				'description' => 'CompatibilityOfferPhotosDescription',
+				'min_dolibarr' => '20.0.0',
+				'min_php' => '8.0.0',
+				'available' => $offerPhotos,
+				'reason' => 'CompatibilityRequiresGdImages',
 			),
 			'native_cron' => array(
 				'label' => 'CompatibilityNativeCron',

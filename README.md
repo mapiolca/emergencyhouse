@@ -158,6 +158,28 @@ limitation de débit par adresse réseau, pilotée par le réglage général du
 module avec un minimum de dix envois par heure. Si le captcha ou l’e-mail de
 support n’est pas prêt, les coordonnées restent visibles mais l’envoi est fermé.
 
+### Photos des offres d’hébergement
+
+L’interrupteur `EMERGENCYHOUSE_PHOTOS_ENABLED`, configuré dans l’onglet
+**Portail**, autorise un propriétaire à joindre jusqu’à cinq photos JPG, PNG ou
+WebP de 5 Mo maximum chacune, dans la limite native d’envoi de fichiers. Les
+photos sont enregistrées dans le répertoire documentaire Multicompany de
+l’entité propriétaire de l’offre.
+
+Pour protéger la confidentialité, chaque image est décodée puis réencodée avant
+son stockage. Les métadonnées intégrées au fichier d’origine, notamment EXIF et
+la position GPS, sont ainsi supprimées. La disponibilité de ce traitement est
+indiquée dans l’onglet **Compatibilité** et nécessite la prise en charge JPG,
+PNG et WebP par l’extension PHP GD.
+
+Les photos restent privées pour le propriétaire et les opérateurs tant que
+l’offre n’a pas été vérifiée. La validation opérateur approuve les photos avec
+l’offre ; un refus les maintient hors du portail public. Tout ajout ou toute
+suppression remet l’offre dans le circuit de vérification. Les fichiers sont
+servis par des contrôleurs qui revérifient l’offre, l’entité, le propriétaire
+et le statut de chaque photo, jamais directement depuis le répertoire
+documentaire.
+
 ## Aperçu privé du portail
 
 Un utilisateur Dolibarr disposant du droit de configuration peut ouvrir
@@ -270,6 +292,7 @@ Contrôles autonomes disponibles depuis la racine du module :
 
 ```bash
 php test/static-contracts.php
+php test/cron-contract.php
 php test/multicompany-visibility-contract.php
 ```
 

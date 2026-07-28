@@ -16,6 +16,10 @@ $form = new Form($db);
 $offer = false;
 $privateValues = array('address' => '', 'private_instructions' => '');
 $selectedFeatures = array();
+$offerPhotos = array();
+$photosEnabled = getDolGlobalInt('EMERGENCYHOUSE_PHOTOS_ENABLED', 0) > 0;
+$photosAvailable = EmergencyHouseOfferPhotoService::isAvailable();
+$photoDeleted = GETPOSTINT('photo_deleted') > 0;
 $errorKey = '';
 
 if ($id > 0) {
@@ -40,6 +44,11 @@ if ($id > 0) {
 			$selectedFeatures[(int) $relation['id']] = (int) $relation['id'];
 		}
 	}
+	$photoService = new EmergencyHouseOfferPhotoService($db);
+	$loadedPhotos = $photoService->fetchPhotos($offer, true);
+	if (is_array($loadedPhotos)) {
+		$offerPhotos = $loadedPhotos;
+	}
 }
 
 $campaigns = emergencyhousePublicCampaignOptions($db);
@@ -52,7 +61,25 @@ $housingTypes = is_array($housingTypes) ? $housingTypes : array();
 $features = is_array($features) ? $features : array();
 
 $submittedData = array();
-if ($action === 'save' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhousePublicAuth, 'offer_save')) {
+if (
+	$action === 'delete_photo'
+	&& $offer instanceof EmergencyHouseOffer
+	&& emergencyhousePublicVerifyAuthenticatedPost($emergencyhousePublicAuth, 'offer_photo_delete')
+) {
+	$photoId = GETPOSTINT('photo_id');
+	$triggerUser = emergencyhousePublicTriggerUser($db);
+	$updatedOffer = $listingService->deleteOwnedOfferPhoto($account, (int) $offer->id, $photoId, $triggerUser);
+	if ($updatedOffer instanceof EmergencyHouseOffer) {
+		header('Location: '.emergencyhousePublicUrl('offer/edit.php', array(
+			'id' => (int) $offer->id,
+			'photo_deleted' => 1,
+		)));
+		exit;
+	}
+	$errorKey = $listingService->error !== '' ? $listingService->error : 'ErrorOfferPhotoDelete';
+} elseif ($action === 'delete_photo') {
+	$errorKey = 'ErrorInvalidCsrfToken';
+} elseif ($action === 'save' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhousePublicAuth, 'offer_save')) {
 	if (!emergencyhousePublicConsumeRateLimit(
 		$db,
 		(int) $account->entity,
@@ -100,9 +127,27 @@ if ($action === 'save' && emergencyhousePublicVerifyAuthenticatedPost($emergency
 		}
 		$submit = $mode === 'submit';
 		$triggerUser = emergencyhousePublicTriggerUser($db);
+		$uploadedPhotos = isset($_FILES['offer_photos']) && is_array($_FILES['offer_photos'])
+			? $_FILES['offer_photos']
+			: array();
 		$saved = $offer instanceof EmergencyHouseOffer
-			? $listingService->updateOwnedOffer($account, (int) $offer->id, $submittedData, $featureValues, $triggerUser, $submit)
-			: $listingService->createOffer($account, $submittedData, $featureValues, $triggerUser, $submit);
+			? $listingService->updateOwnedOffer(
+				$account,
+				(int) $offer->id,
+				$submittedData,
+				$featureValues,
+				$triggerUser,
+				$submit,
+				$uploadedPhotos
+			)
+			: $listingService->createOffer(
+				$account,
+				$submittedData,
+				$featureValues,
+				$triggerUser,
+				$submit,
+				$uploadedPhotos
+			);
 		if ($saved instanceof EmergencyHouseOffer) {
 			header('Location: '.emergencyhousePublicUrl('offer/view.php', array('uuid' => $saved->public_uuid, 'saved' => 1)));
 			exit;
@@ -161,10 +206,38 @@ print '<h1>'.$pageTitle.'</h1><p>'.$langs->trans('OfferFormIntroduction').'</p><
 if ($errorKey !== '') {
 	emergencyhousePublicAlert($errorKey, 'error');
 }
+if ($photoDeleted) {
+	emergencyhousePublicAlert('OfferPhotoDeleted', 'success');
+}
 if (empty($campaignOptions)) {
 	print '<div class="eh-empty"><h2>'.$langs->trans('NoActiveCampaign').'</h2><p>'.$langs->trans('NoActiveCampaignHelp').'</p></div>';
 } else {
-	print '<form method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php', $id > 0 ? array('id' => $id) : array())).'" class="eh-form eh-form-wide" data-disable-on-submit>';
+	if ($offer instanceof EmergencyHouseOffer && !empty($offerPhotos)) {
+		print '<section class="eh-card eh-photo-manager" aria-labelledby="offer-existing-photos">';
+		print '<div class="eh-section-heading"><div><h2 id="offer-existing-photos">'.$langs->trans('OfferPhotos').'</h2>';
+		print '<p>'.$langs->trans('OfferExistingPhotosHelp').'</p></div>';
+		print '<span class="eh-badge">'.$langs->trans('OfferPhotoCount', count($offerPhotos), EmergencyHouseOfferPhotoService::MAX_PHOTOS).'</span></div>';
+		print '<div class="eh-photo-grid">';
+		foreach ($offerPhotos as $photo) {
+			$photoStatus = $langs->trans(EmergencyHouseOfferPhotoService::getStatusTranslationKey((int) $photo['status']));
+			$photoUrl = emergencyhousePublicUrl('offer/photo.php', array(
+				'offer' => $offer->public_uuid,
+				'photo' => (int) $photo['id'],
+			));
+			print '<article class="eh-photo-card">';
+			print '<img src="'.dol_escape_htmltag($photoUrl).'" alt="'.dol_escape_htmltag($langs->trans('OfferPhotoAlt', $offer->title)).'" loading="lazy">';
+			print '<div class="eh-photo-card-footer"><span class="eh-badge">'.dol_escape_htmltag($photoStatus).'</span>';
+			print '<form method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php', array('id' => (int) $offer->id))).'">';
+			print emergencyhousePublicCsrfFields($emergencyhousePublicAuth, 'offer_photo_delete');
+			print '<input type="hidden" name="action" value="delete_photo">';
+			print '<input type="hidden" name="photo_id" value="'.((int) $photo['id']).'">';
+			print '<button class="eh-button eh-button-danger eh-button-small" type="submit">'.$langs->trans('DeletePhoto').'</button>';
+			print '</form></div></article>';
+		}
+		print '</div></section>';
+	}
+
+	print '<form method="POST" enctype="multipart/form-data" action="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php', $id > 0 ? array('id' => $id) : array())).'" class="eh-form eh-form-wide" data-disable-on-submit>';
 	print emergencyhousePublicCsrfFields($emergencyhousePublicAuth, 'offer_save');
 	print '<input type="hidden" name="action" value="save">';
 
@@ -224,6 +297,21 @@ if (empty($campaignOptions)) {
 	print emergencyhouseOfferSwitch('transport_available', 'TransportAvailable', (int) $values['transport_available']);
 	print emergencyhouseOfferSwitch('direct_solicitation_enabled', 'DirectSolicitationEnabled', (int) $values['direct_solicitation_enabled']);
 	print '</div></section>';
+
+	if ($photosEnabled) {
+		print '<section class="eh-form-section"><h2>'.$langs->trans('OfferPhotos').'</h2>';
+		if ($photosAvailable) {
+			print '<p>'.$langs->trans('OfferPhotosHelp', EmergencyHouseOfferPhotoService::MAX_PHOTOS).'</p>';
+			print '<div class="eh-field-grid"><div class="eh-field eh-field-full">';
+			print '<label for="offer_photos">'.$langs->trans('AddOfferPhotos').'</label>';
+			print '<input id="offer_photos" type="file" name="offer_photos[]" accept="image/jpeg,image/png,image/webp" multiple>';
+			print '<span class="eh-help">'.$langs->trans('OfferPhotoUploadHelp', EmergencyHouseOfferPhotoService::MAX_PHOTOS).'</span>';
+			print '</div></div>';
+		} else {
+			print '<div class="eh-alert eh-alert-warning">'.$langs->trans('OfferPhotosUnavailable').'</div>';
+		}
+		print '</section>';
+	}
 
 	print '<div class="eh-form-actions">';
 	print '<button class="eh-button eh-button-secondary" type="submit" name="mode" value="draft">'.$langs->trans('SaveDraft').'</button>';

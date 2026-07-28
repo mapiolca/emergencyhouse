@@ -86,6 +86,13 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-card-link { color: inherit !important; text-decoration: none; }
 .eh-card-link::after { content: ""; }
 .eh-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--eh-border); }
+.eh-photo-manager, .eh-offer-gallery { margin-bottom: 24px; }
+.eh-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.eh-photo-card { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--eh-border); border-radius: 14px; background: var(--eh-paper); }
+.eh-photo-card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #edf3f1; }
+.eh-photo-card figcaption { padding: 10px 12px; color: var(--eh-muted); font-size: 14px; font-weight: 700; }
+.eh-photo-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; }
+.eh-photo-card-footer form { margin: 0; }
 .eh-legal-content { overflow-wrap: anywhere; }
 .eh-legal-content > :first-child { margin-top: 0; }
 .eh-legal-content > :last-child { margin-bottom: 0; }

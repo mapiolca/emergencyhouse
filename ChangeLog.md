@@ -2,6 +2,19 @@
 
 ## Non publié
 
+- Correction du contrat des neuf travaux planifiés Emergency House : un
+  traitement réussi retourne désormais `0` à Dolibarr, tandis que le nombre
+  d’éléments traités est conservé dans la sortie du travail ; les échecs réels
+  et les échecs partiels de correspondance restent signalés comme erreurs.
+- Ajout du contrôle de l’adresse e-mail expéditrice au diagnostic et au travail
+  de santé des fournisseurs, avec lien vers la configuration native des
+  e-mails lorsque l’adresse est absente ou invalide.
+- Ajout de cinq photos maximum par offre d’hébergement, avec contrôle réel du
+  type JPG/PNG/WebP, limites natives d’envoi, stockage documentaire
+  Multicompany, suppression protégée par token et diffusion limitée aux photos
+  approuvées. Chaque image est réencodée avant stockage afin de supprimer ses
+  métadonnées, notamment EXIF et GPS, et de préserver la confidentialité de
+  l’adresse.
 - Reprise de l’onglet **Fichiers joints** sur le contrôleur et le modèle
   documentaires natifs Dolibarr : résumé des fichiers, ajout classique ou par
   glisser-déposer natif, liens, aperçu, téléchargement, renommage et suppression
