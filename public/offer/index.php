@@ -182,13 +182,15 @@ if (!$mine && empty($campaigns)) {
 		}
 		$offerGroups[$offerCampaignId]['offers'][] = $offer;
 	}
+	print '<section class="eh-offer-results eh-section-tight" aria-labelledby="offer-campaigns-title">';
+	print '<div class="eh-section-heading"><div><h2 id="offer-campaigns-title">'.$langs->trans('Campaigns').'</h2></div></div>';
 	print '<div class="eh-offer-groups">';
 	foreach ($offerGroups as $offerCampaignId => $offerGroup) {
 		$campaignPageUrl = emergencyhousePublicUrl('campaign.php', array('slug' => $offerGroup['slug']));
 		$campaignOfferCount = $campaignOfferCounts[$offerCampaignId] ?? count($offerGroup['offers']);
 		print '<section class="eh-offer-campaign-group" aria-labelledby="offer-campaign-'.$offerCampaignId.'">';
-		print '<div class="eh-offer-campaign-heading"><div><p class="eh-eyebrow">'.$langs->trans('Campaign').'</p>';
-		print '<h2 id="offer-campaign-'.$offerCampaignId.'">'.dol_escape_htmltag($offerGroup['label']).'</h2></div>';
+		print '<div class="eh-offer-campaign-heading"><div>';
+		print '<h3 id="offer-campaign-'.$offerCampaignId.'">'.dol_escape_htmltag($offerGroup['label']).'</h3></div>';
 		print '<div class="eh-offer-campaign-actions"><span class="eh-badge">'.$langs->trans(
 			$campaignOfferCount === 1 ? 'CampaignAvailableOfferCountOne' : 'CampaignAvailableOfferCount',
 			$campaignOfferCount
@@ -202,8 +204,8 @@ if (!$mine && empty($campaigns)) {
 				'AvailablePlacesCount',
 				(int) $offer['capacity_available']
 			).'</span></div>';
-			print '<h3><a class="eh-card-link" href="'.dol_escape_htmltag($viewUrl).'">';
-			print dol_escape_htmltag((string) $offer['title']).'</a></h3>';
+			print '<h4><a class="eh-card-link" href="'.dol_escape_htmltag($viewUrl).'">';
+			print dol_escape_htmltag((string) $offer['title']).'</a></h4>';
 			print '<p class="eh-card-meta"><span>'.dol_escape_htmltag((string) $offer['public_zone']).'</span>';
 			print '<span>'.$langs->trans(
 				'AvailabilityFromDate',
@@ -214,7 +216,7 @@ if (!$mine && empty($campaigns)) {
 		}
 		print '</div></section>';
 	}
-	print '</div>';
+	print '</div></section>';
 
 	if ($totalPages > 1) {
 		$paginationParams = array();

@@ -346,6 +346,11 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	$cssUrl = $preview
 		? dol_buildpath('/emergencyhouse/css/public.css.php', 1)
 		: emergencyhousePublicUrl('assets/public.css.php');
+	$cssFile = dirname(__DIR__).'/css/public.css.php';
+	$cssVersion = is_file($cssFile) ? filemtime($cssFile) : false;
+	if (is_int($cssVersion)) {
+		$cssUrl .= (strpos($cssUrl, '?') === false ? '?' : '&').'v='.$cssVersion;
+	}
 	$jsUrl = $preview
 		? dol_buildpath('/emergencyhouse/js/public.js.php', 1)
 		: emergencyhousePublicUrl('assets/public.js.php');

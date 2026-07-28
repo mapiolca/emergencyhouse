@@ -80,7 +80,7 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 
 .eh-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .eh-card { min-width: 0; padding: 22px; border: 1px solid var(--eh-border); border-radius: var(--eh-radius); background: var(--eh-paper); box-shadow: 0 8px 28px rgba(23,36,44,.06); }
-.eh-card h2, .eh-card h3 { margin: 0 0 9px; line-height: 1.2; }
+.eh-card h2, .eh-card h3, .eh-card h4 { margin: 0 0 9px; line-height: 1.2; }
 .eh-card p { margin: 8px 0; }
 .eh-card-meta { display: flex; flex-wrap: wrap; gap: 8px 14px; color: var(--eh-muted); font-size: 14px; }
 .eh-card-link { color: inherit !important; text-decoration: none; }
@@ -89,16 +89,16 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-home-evolution-banner { padding-top: 18px; }
 .eh-home-evolution-banner .eh-alert { margin: 0; }
 .eh-home-evolution-banner p { margin: 6px 0 0; }
-.eh-campaign-overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.eh-campaign-overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
 .eh-campaign-summary { min-width: 0; padding: 18px; border: 1px solid var(--eh-border); border-radius: 14px; background: var(--eh-paper); }
 .eh-campaign-summary.is-selected { border-color: var(--eh-primary); box-shadow: 0 0 0 3px rgba(12,107,88,.1); }
 .eh-campaign-summary h3 { margin: 0 0 8px; font-size: 19px; line-height: 1.25; }
 .eh-campaign-summary h3 a { color: var(--eh-ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .eh-campaign-summary .eh-badge { margin-top: 10px; }
 .eh-offer-campaign-group { padding-block: 32px; border-top: 1px solid var(--eh-border); }
-.eh-offer-campaign-group:first-child { border-top: 0; }
+.eh-offer-campaign-group:first-child { padding-top: 0; border-top: 0; }
 .eh-offer-campaign-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
-.eh-offer-campaign-heading h2 { margin: 0; font-size: clamp(24px, 4vw, 34px); line-height: 1.1; }
+.eh-offer-campaign-heading h3 { margin: 0; font-size: clamp(22px, 3vw, 30px); line-height: 1.1; }
 .eh-offer-campaign-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
 .eh-photo-manager, .eh-offer-gallery { margin-bottom: 24px; }
 .eh-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
@@ -240,7 +240,6 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 	.eh-site-header nav ul { flex-wrap: wrap; }
 	.eh-hero-grid, .eh-dashboard-grid { grid-template-columns: 1fr; }
 	.eh-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-	.eh-campaign-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-preference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-footer-grid { grid-template-columns: 2fr 1fr; }

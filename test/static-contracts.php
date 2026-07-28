@@ -432,9 +432,18 @@ emergencyhouseContract(
 emergencyhouseContract(
 	strpos($publicOfferIndex, '$offerGroups[$offerCampaignId]') !== false
 		&& strpos($publicOfferIndex, 'class="eh-offer-campaign-group"') !== false
+		&& strpos($publicOfferIndex, 'id="offer-campaigns-title"') !== false
+		&& strpos($publicOfferIndex, "\$langs->trans('Campaigns')") !== false
 		&& strpos($publicOfferIndex, "'campaign.php', array('slug' => \$offerGroup['slug'])") !== false
 		&& strpos($publicOfferIndex, '$page = min($page, $totalPages - 1);') !== false,
 	'Résultats paginés regroupés par campagne avec page hors limites normalisée'
+);
+emergencyhouseContract(
+	strpos($publicStyles, 'grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))') !== false
+		&& strpos($publicStyles, '.eh-campaign-overview-grid { grid-template-columns: 1fr; }') !== false
+		&& strpos($publicLibrary, "filemtime(\$cssFile)") !== false
+		&& strpos($publicLibrary, "\$cssUrl .= (strpos(\$cssUrl, '?') === false ? '?' : '&').'v='.\$cssVersion;") !== false,
+	'Aperçu des campagnes côte à côte avec repli mobile et invalidation du cache CSS'
 );
 emergencyhouseContract(
 	strpos($publicOfferIndex, "\$paginationParams['campaign'] = \$campaignId;") !== false

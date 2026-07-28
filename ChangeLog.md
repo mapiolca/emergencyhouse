@@ -6,6 +6,9 @@
   aperçu de toutes les campagnes ouvertes avec compteurs, regroupement des
   résultats par campagne, recherche sur la commune ou la zone publique et
   pagination conservant les filtres.
+- Affichage compact côte à côte de l’aperçu des campagnes avec repli sur une
+  colonne sur mobile, titre de section **Campagnes** aligné sur la hiérarchie
+  de l’aperçu et versionnement de la feuille de style publique.
 - Ajout sur l’accueil d’une bannière bilingue indiquant que le service évolue
   en permanence grâce aux retours utilisateurs et que ses améliorations sont
   accélérées face à l’urgence dans le Sud-Ouest.
