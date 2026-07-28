@@ -87,7 +87,7 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 Résultats de la passe finale du 28 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `742 contrats validés` ;
+- contrats statiques : `739 contrats validés` ;
 - mesure d’audience : tables sans donnée personnelle, collecte désactivée,
   cookie fixe, opposition, engagement, verrouillage, agrégation, rétention,
   filtres exacts, parcours ordonné, menu et conversions contrôlés validés ;

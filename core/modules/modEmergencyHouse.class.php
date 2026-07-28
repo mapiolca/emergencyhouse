@@ -70,7 +70,6 @@ class modEmergencyHouse extends DolibarrModules
 			),
 			'substitutions' => 1,
 			'models' => 1,
-			'css' => array('/emergencyhouse/css/emergencyhouse.css.php'),
 		);
 		$this->dirs = array('/emergencyhouse/temp');
 		$this->tabs = array();
@@ -236,7 +235,7 @@ class modEmergencyHouse extends DolibarrModules
 			'fk_menu' => '',
 			'type' => 'top',
 			'titre' => 'EmergencyHouse',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
+			'prefix' => 'fas fa-house-user',
 			'mainmenu' => 'emergencyhouse',
 			'leftmenu' => '',
 			'url' => '/emergencyhouse/index.php',
