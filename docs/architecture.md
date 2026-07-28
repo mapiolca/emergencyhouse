@@ -27,6 +27,8 @@ chemin interne Dolibarr reste le fallback de recette.
 - Les recherches exactes utilisent des empreintes HMAC normalisées.
 - Les réponses publiques ne contiennent jamais de données exactes masquées.
 - Les révélations de coordonnées sont explicites, autorisées et auditées.
+- Le formulaire de contact impose le token CSRF, le captcha natif, une limite
+  de débit et une validation réelle du type des images jointes.
 
 ## Composants
 
@@ -70,6 +72,27 @@ directement, sans écriture dans la file et sans travail planifié. La file et s
 travail planifié sont réservés aux notifications métier différées. Les anciennes
 lignes d’accès créées par une version antérieure sont exclues du traitement puis
 invalidées sans envoi.
+
+Le formulaire public de contact constitue également un envoi synchrone :
+`EmergencyHousePublicContactService` remet immédiatement le message et ses
+images validées à `CMailFile`. L’adresse du visiteur est utilisée comme adresse
+de réponse, tandis que l’expéditeur et la copie cachée permanente restent ceux
+de la configuration générale. Aucune ligne de file et aucun document permanent
+ne sont créés. Les fichiers temporaires disparaissent avec la requête PHP.
+
+## Contact public et anti-spam
+
+`public/contact.php` est lié depuis l’en-tête et le pied de page. Les
+coordonnées proviennent des constantes par entité
+`EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL` et
+`EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE`.
+
+La génération du code anti-spam est déléguée au point d’entrée natif
+`core/antispamimage.php`. Le petit relais `public/captcha.php` est nécessaire
+pour conserver une URL de même origine lorsque le répertoire `public/` est
+exposé comme racine d’un domaine distinct. La valeur attendue reste celle de la
+session native `dol_antispam_value`. Le formulaire reste fermé lorsque
+`MAIN_SECURITY_ENABLECAPTCHA` ou l’extension GD n’est pas disponible.
 
 ## Cartographie
 

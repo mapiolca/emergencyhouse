@@ -146,6 +146,13 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-switch { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 52px; padding: 10px 12px; border: 1px solid var(--eh-border); border-radius: 10px; }
 .eh-switch input { width: 46px; height: 26px; accent-color: var(--eh-primary); }
 .eh-form-actions { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin: 30px -12px -12px; padding: 14px 12px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--eh-border); background: rgba(255,255,255,.96); backdrop-filter: blur(10px); }
+.eh-contact-layout { display: grid; grid-template-columns: minmax(240px, .65fr) minmax(0, 1.35fr); align-items: start; gap: 24px; }
+.eh-contact-details { position: sticky; top: 96px; }
+.eh-contact-link { overflow-wrap: anywhere; font-size: 18px; font-weight: 750; }
+.eh-captcha { display: grid; grid-template-columns: minmax(120px, 1fr) auto auto; align-items: center; gap: 10px; }
+.eh-captcha img { width: 80px; max-width: none; height: 32px; border: 1px solid var(--eh-border); border-radius: 6px; background: #fafafa; image-rendering: auto; }
+.eh-field input[type="file"] { min-height: 54px; padding: 9px; }
+.eh-field input[type="file"]::file-selector-button { min-height: 34px; margin-right: 10px; padding: 6px 10px; border: 1px solid var(--eh-border); border-radius: 8px; background: #edf3f1; color: var(--eh-ink); cursor: pointer; }
 
 .eh-alert { margin-block: 16px; padding: 14px 16px; border: 1px solid; border-radius: 12px; }
 .eh-alert-info { border-color: #9cbfd9; background: #edf6fc; color: #174968; }
@@ -175,25 +182,27 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-message { max-width: min(78%, 620px); padding: 12px 14px; border-radius: 14px 14px 14px 4px; background: #fff; white-space: pre-wrap; }
 .eh-message-own { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: #d9efe8; }
 .eh-site-footer { margin-top: 44px; padding-block: 34px calc(34px + env(safe-area-inset-bottom)); border-top: 1px solid var(--eh-border); background: #e9efed; }
-.eh-footer-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+.eh-footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 30px; }
 .eh-site-footer p { max-width: 70ch; color: var(--eh-muted); }
 .eh-site-footer nav ul { align-items: start; flex-direction: column; }
+.eh-footer-contact { display: flex; align-items: start; flex-direction: column; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
 
 @media (max-width: 900px) {
 	.eh-header-inner { align-items: flex-start; flex-direction: column; gap: 12px; padding-block: 12px; }
 	.eh-site-header { position: static; }
-	.eh-site-header nav { width: 100%; overflow-x: auto; padding-bottom: 4px; }
-	.eh-site-header nav ul { width: max-content; }
+	.eh-site-header nav { width: 100%; }
+	.eh-site-header nav ul { flex-wrap: wrap; }
 	.eh-hero-grid, .eh-dashboard-grid { grid-template-columns: 1fr; }
 	.eh-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-preference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.eh-footer-grid { grid-template-columns: 2fr 1fr; }
 }
 
 @media (max-width: 640px) {
 	.eh-shell { width: min(calc(100% - 24px), var(--eh-shell)); }
 	.eh-brand small { display: none; }
-	.eh-card-grid, .eh-field-grid, .eh-choice-grid, .eh-footer-grid, .eh-description-list, .eh-preference-grid { grid-template-columns: 1fr; }
+	.eh-card-grid, .eh-field-grid, .eh-choice-grid, .eh-footer-grid, .eh-description-list, .eh-preference-grid, .eh-contact-layout { grid-template-columns: 1fr; }
 	.eh-field-full { grid-column: auto; }
 	.eh-stat-grid { grid-template-columns: 1fr 1fr; }
 	.eh-section-heading { align-items: start; flex-direction: column; }
@@ -201,6 +210,9 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 	.eh-form-actions { justify-content: stretch; }
 	.eh-form-actions .eh-button { flex: 1 1 100%; }
 	.eh-message { max-width: 90%; }
+	.eh-contact-details { position: static; }
+	.eh-captcha { grid-template-columns: 1fr auto; }
+	.eh-captcha .eh-button { grid-column: 1 / -1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

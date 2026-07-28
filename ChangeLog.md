@@ -22,6 +22,15 @@
 - Ajout des conditions générales d’utilisation administrables en HTML avec
   l’éditeur WYSIWYG natif, page publique dédiée et masquage complet du lien et
   du consentement lorsque le contenu est vide.
+- Ajout d’une page publique « Nous contacter », visible dans l’en-tête, le
+  pied de page et l’aperçu privé, avec e-mail et téléphone du support
+  configurables par entité.
+- Ajout de l’envoi immédiat des demandes de contact par le transport de
+  courriel natif, sans file ni travail planifié, avec jusqu’à cinq photos ou
+  captures d’écran contrôlées et attachées sans stockage permanent.
+- Protection du formulaire de contact par le captcha natif, le token CSRF et
+  une limitation de débit ; l’envoi reste fermé si cette protection ou
+  l’adresse du support n’est pas configurée.
 - Correction des confirmations publiques manquantes, notamment après la
   création et la vérification d’un compte, qui affichaient à tort une erreur
   interne alors que l’opération avait réussi.

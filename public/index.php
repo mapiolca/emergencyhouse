@@ -31,6 +31,7 @@ print '<p class="eh-lead">'.$langs->trans('PublicHeroDescription').'</p>';
 print '<div class="eh-actions">';
 print '<a class="eh-button" href="'.dol_escape_htmltag(emergencyhousePublicUrl('request/edit.php')).'">'.$langs->trans('NeedAccommodationCta').'</a>';
 print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php')).'">'.$langs->trans('OfferAccommodationCta').'</a>';
+print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('contact.php')).'">'.$langs->trans('ContactUs').'</a>';
 print '</div></div>';
 print '<aside class="eh-reassurance" aria-label="'.$langs->trans('ServiceCommitments').'">';
 print emergencyhousePublicReassurance('1', 'MutualConsentTitle', 'MutualConsentDescription');

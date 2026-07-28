@@ -41,6 +41,20 @@ document.addEventListener("DOMContentLoaded", function () {
 		update();
 	});
 
+	document.querySelectorAll("[data-captcha-refresh]").forEach(function (button) {
+		button.addEventListener("click", function () {
+			var image = document.getElementById("img_securitycode");
+			var input = document.getElementById("securitycode");
+			var baseUrl = button.getAttribute("data-captcha-url");
+			if (!image || !baseUrl) return;
+			image.src = baseUrl + (baseUrl.indexOf("?") === -1 ? "?" : "&") + "refresh=" + String(Date.now());
+			if (input) {
+				input.value = "";
+				input.focus();
+			}
+		});
+	});
+
 	document.querySelectorAll("form[data-disable-on-submit]").forEach(function (form) {
 		form.addEventListener("submit", function () {
 			form.querySelectorAll("button[type=submit], input[type=submit]").forEach(function (button) {

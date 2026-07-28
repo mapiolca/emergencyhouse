@@ -52,12 +52,15 @@ Après copie ou clonage :
 3. vérifier dans l’onglet **Sécurité** que les clés gérées automatiquement sont
    disponibles ;
 4. renseigner les textes juridiques, les coordonnées officielles et l’URL
-   racine qui expose directement le répertoire `public/` ;
+   racine qui expose directement le répertoire `public/`, ainsi que l’e-mail
+   et le téléphone du support ;
 5. vérifier les travaux planifiés Emergency House, automatiquement activés en
    même temps que le module ;
 6. configurer les notifications back-office dans la page native
    `/admin/notification.php` ;
-7. réaliser la recette de sécurité, de droits et Multicompany avant
+7. activer le captcha natif dans les réglages de sécurité et vérifier que
+   l’extension PHP GD est disponible ;
+8. réaliser la recette de sécurité, de droits et Multicompany avant
    l’ouverture publique.
 
 La désactivation est non destructive : les travaux planifiés Emergency House
@@ -73,6 +76,7 @@ Multicompany sont conservés. Ils sont tous réactivés avec le module.
 
 - `https://emergencyhouse.example.org/` pour l’accueil ;
 - `https://emergencyhouse.example.org/offer/index.php` pour les offres ;
+- `https://emergencyhouse.example.org/contact.php` pour contacter le support ;
 - `https://emergencyhouse.example.org/account/index.php` pour l’espace
   personnel.
 
@@ -87,6 +91,28 @@ son éditeur WYSIWYG natif lorsque ce module est actif, avec repli sur une zone
 de texte standard. Le contenu est publié sur `/terms.php` ; si la constante est
 vide, le lien, la page et le consentement d’inscription correspondants sont
 masqués.
+
+### Contact public
+
+La page `/contact.php` est accessible depuis la navigation principale et le
+pied de page. Les constantes `EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL` et
+`EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE`, configurées dans l’onglet **Portail**,
+alimentent les coordonnées affichées. L’e-mail est obligatoire pour ouvrir le
+formulaire ; le téléphone reste facultatif.
+
+Les messages sont envoyés immédiatement avec `CMailFile` et héritent du
+transport, de l’expéditeur et de la copie cachée permanente configurés pour
+l’instance. Ils ne passent jamais par la file ni par un travail planifié. Le
+visiteur peut joindre jusqu’à cinq images JPG, PNG ou WebP de 5 Mo maximum
+chacune, sous réserve de la limite native d’envoi de fichiers. Les images sont
+contrôlées puis attachées depuis le répertoire temporaire PHP, sans copie dans
+les documents du module.
+
+Le formulaire exige le captcha natif activé par
+`MAIN_SECURITY_ENABLECAPTCHA`, l’extension PHP GD, le token CSRF et une
+limitation de débit par adresse réseau, pilotée par le réglage général du
+module avec un minimum de dix envois par heure. Si le captcha ou l’e-mail de
+support n’est pas prêt, les coordonnées restent visibles mais l’envoi est fermé.
 
 ## Aperçu privé du portail
 

@@ -18,12 +18,14 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/security.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/doc/pdf_emergencyhouse_agreement.modules.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
+dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
 
 $langs->loadLangs(array('admin', 'emergencyhouse@emergencyhouse'));
 
@@ -66,6 +68,8 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_PUBLIC_BASE_URL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_ORGANISATION_NAME' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_OFFICIAL_PHONE' => array('type' => 'string', 'default' => ''),
+		'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('type' => 'string', 'default' => ''),
+		'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_PRIVACY_URL' => array('type' => 'string', 'default' => ''),
 		'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('type' => 'string', 'default' => ''),
 	),
@@ -132,6 +136,8 @@ $settingsByTab = array(
  */
 $settingHelpKeys = array(
 	'EMERGENCYHOUSE_PUBLIC_BASE_URL' => 'HelpPublicBaseUrl',
+	'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => 'HelpPublicSupportEmail',
+	'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => 'HelpPublicSupportPhone',
 	'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => 'HelpPublicTermsHtml',
 	'EMERGENCYHOUSE_OSM_TILE_URL' => 'HelpOsmTileUrl',
 	'EMERGENCYHOUSE_GEOCODING_PROVIDER' => 'HelpGeocodingProvider',
@@ -245,6 +251,10 @@ if ($action === 'set_numbering_model') {
 	}
 	if ($tab === 'portal') {
 		$publicBaseUrl = trim($values['EMERGENCYHOUSE_PUBLIC_BASE_URL']);
+		$supportEmail = trim($values['EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL']);
+		$supportPhone = trim(dol_string_nohtmltag($values['EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE']));
+		$values['EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL'] = $supportEmail;
+		$values['EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE'] = $supportPhone;
 		if ($publicBaseUrl !== '') {
 			$publicBaseUrlParts = parse_url($publicBaseUrl);
 			if (
@@ -262,6 +272,14 @@ if ($action === 'set_numbering_model') {
 			} else {
 				$values['EMERGENCYHOUSE_PUBLIC_BASE_URL'] = rtrim($publicBaseUrl, '/').'/';
 			}
+		}
+		if ($supportEmail !== '' && (filter_var($supportEmail, FILTER_VALIDATE_EMAIL) === false || dol_strlen($supportEmail) > 255)) {
+			$error++;
+			setEventMessages($langs->trans('ErrorSupportEmailInvalid'), null, 'errors');
+		}
+		if (dol_strlen($supportPhone) > 40) {
+			$error++;
+			setEventMessages($langs->trans('ErrorSupportPhoneInvalid'), null, 'errors');
 		}
 	}
 	if ($tab === 'providers') {
@@ -369,10 +387,35 @@ if ($tab === 'authentication') {
 }
 if ($tab === 'portal') {
 	$previewUrl = dol_buildpath('/emergencyhouse/admin/public-preview.php', 1);
+	$contactUrl = emergencyhousePublicUrl('contact.php');
+	$captchaEnabled = getDolGlobalInt('MAIN_SECURITY_ENABLECAPTCHA', 0) > 0;
+	$captchaReady = $captchaEnabled && function_exists('imagecreate') && function_exists('imagepng');
+	$nativeUploadLimits = getMaxFileSizeArray();
+	$nativeUploadLimitKb = isset($nativeUploadLimits['maxmin']) ? (int) $nativeUploadLimits['maxmin'] : 0;
+	$nativeUploadReady = $nativeUploadLimitKb > 0;
 	print '<div class="info">'.$langs->trans('PublicPreviewHelp').'</div>';
 	print '<p><a class="button" target="_blank" rel="noopener noreferrer" href="'.dol_escape_htmltag($previewUrl).'">';
 	print $langs->trans('OpenPublicPreview').'</a></p>';
 	print '<div class="info">'.$langs->trans('PublicBaseUrlConfigurationHelp').'</div>';
+	print '<p><a class="button" target="_blank" rel="noopener noreferrer" href="'.dol_escape_htmltag($contactUrl).'">';
+	print $langs->trans('OpenPublicContactPage').'</a></p>';
+	print '<br>'.load_fiche_titre($langs->trans('PublicContactConfiguration'), '', 'address-card');
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('SecurityCheck').'</th><th>'.$langs->trans('Status').'</th></tr>';
+	print '<tr class="oddeven"><td>'.$langs->trans('NativeCaptcha').'</td><td>';
+	print img_picto($langs->trans($captchaReady ? 'Available' : 'Unavailable'), $captchaReady ? 'switch_on' : 'switch_off');
+	print ' '.$langs->trans($captchaReady ? 'Available' : 'Unavailable').'</td></tr>';
+	print '<tr class="oddeven"><td>'.$langs->trans('ContactAttachments').'</td><td>';
+	print img_picto($langs->trans($nativeUploadReady ? 'Available' : 'Unavailable'), $nativeUploadReady ? 'switch_on' : 'switch_off');
+	print ' '.$langs->trans($nativeUploadReady ? 'Available' : 'Unavailable');
+	if ($nativeUploadReady) {
+		print ' — '.((int) $nativeUploadLimitKb).' '.$langs->trans('Kb');
+	}
+	print '</td></tr></table>';
+	print '<div class="info">'.$langs->trans('NativeCaptchaConfigurationInfo').'</div>';
+	print '<p><a class="button" href="'.DOL_URL_ROOT.'/admin/security_other.php">'.$langs->trans('ConfigureNativeCaptcha').'</a></p>';
+	print '<div class="info">'.$langs->trans('NativeUploadConfigurationInfo').'</div>';
+	print '<p><a class="button" href="'.DOL_URL_ROOT.'/admin/security_file.php">'.$langs->trans('ConfigureNativeUploads').'</a></p>';
 }
 if ($tab === 'security') {
 	$encryptionService = new EmergencyHouseEncryptionService();
@@ -495,6 +538,12 @@ if (isset($settingsByTab[$tab])) {
 			print '<input class="flat minwidth100" type="number" min="0" name="'.dol_escape_htmltag($name).'" value="'.((int) $value).'">';
 		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_BASE_URL') {
 			print '<input class="flat minwidth500" type="url" inputmode="url" placeholder="https://emergencyhouse.example.org/"';
+			print ' name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';
+		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL') {
+			print '<input class="flat minwidth500" type="email" inputmode="email" autocomplete="email"';
+			print ' name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';
+		} elseif ($name === 'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE') {
+			print '<input class="flat minwidth500" type="tel" inputmode="tel" autocomplete="tel" maxlength="40"';
 			print ' name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';
 		} else {
 			print '<input class="flat minwidth500" type="text" name="'.dol_escape_htmltag($name).'" value="'.dol_escape_htmltag($value).'">';

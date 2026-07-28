@@ -42,6 +42,7 @@ print '<p class="eh-lead">'.$langs->trans('PublicHeroDescription').'</p>';
 print '<div class="eh-actions">';
 print '<a class="eh-button" href="#preview-requests">'.$langs->trans('NeedAccommodationCta').'</a>';
 print '<a class="eh-button eh-button-secondary" href="#preview-offers">'.$langs->trans('OfferAccommodationCta').'</a>';
+print '<a class="eh-button eh-button-secondary" href="#preview-contact">'.$langs->trans('ContactUs').'</a>';
 print '</div></div>';
 print '<aside class="eh-reassurance" aria-label="'.$langs->trans('ServiceCommitments').'">';
 print emergencyhousePreviewReassurance('1', 'MutualConsentTitle', 'MutualConsentDescription');
@@ -84,6 +85,34 @@ print '</div></section>';
 print '<section id="preview-account" class="eh-shell eh-section"><div class="eh-empty">';
 print '<h2>'.$langs->trans('PreviewAccountTitle').'</h2><p>'.$langs->trans('PreviewAccountDescription').'</p>';
 print '</div></section>';
+
+print '<section id="preview-contact" class="eh-shell eh-section" aria-labelledby="preview-contact-title">';
+print '<div class="eh-page-title"><p class="eh-eyebrow">'.$langs->trans('Support').'</p>';
+print '<h2 id="preview-contact-title">'.$langs->trans('ContactUs').'</h2>';
+print '<p>'.$langs->trans('PublicContactIntroduction').'</p></div>';
+print '<div class="eh-contact-layout"><aside class="eh-card">';
+print '<h3>'.$langs->trans('SupportContactDetails').'</h3>';
+$previewSupportPhone = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE', ''));
+$previewSupportEmail = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL', ''));
+if ($previewSupportPhone !== '') {
+	print '<p><strong>'.$langs->trans('Phone').'</strong><br>'.dol_escape_htmltag($previewSupportPhone).'</p>';
+}
+if (filter_var($previewSupportEmail, FILTER_VALIDATE_EMAIL) !== false) {
+	print '<p><strong>'.$langs->trans('Email').'</strong><br>'.dol_escape_htmltag($previewSupportEmail).'</p>';
+}
+if ($previewSupportPhone === '' && filter_var($previewSupportEmail, FILTER_VALIDATE_EMAIL) === false) {
+	print '<p>'.$langs->trans('PreviewContactConfigurationHelp').'</p>';
+}
+print '</aside><div class="eh-form eh-form-wide"><h3>'.$langs->trans('ContactForm').'</h3>';
+print '<p>'.$langs->trans('PreviewContactFormHelp').'</p>';
+print '<div class="eh-field-grid"><div class="eh-field"><label for="preview_contact_name">'.$langs->trans('Name').'</label>';
+print '<input id="preview_contact_name" disabled value="'.dol_escape_htmltag($langs->trans('PreviewContactName')).'"></div>';
+print '<div class="eh-field"><label for="preview_contact_email">'.$langs->trans('Email').'</label>';
+print '<input id="preview_contact_email" disabled value="contact@example.org"></div>';
+print '<div class="eh-field eh-field-full"><label for="preview_contact_message">'.$langs->trans('Message').'</label>';
+print '<textarea id="preview_contact_message" disabled>'.dol_escape_htmltag($langs->trans('PreviewContactMessage')).'</textarea>';
+print '</div></div></div></div>';
+print '</section>';
 
 emergencyhousePublicRenderFooter(true);
 $db->close();

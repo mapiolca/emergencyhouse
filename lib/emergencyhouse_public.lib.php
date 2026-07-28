@@ -220,6 +220,7 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	print emergencyhousePublicNavItem('campaigns', $active, $preview ? '#preview-campaigns' : emergencyhousePublicUrl(), $langs->trans('Campaigns'));
 	print emergencyhousePublicNavItem('offers', $active, $preview ? '#preview-offers' : emergencyhousePublicUrl('offer/index.php'), $langs->trans('Offers'));
 	print emergencyhousePublicNavItem('requests', $active, $preview ? '#preview-requests' : emergencyhousePublicUrl('request/index.php'), $langs->trans('Requests'));
+	print emergencyhousePublicNavItem('contact', $active, $preview ? '#preview-contact' : emergencyhousePublicUrl('contact.php'), $langs->trans('ContactUs'));
 	if ($account instanceof EmergencyHousePublicAccount) {
 		print emergencyhousePublicNavItem('account', $active, emergencyhousePublicUrl('account/index.php'), $langs->trans('MySpace'));
 		print emergencyhousePublicNavItem('logout', $active, emergencyhousePublicUrl('auth/logout.php'), $langs->trans('Logout'));
@@ -276,6 +277,20 @@ function emergencyhousePublicRenderFooter($preview = false)
 	print '</main>';
 	print '<footer class="eh-site-footer"><div class="eh-shell eh-footer-grid">';
 	print '<div><strong>'.$langs->trans('EmergencyHouse').'</strong><p>'.$langs->trans('EmergencyHousePublicDisclaimer').'</p></div>';
+	print '<div><strong>'.$langs->trans('ContactUs').'</strong><ul class="eh-footer-contact">';
+	print '<li><a href="'.dol_escape_htmltag($preview ? '#preview-contact' : emergencyhousePublicUrl('contact.php')).'">'
+		.$langs->trans('ContactForm').'</a></li>';
+	$supportPhone = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE', ''));
+	$supportEmail = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL', ''));
+	if ($supportPhone !== '') {
+		$phoneUri = preg_replace('/[^0-9+]/', '', $supportPhone);
+		print '<li><a href="tel:'.dol_escape_htmltag(is_string($phoneUri) ? $phoneUri : '').'">'
+			.dol_escape_htmltag($supportPhone).'</a></li>';
+	}
+	if (filter_var($supportEmail, FILTER_VALIDATE_EMAIL) !== false) {
+		print '<li><a href="mailto:'.dol_escape_htmltag($supportEmail).'">'.dol_escape_htmltag($supportEmail).'</a></li>';
+	}
+	print '</ul></div>';
 	print '<nav aria-label="'.$langs->trans('LegalNavigation').'"><ul>';
 	$privacyUrl = getDolGlobalString('EMERGENCYHOUSE_PUBLIC_PRIVACY_URL', '');
 	$termsHtml = trim(getDolGlobalString('EMERGENCYHOUSE_PUBLIC_TERMS_HTML', ''));
@@ -402,7 +417,7 @@ function emergencyhousePublicSafeReturnUrl($value)
 		strpos($decodedRelativePath, "\0") !== false
 		|| preg_match('~(?:^|/)\.\.(?:/|$)~', $decodedRelativePath)
 		|| !preg_match(
-			'~^(?:index\.php|campaign\.php|accessibility\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
+			'~^(?:index\.php|campaign\.php|accessibility\.php|contact\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
 			$decodedRelativePath
 		)
 	) {

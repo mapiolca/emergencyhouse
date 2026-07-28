@@ -64,6 +64,10 @@ emergencyhousePublicUrlAssert(
 	emergencyhousePublicUrl('offer/index.php') === 'https://emergencyhouse.example.org/offer/index.php',
 	'Le chemin Dolibarr ne doit pas être ajouté à un lien d’offre.'
 );
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicUrl('contact.php') === 'https://emergencyhouse.example.org/contact.php',
+	'La page de contact doit être publiée directement sous la racine configurée.'
+);
 $emergencyhouseTestPublicBaseUrl = 'https://emergencyhouse.example.org/portal';
 emergencyhousePublicUrlAssert(
 	emergencyhousePublicUrl('offer/index.php') === 'https://emergencyhouse.example.org/portal/offer/index.php',
@@ -83,6 +87,11 @@ emergencyhousePublicUrlAssert(
 emergencyhousePublicUrlAssert(
 	emergencyhousePublicSafeReturnUrl('https://attacker.example/request/view.php?uuid=abc') === '',
 	'Une redirection vers une autre origine doit être refusée.'
+);
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicSafeReturnUrl('https://emergencyhouse.example.org/contact.php')
+		=== 'https://emergencyhouse.example.org/contact.php',
+	'La page de contact doit être une destination de retour interne sûre.'
 );
 
 $langs = new class {
@@ -104,6 +113,7 @@ $renderedHeader = ob_get_clean();
 emergencyhousePublicUrlAssert(
 	is_string($renderedHeader)
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/offer/index.php') !== false
+		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/contact.php') !== false
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/assets/public.css.php') !== false
 		&& strpos($renderedHeader, '/custom/emergencyhouse') === false,
 	'La navigation et les ressources rendues doivent utiliser la racine publique.'

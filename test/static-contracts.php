@@ -331,6 +331,55 @@ emergencyhouseContract(
 		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_BASE_URL' => 'HelpPublicBaseUrl'") !== false,
 	'Validation et aide de l’URL racine publique'
 );
+$publicContact = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'contact.php'
+);
+$publicHome = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'index.php'
+);
+$publicCaptcha = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'captcha.php'
+);
+$publicContactService = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'publiccontactservice.class.php'
+);
+emergencyhouseContract(
+	strpos($setup, "'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('type' => 'string', 'default' => '')") !== false
+		&& strpos($setup, "'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('type' => 'string', 'default' => '')") !== false
+		&& strpos($setup, 'type="email" inputmode="email" autocomplete="email"') !== false
+		&& strpos($setup, 'type="tel" inputmode="tel" autocomplete="tel"') !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_SUPPORT_EMAIL' => array('', 'chaine')") !== false
+		&& strpos($descriptor, "'EMERGENCYHOUSE_PUBLIC_SUPPORT_PHONE' => array('', 'chaine')") !== false,
+	'Coordonnées du support configurables par entité'
+);
+emergencyhouseContract(
+	substr_count($publicLibrary, "emergencyhousePublicUrl('contact.php')") >= 2
+		&& strpos($publicLibrary, "'contact', \$active") !== false
+		&& strpos($publicHome, "emergencyhousePublicUrl('contact.php')") !== false
+		&& strpos($preview, 'id="preview-contact"') !== false,
+	'Page Nous contacter visible dans la navigation, l’accueil, le pied et l’aperçu'
+);
+emergencyhouseContract(
+	strpos($publicContact, "getDolGlobalInt('MAIN_SECURITY_ENABLECAPTCHA'") !== false
+		&& strpos($publicContact, "\$_SESSION['dol_antispam_value']") !== false
+		&& strpos($publicContact, 'hash_equals(') !== false
+		&& strpos($publicContact, 'emergencyhousePublicCsrfFields(') !== false
+		&& strpos($publicContact, 'emergencyhousePublicConsumeRateLimit(') !== false
+		&& strpos($publicCaptcha, 'core/antispamimage.php') !== false,
+	'Formulaire protégé par CSRF, débit et captcha natif'
+);
+emergencyhouseContract(
+	strpos($publicContact, 'enctype="multipart/form-data"') !== false
+		&& strpos($publicContact, 'name="attachments[]"') !== false
+		&& strpos($publicContactService, 'getMaxFileSizeArray()') !== false
+		&& strpos($publicContactService, 'getimagesize($tmpName)') !== false
+		&& strpos($publicContactService, 'dolCheckVirus($tmpName, $safeName)') !== false
+		&& strpos($publicContactService, 'new CMailFile(') !== false
+		&& strpos($publicContactService, 'MAIN_MAIL_AUTOCOPY_TO permanent BCC') !== false
+		&& strpos($publicContactService, 'queueEmail(') === false
+		&& strpos($publicContactService, 'dol_move_uploaded_file(') === false,
+	'Images contrôlées, envoyées immédiatement et non conservées'
+);
 $publicControllers = '';
 foreach (emergencyhousePhpFiles($root.DIRECTORY_SEPARATOR.'public') as $publicPhpFile) {
 	$publicControllers .= "\n".emergencyhouseReadRequired($publicPhpFile);
