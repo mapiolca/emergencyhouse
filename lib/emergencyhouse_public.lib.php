@@ -504,7 +504,7 @@ function emergencyhousePublicUserAgent()
  */
 function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false, array $seo = array(), array $analyticsContext = array())
 {
-	global $langs, $emergencyhousePublicAnalytics, $emergencyhousePublicAuth;
+	global $langs, $emergencyhousePublicAnalytics;
 
 	$language = emergencyhousePublicLanguageTag();
 	$cssUrl = $preview
@@ -642,30 +642,6 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	print '<img src="'.dol_escape_htmltag($logoUrl).'" alt="" width="38" height="38">';
 	print '<span><strong>'.$langs->trans('EmergencyHouse').'</strong><small>'.$langs->trans('PublicServiceTagline').'</small></span>';
 	print '</a>';
-	if (!$preview) {
-		$returnTo = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])
-			? emergencyhousePublicSafeReturnUrl($_SERVER['REQUEST_URI'])
-			: emergencyhousePublicUrl();
-		if ($returnTo === '') {
-			$returnTo = emergencyhousePublicUrl();
-		}
-		print '<form class="eh-language-form" method="POST" action="'.dol_escape_htmltag(emergencyhousePublicUrl('language.php')).'">';
-		print emergencyhousePublicCsrfFields(
-			$account instanceof EmergencyHousePublicAccount ? $emergencyhousePublicAuth : null,
-			$account instanceof EmergencyHousePublicAccount ? 'change_language' : ''
-		);
-		print '<input type="hidden" name="action" value="change_language">';
-		print '<input type="hidden" name="return_to" value="'.dol_escape_htmltag($returnTo).'">';
-		print '<label class="eh-visually-hidden" for="eh-public-language">'.$langs->trans('Language').'</label>';
-		print '<select class="eh-select2" id="eh-public-language" name="lang" aria-label="'.$langs->trans('Language').'">';
-		foreach (EmergencyHouseLanguageService::getSupportedLocales() as $locale => $metadata) {
-			print '<option value="'.dol_escape_htmltag($locale).'"'
-				.($locale === emergencyhousePublicCurrentLocale() ? ' selected' : '').'>'
-				.dol_escape_htmltag($metadata['label']).'</option>';
-		}
-		print '</select><button class="eh-button eh-button-small eh-button-secondary" type="submit">'
-			.$langs->trans('ChangeLanguage').'</button></form>';
-	}
 	print '<nav aria-label="'.$langs->trans('PrimaryNavigation').'"><ul>';
 	print emergencyhousePublicNavItem('campaigns', $active, $preview ? '#preview-campaigns' : emergencyhousePublicUrl(), $langs->trans('Campaigns'));
 	print emergencyhousePublicNavItem('offers', $active, $preview ? '#preview-offers' : emergencyhousePublicUrl('offer/index.php'), $langs->trans('Offers'));
@@ -681,6 +657,45 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	print '</ul></nav>';
 	print '</div></header>';
 	print '<main id="main">';
+}
+
+/**
+ * Render the public language selector.
+ *
+ * @param EmergencyHousePublicAccount|null $account Authenticated public account
+ * @return string
+ */
+function emergencyhousePublicLanguageSelector($account = null)
+{
+	global $langs, $emergencyhousePublicAuth;
+
+	$returnTo = isset($_SERVER['REQUEST_URI']) && is_string($_SERVER['REQUEST_URI'])
+		? emergencyhousePublicSafeReturnUrl($_SERVER['REQUEST_URI'])
+		: emergencyhousePublicUrl();
+	if ($returnTo === '') {
+		$returnTo = emergencyhousePublicUrl();
+	}
+
+	$html = '<form class="eh-language-form" method="POST" action="'
+		.dol_escape_htmltag(emergencyhousePublicUrl('language.php', array(), false)).'">';
+	$html .= emergencyhousePublicCsrfFields(
+		$account instanceof EmergencyHousePublicAccount ? $emergencyhousePublicAuth : null,
+		$account instanceof EmergencyHousePublicAccount ? 'change_language' : ''
+	);
+	$html .= '<input type="hidden" name="action" value="change_language">';
+	$html .= '<input type="hidden" name="return_to" value="'.dol_escape_htmltag($returnTo).'">';
+	$html .= '<label class="eh-visually-hidden" for="eh-public-language">'.$langs->trans('Language').'</label>';
+	$html .= '<select class="eh-select2" id="eh-public-language" name="selected_locale" aria-label="'
+		.$langs->trans('Language').'">';
+	foreach (EmergencyHouseLanguageService::getSupportedLocales() as $locale => $metadata) {
+		$html .= '<option value="'.dol_escape_htmltag($locale).'"'
+			.($locale === emergencyhousePublicCurrentLocale() ? ' selected' : '').'>'
+			.dol_escape_htmltag($metadata['label']).'</option>';
+	}
+	$html .= '</select><button class="eh-button eh-button-small eh-button-secondary" type="submit">'
+		.$langs->trans('ChangeLanguage').'</button></form>';
+
+	return $html;
 }
 
 /**
@@ -788,10 +803,11 @@ function emergencyhousePublicLegalPageIsPublished($enabledConstant, $htmlConstan
  */
 function emergencyhousePublicRenderFooter($preview = false)
 {
-	global $langs;
+	global $langs, $emergencyhousePublicAccount;
 
 	print '</main>';
-	print '<footer class="eh-site-footer"><div class="eh-shell eh-footer-grid">';
+	$footerGridClass = 'eh-shell eh-footer-grid'.($preview ? ' eh-footer-grid-preview' : '');
+	print '<footer class="eh-site-footer"><div class="'.dol_escape_htmltag($footerGridClass).'">';
 	print '<div><strong>'.$langs->trans('EmergencyHouse').'</strong><p>'.$langs->trans('EmergencyHousePublicDisclaimer').'</p></div>';
 	print '<div><strong>'.$langs->trans('ContactUs').'</strong><ul class="eh-footer-contact">';
 	print '<li><a href="'.dol_escape_htmltag($preview ? '#preview-contact' : emergencyhousePublicUrl('contact.php')).'">'
@@ -835,7 +851,17 @@ function emergencyhousePublicRenderFooter($preview = false)
 		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('audience.php')).'">'.$langs->trans('AudienceMeasurement').'</a></li>';
 	}
 	print '<li><a href="'.dol_escape_htmltag($preview ? '#main' : emergencyhousePublicUrl('accessibility.php')).'">'.$langs->trans('Accessibility').'</a></li>';
-	print '</ul></nav></div></footer>';
+	print '</ul></nav>';
+	if (!$preview) {
+		$languageAccount = isset($emergencyhousePublicAccount)
+			&& $emergencyhousePublicAccount instanceof EmergencyHousePublicAccount
+				? $emergencyhousePublicAccount
+				: null;
+		print '<div class="eh-footer-language"><strong>'.$langs->trans('Language').'</strong>';
+		print emergencyhousePublicLanguageSelector($languageAccount);
+		print '</div>';
+	}
+	print '</div></footer>';
 	print '</body></html>';
 }
 

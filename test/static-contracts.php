@@ -400,6 +400,9 @@ $publicOfferIndex = emergencyhouseReadRequired(
 $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
 );
+$languageController = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'language.php'
+);
 emergencyhouseContract(
 	strpos($listingService, "c.public_visibility_mode = 'offers_requests'") !== false
 		&& strpos($publicRequestIndex, "array('requests', 'both')") === false,
@@ -553,6 +556,19 @@ emergencyhouseContract(
 		&& strpos($publicLibrary, "setcookie('emergencyhouse_language'") !== false
 		&& strpos($publicLibrary, 'EmergencyHouseLanguageService::getSupportedLocales()') !== false,
 	'Langue publique par défaut conservée par entité, négociation navigateur et sélecteur persistant'
+);
+emergencyhouseContract(
+	strpos($publicLibrary, "emergencyhousePublicUrl('language.php', array(), false)") !== false
+		&& strpos($publicLibrary, 'name="selected_locale"') !== false
+		&& strpos($publicLibrary, 'class="eh-footer-language"') !== false
+		&& strpos($languageController, "GETPOST('selected_locale', 'alphanohtml')") !== false
+		&& strpos($languageController, "GETPOST('lang', 'alphanohtml')") === false
+		&& strpos($languageController, '$emergencyhousePublicAccount->updateLanguage($locale)') !== false
+		&& strpos($languageController, '$memberService->updateLanguage($emergencyhousePublicAccount, $triggerUser)') !== false
+		&& strpos($languageController, 'emergencyhousePublicSetLanguageCookie($locale);') !== false
+		&& strpos($languageController, 'emergencyhousePublicUrlWithLocale($returnTo, $locale)') !== false
+		&& strpos($publicStyles, 'grid-template-columns: 2fr 1fr 1fr 1fr;') !== false,
+	'Sélecteur dans le footer, POST distinct, redirection localisée et préférences persistées'
 );
 emergencyhouseContract(
 	strpos($publicLibrary, 'function emergencyhousePublicLegalPageIsPublished(') !== false

@@ -30,6 +30,16 @@ function getDolGlobalString($name, $default = '')
 }
 
 /**
+ * @param string $name Constant name
+ * @param int $default Default
+ * @return int
+ */
+function getDolGlobalInt($name, $default = 0)
+{
+	return $default;
+}
+
+/**
  * @param string $name Input name
  * @param string $type Input filter
  * @return string
@@ -197,11 +207,39 @@ emergencyhousePublicUrlAssert(
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/offer/index.php?lang=fr_FR') !== false
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/contact.php?lang=fr_FR') !== false
 		&& strpos($renderedHeader, 'https://emergencyhouse.example.org/assets/public.css.php') !== false
-		&& strpos($renderedHeader, 'name="lang"') !== false
-		&& strpos($renderedHeader, 'value="ar_SA"') !== false
+		&& strpos($renderedHeader, 'eh-language-form') === false
+		&& strpos($renderedHeader, 'name="selected_locale"') === false
 		&& strpos($renderedHeader, 'content="noindex,nofollow"') !== false
 		&& strpos($renderedHeader, '/custom/emergencyhouse') === false,
 	'La navigation et les ressources rendues doivent utiliser la racine publique.'
+);
+
+$_SERVER['REQUEST_URI'] = '/request/view.php?uuid=abc&lang=fr_FR';
+ob_start();
+emergencyhousePublicRenderFooter();
+$renderedFooter = ob_get_clean();
+emergencyhousePublicUrlAssert(
+	is_string($renderedFooter)
+		&& strpos($renderedFooter, 'class="eh-footer-language"') !== false
+		&& strpos($renderedFooter, 'action="https://emergencyhouse.example.org/language.php"') !== false
+		&& strpos($renderedFooter, 'action="https://emergencyhouse.example.org/language.php?lang=') === false
+		&& strpos($renderedFooter, 'name="selected_locale"') !== false
+		&& strpos($renderedFooter, 'name="lang"') === false
+		&& substr_count($renderedFooter, '<option value=') === 15
+		&& strpos($renderedFooter, 'value="ar_SA"') !== false
+		&& strpos($renderedFooter, 'name="token" value="test-token"') !== false
+		&& strpos($renderedFooter, 'uuid=abc&amp;lang=fr_FR') !== false,
+	'Le sélecteur doit être rendu dans le pied de page avec une action non localisée et préserver le retour.'
+);
+
+ob_start();
+emergencyhousePublicRenderFooter(true);
+$renderedPreviewFooter = ob_get_clean();
+emergencyhousePublicUrlAssert(
+	is_string($renderedPreviewFooter)
+		&& strpos($renderedPreviewFooter, 'eh-footer-grid-preview') !== false
+		&& strpos($renderedPreviewFooter, 'eh-language-form') === false,
+	'L’aperçu privé ne doit pas afficher le sélecteur de langue.'
 );
 
 ob_start();

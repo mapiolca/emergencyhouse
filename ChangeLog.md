@@ -9,6 +9,9 @@
   compte, le cookie fonctionnel, l’en-tête `Accept-Language`, puis la langue
   publique par défaut configurée par entité ; ajout d’un sélecteur accessible
   qui conserve la préférence dans le compte public et la fiche Adhérent liée.
+- Correction de la soumission du sélecteur de langue avec un champ POST dédié,
+  sans collision avec le paramètre `lang` de l’URL, et déplacement du
+  sélecteur dans une quatrième colonne du pied de page.
 - Localisation des URL publiques et des courriels transactionnels, ajout des
   balises `hreflang`, des variantes localisées au sitemap, de
   `Content-Language` et du rendu RTL pour l’arabe.

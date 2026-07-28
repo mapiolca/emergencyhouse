@@ -6,7 +6,7 @@ require __DIR__.'/_init.php';
 dol_include_once('/emergencyhouse/class/memberservice.class.php');
 
 $action = GETPOST('action', 'aZ09');
-$locale = EmergencyHouseLanguageService::normalizeLocale(GETPOST('lang', 'alphanohtml'));
+$locale = EmergencyHouseLanguageService::normalizeLocale(GETPOST('selected_locale', 'alphanohtml'));
 $returnTo = emergencyhousePublicSafeReturnUrl(GETPOST('return_to', 'restricthtml'));
 
 if (

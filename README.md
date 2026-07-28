@@ -127,7 +127,7 @@ Pour chaque requête publique, la langue est résolue dans cet ordre :
 4. en-tête navigateur `Accept-Language` ;
 5. constante par entité `EMERGENCYHOUSE_PUBLIC_DEFAULT_LANG`.
 
-Le sélecteur de l’en-tête conserve le choix pendant un an. Pour un compte
+Le sélecteur du pied de page conserve le choix pendant un an. Pour un compte
 authentifié, il met également à jour le compte public et la langue par défaut
 de la fiche Adhérent liée. Les pages indexables publient leurs variantes
 `hreflang`, et le sitemap contient une URL par langue.
