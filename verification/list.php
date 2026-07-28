@@ -17,6 +17,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/class/offer.class.php');
+dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
 dol_include_once('/emergencyhouse/class/verificationservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
@@ -27,10 +28,16 @@ if (!isModEnabled('emergencyhouse') || !emergencyhouseCanDo($user, 'verification
 	accessforbidden();
 }
 
+$objectTypeOptions = array(
+	'account' => $langs->trans('PublicAccount'),
+	'offer' => $langs->trans('Offer'),
+	'request' => $langs->trans('Request'),
+);
 $action = GETPOST('action', 'aZ09');
 if ($action === 'record_verification') {
 	$objectType = GETPOST('object_type', 'aZ09');
-	$objectId = GETPOSTINT('fk_object');
+	$objectId = isset($objectTypeOptions[$objectType]) ? GETPOSTINT('fk_object') : 0;
+	$targetMode = GETPOST('target_mode', 'alpha');
 	$verificationType = GETPOST('verification_type', 'aZ09');
 	$levelId = GETPOSTINT('fk_verification_level');
 	$status = GETPOSTINT('verification_status');
@@ -68,7 +75,11 @@ if ($action === 'record_verification') {
 			);
 			if ($result > 0) {
 				setEventMessages($langs->trans('VerificationRecorded'), null, 'mesgs');
-				header('Location: '.$_SERVER['PHP_SELF']);
+				$redirectUrl = $_SERVER['PHP_SELF'];
+				if ($targetMode === 'locked') {
+					$redirectUrl .= '?object_type='.urlencode($objectType).'&fk_object='.((int) $objectId);
+				}
+				header('Location: '.$redirectUrl);
 				exit;
 			}
 			setEventMessages(emergencyhouseGetUserErrorMessage($service->error), null, 'errors');
@@ -76,20 +87,22 @@ if ($action === 'record_verification') {
 	}
 }
 
-$objectTypeOptions = array(
-	'account' => $langs->trans('PublicAccount'),
-	'offer' => $langs->trans('Offer'),
-	'request' => $langs->trans('Request'),
-);
 $formObjectType = GETPOST('object_type', 'aZ09');
 if (!isset($objectTypeOptions[$formObjectType])) {
 	$formObjectType = 'offer';
 }
 $formObjectId = GETPOSTINT('fk_object');
 $formTargetEntity = emergencyhouseVerificationResolveEntity($db, $formObjectType, $formObjectId);
-if (!emergencyhouseVerificationEntityIsAccessible($formTargetEntity, $formObjectType)) {
+$formTargetAccessible = emergencyhouseVerificationEntityIsAccessible($formTargetEntity, $formObjectType);
+if (!$formTargetAccessible) {
+	$formObjectId = 0;
 	$formTargetEntity = (int) $conf->entity;
 }
+$formTargetMode = GETPOST('target_mode', 'alpha');
+$formTargetLocked = $formTargetMode !== 'selector' && $formObjectId > 0 && $formTargetAccessible;
+$targetOptions = $formTargetLocked
+	? array()
+	: emergencyhouseVerificationBuildTargetOptions($db, $formObjectType);
 $form = new Form($db);
 $levelOptions = array();
 $sqlLevels = 'SELECT rowid, label FROM '.MAIN_DB_PREFIX.'c_emergencyhouse_verification_level';
@@ -205,33 +218,68 @@ foreach ($searchEntities as $searchEntity) {
 	$param .= '&search_entity[]='.((int) $searchEntity);
 }
 
-llxHeader('', $langs->trans('Verifications'));
+llxHeader(
+	'',
+	$langs->trans('Verifications'),
+	'',
+	'',
+	0,
+	0,
+	array('/emergencyhouse/js/verification.js'),
+	array(),
+	'',
+	'mod-emergencyhouse page-verification'
+);
 print load_fiche_titre($langs->trans('RecordVerification'), '', 'check');
-print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+print '<form id="emergencyhouse-verification-form" method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'"';
+print ' data-refresh-url="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" data-target-locked="'.($formTargetLocked ? '1' : '0').'">';
 print '<input type="hidden" name="token" value="'.newToken().'"><input type="hidden" name="action" value="record_verification">';
 print '<table class="border centpercent">';
-print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans('ObjectType').'</td><td>'.$form->selectarray('object_type', $objectTypeOptions, $formObjectType, 0, 0, 0, '', 0, 0, 0, '', 'minwidth200').'</td></tr>';
-print '<tr><td class="fieldrequired">'.$langs->trans('LinkedObject').'</td><td><input class="flat maxwidth100" type="number" min="1" name="fk_object" required value="'.($formObjectId > 0 ? $formObjectId : '').'"></td></tr>';
+if ($formTargetLocked) {
+	print '<input type="hidden" name="target_mode" value="locked">';
+	print '<input type="hidden" name="object_type" value="'.dol_escape_htmltag($formObjectType).'">';
+	print '<input type="hidden" name="fk_object" value="'.((int) $formObjectId).'">';
+	print '<tr><td class="titlefieldcreate">'.$langs->trans('ObjectType').'</td><td>';
+	print dol_escape_htmltag($objectTypeOptions[$formObjectType]);
+	print '</td></tr>';
+	print '<tr><td>'.$langs->trans('ObjectToVerify').'</td><td>';
+	print emergencyhouseVerificationRenderTarget($db, $formObjectType, $formObjectId, $formTargetEntity);
+	print '</td></tr>';
+} else {
+	print '<input type="hidden" name="target_mode" value="selector">';
+	print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans('ObjectType').'</td><td>';
+	print $form->selectarray('object_type', $objectTypeOptions, $formObjectType, 0, 0, 0, '', 0, 0, 0, '', 'minwidth200');
+	print '</td></tr>';
+	print '<tr><td class="fieldrequired">'.$langs->trans('ObjectToVerify').'</td><td>';
+	print $form->selectarray('fk_object', $targetOptions, $formObjectId, 1, 0, 0, '', 0, 0, 0, '', 'minwidth400');
+	print '</td></tr>';
+}
 print '<tr><td class="fieldrequired">'.$langs->trans('VerificationType').'</td><td>'.$form->selectarray('verification_type', $verificationTypeOptions, 'identity', 0, 0, 0, '', 0, 0, 0, '', 'minwidth200').'</td></tr>';
 print '<tr><td class="fieldrequired">'.$langs->trans('VerificationLevel').'</td><td>'.$form->selectarray('fk_verification_level', $levelOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200').'</td></tr>';
 print '<tr><td class="fieldrequired">'.$langs->trans('Status').'</td><td>'.$form->selectarray('verification_status', $verificationStatusOptions, 1, 0, 0, 0, '', 0, 0, 0, '', 'minwidth200').'</td></tr>';
 print '<tr><td class="fieldrequired">'.$langs->trans('VerificationMethod').'</td><td>'.$form->selectarray('method_code', $methodOptions, 'operator_review', 0, 0, 0, '', 0, 0, 0, '', 'minwidth200').'</td></tr>';
 print '<tr><td>'.$langs->trans('PrivateNote').'</td><td><textarea class="flat centpercent" name="private_note" rows="4"></textarea></td></tr>';
-print '<tr><td>'.$langs->trans('ExpirationDate').'</td><td>'.$form->selectDate(-1, 'date_expiration', 0, 0, 1, '', 1, 0, 0, 0).'</td></tr>';
+print '<tr><td>'.$langs->trans('DateExpiration').'</td><td>'.$form->selectDate(-1, 'date_expiration', 0, 0, 1, '', 1, 0, 0, 0).'</td></tr>';
 print '</table><div class="center"><button class="button button-save" type="submit">'.$langs->trans('Save').'</button></div></form>';
 foreach (array('object_type', 'verification_type', 'fk_verification_level', 'verification_status', 'method_code') as $selectName) {
+	if ($formTargetLocked && $selectName === 'object_type') {
+		continue;
+	}
 	print ajax_combobox($selectName);
+}
+if (!$formTargetLocked) {
+	print ajax_combobox('fk_object');
 }
 
 $listFields = array(
 	'v.object_type' => 'ObjectType',
-	'v.fk_object' => 'LinkedObject',
+	'v.fk_object' => 'VerifiedObject',
 	'v.verification_type' => 'VerificationType',
 	'v.fk_verification_level' => 'VerificationLevel',
 	'v.status' => 'Status',
 	'v.fk_operator' => 'Operator',
 	'v.date_creation' => 'DateCreation',
-	'v.date_expiration' => 'ExpirationDate',
+	'v.date_expiration' => 'DateExpiration',
 );
 if ($showEnvironment) {
 	$listFields['v.entity'] = 'Environment';
@@ -347,6 +395,138 @@ function emergencyhouseVerificationEntityIsAccessible($entity, $objectType)
 	}
 
 	return emergencyhouseEntityIsAccessibleForElement($entity, $objectType);
+}
+
+/**
+ * Build native selector options for the requested verification target type.
+ *
+ * @param DoliDB $db Database handler
+ * @param string $objectType Target type
+ * @return array<int, string>
+ */
+function emergencyhouseVerificationBuildTargetOptions($db, $objectType)
+{
+	global $conf, $langs, $user;
+
+	$options = array();
+	if ($objectType === 'account') {
+		$sql = 'SELECT rowid, entity, public_uuid, firstname_encrypted, lastname_encrypted, status';
+		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql .= ' WHERE entity = '.((int) $conf->entity);
+		$sql .= ' ORDER BY date_creation DESC, rowid DESC';
+		$resql = $db->query($sql);
+		if (!$resql) {
+			dol_syslog(__METHOD__.': '.$db->lasterror(), LOG_ERR);
+			return $options;
+		}
+
+		$canRevealIdentity = emergencyhouseCanDo($user, 'sensitive', 'contact');
+		while (is_object($row = $db->fetch_object($resql))) {
+			$uuid = (string) $row->public_uuid;
+			$shortIdentifier = substr($uuid, 0, 8);
+			$label = $langs->trans('PublicAccount').' '.$shortIdentifier;
+			if ((int) $row->status === EmergencyHousePublicAccount::STATUS_ANONYMIZED) {
+				$label = $langs->trans('PublicAccountAnonymized').' '.$shortIdentifier;
+			} elseif ($canRevealIdentity) {
+				$account = new EmergencyHousePublicAccount($db);
+				$account->id = (int) $row->rowid;
+				$account->entity = (int) $row->entity;
+				$account->public_uuid = $uuid;
+				$account->firstname_encrypted = (string) $row->firstname_encrypted;
+				$account->lastname_encrypted = (string) $row->lastname_encrypted;
+				$identity = $account->getDecryptedIdentity();
+				if (is_array($identity)) {
+					$displayName = trim(dolGetFirstLastname($identity['firstname'], $identity['lastname']));
+					if ($displayName !== '') {
+						$label = $displayName.' — '.$langs->trans('PublicAccount').' '.$shortIdentifier;
+					}
+				}
+			}
+			$options[(int) $row->rowid] = $label;
+		}
+
+		return $options;
+	}
+
+	if (!in_array($objectType, array('offer', 'request'), true)) {
+		return $options;
+	}
+
+	$scope = emergencyhouseEntityScope($objectType);
+	if (empty($scope)) {
+		return $options;
+	}
+	$entityOptions = emergencyhouseEntityOptionsForScope($db, $scope);
+	$showEnvironment = emergencyhouseEntityScopeIsShared($scope);
+	$sql = 'SELECT rowid, entity, ref, title';
+	$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_'.$objectType;
+	$sql .= ' WHERE entity IN ('.implode(',', array_map('intval', $scope)).')';
+	$sql .= ' ORDER BY ref DESC, rowid DESC';
+	$resql = $db->query($sql);
+	if (!$resql) {
+		dol_syslog(__METHOD__.': '.$db->lasterror(), LOG_ERR);
+		return $options;
+	}
+	while (is_object($row = $db->fetch_object($resql))) {
+		$label = (string) $row->ref;
+		if ((string) $row->title !== '' && (string) $row->title !== $label) {
+			$label .= ' — '.(string) $row->title;
+		}
+		if ($showEnvironment) {
+			$entityId = (int) $row->entity;
+			$label .= ' — ['.($entityOptions[$entityId] ?? (string) $entityId).']';
+		}
+		$options[(int) $row->rowid] = $label;
+	}
+
+	return $options;
+}
+
+/**
+ * Render a validated verification target without exposing its technical ID.
+ *
+ * @param DoliDB $db Database handler
+ * @param string $objectType Target type
+ * @param int $objectId Target ID
+ * @param int $entity Owner entity
+ * @return string
+ */
+function emergencyhouseVerificationRenderTarget($db, $objectType, $objectId, $entity)
+{
+	global $langs, $user;
+
+	if ($objectType === 'offer') {
+		$object = new EmergencyHouseOffer($db);
+		if ($object->fetch($objectId) > 0 && (int) $object->entity === $entity) {
+			return $object->getNomUrl(1);
+		}
+	} elseif ($objectType === 'request') {
+		$object = new EmergencyHouseRequest($db);
+		if ($object->fetch($objectId) > 0 && (int) $object->entity === $entity) {
+			return $object->getNomUrl(1);
+		}
+	} elseif ($objectType === 'account') {
+		$account = new EmergencyHousePublicAccount($db);
+		if ($account->fetch($objectId, $entity) > 0) {
+			$shortIdentifier = substr((string) $account->public_uuid, 0, 8);
+			$label = $langs->trans('PublicAccount').' '.$shortIdentifier;
+			if ((int) $account->status === EmergencyHousePublicAccount::STATUS_ANONYMIZED) {
+				$label = $langs->trans('PublicAccountAnonymized').' '.$shortIdentifier;
+			} elseif (emergencyhouseCanDo($user, 'sensitive', 'contact')) {
+				$identity = $account->getDecryptedIdentity();
+				if (is_array($identity)) {
+					$displayName = trim(dolGetFirstLastname($identity['firstname'], $identity['lastname']));
+					if ($displayName !== '') {
+						$label = $displayName.' — '.$langs->trans('PublicAccount').' '.$shortIdentifier;
+					}
+				}
+			}
+
+			return img_picto('', 'user', 'class="pictofixedwidth"').dol_escape_htmltag($label);
+		}
+	}
+
+	return '<span class="opacitymedium">'.$langs->trans('ErrorRecordNotFound').'</span>';
 }
 
 /**

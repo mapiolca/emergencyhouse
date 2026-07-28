@@ -125,10 +125,10 @@ $configurations = array(
 			'fk_offer' => 'Offer',
 			'fk_request' => 'Request',
 			'fk_match' => 'Match',
-			'initiator_direction' => 'Direction',
+			'initiator_direction' => 'SolicitationDirection',
 			'date_read' => 'DateRead',
 			'date_response' => 'DateResponse',
-			'date_expiration' => 'ExpirationDate',
+			'date_expiration' => 'DateExpiration',
 			'initiator_contact_consent' => 'InitiatorContactConsent',
 			'recipient_contact_consent' => 'RecipientContactConsent',
 			'address_share_authorized' => 'AddressShareAuthorized',
@@ -357,7 +357,9 @@ if ($action === 'reveal_address' && $object instanceof EmergencyHouseOffer) {
 llxHeader('', $langs->trans($configuration['title']).' '.$object->ref, '', '', 0, 0, array(), array(), '', 'mod-emergencyhouse page-card');
 $head = emergencyhouseObjectPrepareHead($object);
 print dol_get_fiche_head($head, $tab, $langs->trans($configuration['title']), -1, $object->picto);
-print dol_banner_tab($object, 'ref', '', 1, 'ref', 'ref');
+$listUrl = dol_buildpath('/emergencyhouse/'.$object->element.'/list.php', 1).'?restore_lastsearch_values=1';
+$linkback = '<a href="'.dol_escape_htmltag($listUrl).'">'.$langs->trans('BackToList').'</a>';
+dol_banner_tab($object, 'id', $linkback, 1, 'rowid', 'ref');
 
 $ficheHeadClosed = false;
 if ($tab === 'notes' && property_exists($object, 'note_public')) {
@@ -719,6 +721,37 @@ function emergencyhouseCardRenderField($db, $object, $field)
 	global $langs;
 
 	$value = property_exists($object, $field) ? $object->{$field} : null;
+	$valueTranslationKeys = array(
+		'public_visibility_mode' => array(
+			'offers' => 'VisibilityOffersOnly',
+			'offers_requests' => 'VisibilityOffersAndRequests',
+			'private' => 'VisibilityPrivate',
+		),
+		'verification_policy' => array(
+			'operator_validation' => 'VerificationOperatorValidation',
+			'email_verification' => 'VerificationEmailOnly',
+			'manual' => 'VerificationManual',
+		),
+		'initiator_direction' => array(
+			'request_to_offer' => 'SolicitationDirectionRequestToOffer',
+			'offer_to_request' => 'SolicitationDirectionOfferToRequest',
+			'operator' => 'SolicitationDirectionOperator',
+		),
+	);
+	if (isset($valueTranslationKeys[$field])) {
+		$technicalValue = is_string($value) ? $value : '';
+		if (isset($valueTranslationKeys[$field][$technicalValue])) {
+			return dol_escape_htmltag($langs->trans($valueTranslationKeys[$field][$technicalValue]));
+		}
+		return '<span class="opacitymedium">'.$langs->trans('UnknownValue').'</span>';
+	}
+	if ($field === 'severity') {
+		$severity = (int) $value;
+		if ($severity >= 0 && $severity <= 5) {
+			return dol_escape_htmltag($langs->trans('SeverityLevel'.$severity));
+		}
+		return '<span class="opacitymedium">'.$langs->trans('UnknownValue').'</span>';
+	}
 	if (in_array($field, array('date_start', 'date_end', 'actual_start', 'actual_end', 'date_read', 'date_response', 'date_expiration', 'date_closure'), true)) {
 		return empty($value) ? '' : dol_print_date((int) $value, 'dayhour');
 	}
