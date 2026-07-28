@@ -25,7 +25,7 @@ if ($mine) {
 	$account = $emergencyhousePublicAccount;
 	$campaign = $campaignId > 0 ? emergencyhousePublicFetchCampaign($db, $campaignId) : false;
 	$canExposeRequests = $campaign instanceof EmergencyHouseCampaign
-		&& in_array($campaign->public_visibility_mode, array('requests', 'both'), true);
+		&& $campaign->public_visibility_mode === 'offers_requests';
 	$requests = $canExposeRequests
 		? $listingService->fetchPublicRequests($campaignId, $limit, $offset)
 		: array();

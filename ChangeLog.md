@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Correction de l’exposition des demandes publiques pour les campagnes
+  configurées en mode **Offres et demandes** ; la publication reste
+  conditionnée à la vérification opérateur, désormais explicitée dans le
+  formulaire.
 - Remplacement de la sélection manuelle de vérification par une file FIFO
   commune aux comptes confirmés, offres soumises et demandes actives, avec
   cible imposée par `queue_id` et registre historique conservé dans une vue

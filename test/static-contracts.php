@@ -353,8 +353,16 @@ $publicOfferEditor = emergencyhouseReadRequired(
 $publicRequestEditor = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'request'.DIRECTORY_SEPARATOR.'edit.php'
 );
+$publicRequestIndex = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'request'.DIRECTORY_SEPARATOR.'index.php'
+);
 $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
+);
+emergencyhouseContract(
+	strpos($publicRequestIndex, "\$campaign->public_visibility_mode === 'offers_requests'") !== false
+		&& strpos($publicRequestIndex, "array('requests', 'both')") === false,
+	'Les demandes publiques sont exposées pour le mode de campagne Offres et demandes'
 );
 emergencyhouseContract(
 	strpos($registerController, '$db->begin();') !== false
