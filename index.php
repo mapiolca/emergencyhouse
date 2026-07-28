@@ -74,6 +74,10 @@ print '</div>';
 print '</div><div class="fichehalfright">';
 print load_fiche_titre($langs->trans('OperationalReadiness'));
 print '<table class="noborder centpercent">';
+print '<thead><tr class="liste_titre">';
+print '<th>'.$langs->trans('OperationalComponent').'</th>';
+print '<th class="right">'.$langs->trans('OperationalStatus').'</th>';
+print '</tr></thead><tbody>';
 $encryptionService = new EmergencyHouseEncryptionService();
 $readiness = array(
 	'PublicPortal' => getDolGlobalInt('EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED') === 1,
@@ -84,10 +88,11 @@ $readiness = array(
 );
 foreach ($readiness as $label => $ready) {
 	print '<tr class="oddeven"><td>'.$langs->trans($label).'</td><td class="right">';
-	print dolGetStatus($langs->trans($ready ? 'StatusAvailable' : 'StatusUnavailable'), '', '', $ready ? 4 : 6, 1);
+	$statusLabel = $langs->trans($ready ? 'StatusAvailable' : 'StatusUnavailable');
+	print dolGetStatus($statusLabel, $statusLabel, '', $ready ? 'status4' : 'status6', 2);
 	print '</td></tr>';
 }
-print '</table></div></div>';
+print '</tbody></table></div></div>';
 if ($recentReports) {
 	print load_fiche_titre($langs->trans('RecentReports'));
 	print '<div class="div-table-responsive"><table class="noborder centpercent">';

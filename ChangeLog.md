@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Amélioration du tableau **État opérationnel** avec des en-têtes de colonnes,
+  des badges de statut natifs Dolibarr et la traduction de **Travaux planifiés**.
 - Masquage de l’onglet de réglages **Multicompany** tant que le module
   Multicompany est désactivé ou qu’aucun objet Emergency House ne possède de
   partage multi-entité effectif ; les filtres et colonnes **Environnement**

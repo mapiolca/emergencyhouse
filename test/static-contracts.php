@@ -706,6 +706,9 @@ $requiredTranslations = array(
 	'EmergencyHouseModuleDescription',
 	'EmergencyHouseModuleDescriptionLong',
 	'EmergencyHouseRightApi',
+	'OperationalComponent',
+	'OperationalStatus',
+	'ScheduledJobs',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',
 	'Notify_EMERGENCYHOUSE_REQUEST_DELETE',
@@ -719,6 +722,15 @@ foreach ($requiredTranslations as $translationKey) {
 		'Traduction bilingue : '.$translationKey
 	);
 }
+
+$dashboard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'index.php');
+emergencyhouseContract(
+	strpos($dashboard, '<tr class="liste_titre">') !== false
+		&& strpos($dashboard, "trans('OperationalComponent')") !== false
+		&& strpos($dashboard, "trans('OperationalStatus')") !== false
+		&& strpos($dashboard, "\$ready ? 'status4' : 'status6', 2") !== false,
+	'Tableau d’état opérationnel avec en-têtes et badges Dolibarr'
+);
 
 $readme = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'README.md');
 $changeLog = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'ChangeLog.md');
