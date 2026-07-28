@@ -34,9 +34,27 @@ class EmergencyHouseRetentionService
 	public function apply($entity)
 	{
 		$affected = 0;
+		$todayStart = dol_mktime(
+			0,
+			0,
+			0,
+			(int) dol_print_date(dol_now(), '%m'),
+			(int) dol_print_date(dol_now(), '%d'),
+			(int) dol_print_date(dol_now(), '%Y')
+		);
 		$sessionCutoff = dol_time_plus_duree(dol_now(), -max(1, getDolGlobalInt('EMERGENCYHOUSE_RETENTION_SESSION_DAYS', 7)), 'd');
 		$tokenCutoff = dol_time_plus_duree(dol_now(), -max(1, getDolGlobalInt('EMERGENCYHOUSE_RETENTION_TOKEN_DAYS', 7)), 'd');
 		$rateCutoff = dol_time_plus_duree(dol_now(), -7, 'd');
+		$analyticsDetailCutoff = dol_time_plus_duree(
+			$todayStart,
+			-max(7, getDolGlobalInt('EMERGENCYHOUSE_ANALYTICS_DETAIL_RETENTION_DAYS', 90)),
+			'd'
+		);
+		$analyticsAggregateCutoff = dol_time_plus_duree(
+			dol_now(),
+			-max(1, getDolGlobalInt('EMERGENCYHOUSE_ANALYTICS_AGGREGATE_RETENTION_MONTHS', 25)),
+			'm'
+		);
 
 		$queries = array(
 			'DELETE FROM '.MAIN_DB_PREFIX.'emergencyhouse_public_session WHERE entity = '.((int) $entity)
@@ -47,6 +65,12 @@ class EmergencyHouseRetentionService
 				." AND window_start < '".$this->db->idate($rateCutoff)."'",
 			'DELETE FROM '.MAIN_DB_PREFIX.'emergencyhouse_geo_cache WHERE entity = '.((int) $entity)
 				." AND expires_at < '".$this->db->idate(dol_now())."'",
+			'DELETE FROM '.MAIN_DB_PREFIX.'emergencyhouse_analytics_event WHERE entity = '.((int) $entity)
+				." AND date_event < '".$this->db->idate($analyticsDetailCutoff)."'",
+			'DELETE FROM '.MAIN_DB_PREFIX.'emergencyhouse_analytics_visit WHERE entity = '.((int) $entity)
+				." AND date_last_activity < '".$this->db->idate($analyticsDetailCutoff)."'",
+			'DELETE FROM '.MAIN_DB_PREFIX.'emergencyhouse_analytics_daily WHERE entity = '.((int) $entity)
+				." AND metric_date < '".$this->db->escape(dol_print_date($analyticsAggregateCutoff, '%Y-%m-%d'))."'",
 		);
 		foreach ($queries as $sql) {
 			$result = $this->db->query($sql);

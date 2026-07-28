@@ -76,6 +76,7 @@ if ($action === 'send' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST
 				$contactService = new EmergencyHousePublicContactService();
 				$result = $contactService->send($name, $email, $phone, $subject, $message, $uploadedFiles);
 				if ($result > 0) {
+					emergencyhousePublicAnalyticsEvent('contact_sent', true, 'contact', $emergencyhousePublicAccount);
 					$sent = true;
 					$name = '';
 					$email = '';

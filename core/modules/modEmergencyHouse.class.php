@@ -253,7 +253,7 @@ class modEmergencyHouse extends DolibarrModules
 		$this->addLeftMenu($r, 'AllocationsAndStays', '/emergencyhouse/allocation/list.php', 'allocation', 'write', 70);
 		$this->addLeftMenu($r, 'Verifications', '/emergencyhouse/verification/list.php', 'verification', 'write', 80);
 		$this->addLeftMenu($r, 'Reports', '/emergencyhouse/report/list.php', 'report', 'write', 90);
-		$this->addLeftMenu($r, 'Statistics', '/emergencyhouse/statistics/index.php', 'statistics', 'read', 100);
+		$this->addLeftMenu($r, 'Supervision', '/emergencyhouse/supervision/index.php', 'statistics', 'read', 100);
 		$this->addLeftMenu($r, 'EmergencyHouseConfiguration', '/emergencyhouse/admin/setup.php', 'configuration', 'write', 110);
 	}
 
@@ -482,6 +482,11 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_PUBLIC_SOCIAL_IMAGE_URL' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_TERMS_HTML' => array('', 'chaine'),
 			'EMERGENCYHOUSE_PUBLIC_GPTBOT_ALLOWED' => array('0', 'yesno'),
+			'EMERGENCYHOUSE_ANALYTICS_ENABLED' => array('0', 'yesno'),
+			'EMERGENCYHOUSE_ANALYTICS_SESSION_MINUTES' => array('30', 'chaine'),
+			'EMERGENCYHOUSE_ANALYTICS_ENGAGEMENT_SECONDS' => array('10', 'chaine'),
+			'EMERGENCYHOUSE_ANALYTICS_DETAIL_RETENTION_DAYS' => array('90', 'chaine'),
+			'EMERGENCYHOUSE_ANALYTICS_AGGREGATE_RETENTION_MONTHS' => array('25', 'chaine'),
 			'EMERGENCYHOUSE_OFFER_PUBLICATION_POLICY' => array('operator_validation', 'chaine'),
 			'EMERGENCYHOUSE_OSM_TILES_ENABLED' => array('1', 'yesno'),
 			'EMERGENCYHOUSE_OSM_TILE_URL' => array('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 'chaine'),

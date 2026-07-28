@@ -49,10 +49,15 @@ emergencyhousePublicRenderHeader(
 	(string) $campaign->label,
 	$emergencyhousePublicAccount,
 	'campaigns',
-	$campaignIndexable,
-	false,
-	$campaignSeo
-);
+		$campaignIndexable,
+		false,
+		$campaignSeo,
+		array(
+			'campaign_id' => (int) $campaign->id,
+			'content_type' => 'campaign',
+			'content_id' => (int) $campaign->id,
+		)
+	);
 print '<section class="eh-hero"><div class="eh-shell eh-hero-grid"><div>';
 print '<p class="eh-eyebrow">'.dol_escape_htmltag($campaign->coordinator_name).'</p>';
 print '<h1>'.dol_escape_htmltag($campaign->label).'</h1>';

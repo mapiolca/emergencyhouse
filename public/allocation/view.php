@@ -45,11 +45,14 @@ if ($action !== '' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhous
 		$revealedAddress = $sensitive->revealAddressForAllocation($allocation, $account);
 		if (!is_string($revealedAddress)) {
 			$errorKey = $sensitive->error;
+		} else {
+			emergencyhousePublicAnalyticsEvent('allocation_address_revealed', false, 'allocation_detail', $account);
 		}
 	} else {
 		$errorKey = 'ErrorInvalidAction';
 	}
 	if ($successKey !== '') {
+		emergencyhousePublicAnalyticsEvent('allocation_updated', false, 'allocation_detail', $account);
 		$context = $service->fetchAllocation($account, $id);
 		if (is_array($context)) {
 			$allocation = $context['allocation'];

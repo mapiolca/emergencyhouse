@@ -110,6 +110,13 @@ if ($action === 'save' && emergencyhousePublicVerifyAuthenticatedPost($emergency
 			? $listingService->updateOwnedRequest($account, (int) $request->id, $submittedData, $storedHousing, $storedCriteria, $triggerUser, $submit)
 			: $listingService->createRequest($account, $submittedData, $storedHousing, $storedCriteria, $triggerUser, $submit);
 		if ($saved instanceof EmergencyHouseRequest) {
+			emergencyhousePublicAnalyticsEvent(
+				$submit ? 'request_submitted' : 'request_draft_saved',
+				$submit,
+				'request_form',
+				$account,
+				(int) $saved->fk_campaign
+			);
 			header('Location: '.emergencyhousePublicUrl('request/view.php', array('uuid' => $saved->public_uuid, 'saved' => 1)));
 			exit;
 		}

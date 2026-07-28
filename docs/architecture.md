@@ -44,9 +44,39 @@ chemin interne Dolibarr reste le fallback de recette.
 7. Allocations, capacités et séjours.
 8. Vérification, modération et incidents.
 9. Notifications et travaux planifiés.
-10. Statistiques, exports et documents.
+10. Supervision, mesure d’audience, exports et documents.
 11. API, webhooks et adaptateurs optionnels.
 12. Audit, conservation et purge.
+
+## Supervision de l’activité publique
+
+`EmergencyHousePublicAnalyticsService` est appelé par le rendu commun des
+contrôleurs HTML et par les contrôleurs uniquement après leurs actions
+réussies. Il accepte exclusivement des codes de page, d’action et de contenu
+contrôlés. Une campagne, une offre ou une demande n’est associée à un événement
+que si le service la recharge et confirme qu’elle est effectivement publique.
+
+L’identifiant visiteur est aléatoire, signé et cloisonné par entité. Seule son
+empreinte HMAC est persistée. La création ou mise à jour d’une visite est
+sérialisée par un verrou nommé puis exécutée dans une transaction ; la ligne
+de visite est verrouillée avant le compteur de pages, l’engagement et la
+conversion. Les signaux de durée appliquent `GREATEST()` afin de rester
+idempotents.
+
+`public/analytics.php` est un point POST interne de même origine. Il accepte un
+token Dolibarr, un cookie signé validé avant la limitation de débit, un nombre
+de secondes borné et une fréquence
+limitée. Ce contrôleur technique n’authentifie pas le compte public et ne lit
+pas l’adresse IP. Il ne fait pas partie de l’API REST. Les assets, robots, captcha,
+sitemaps, index LLM et aperçus privés ne passent pas par le rendu collecteur.
+
+Le travail planifié `buildDailyStatistics` conserve son identité et agrège
+désormais les indicateurs d’audience en plus des indicateurs métier. Le service
+de rétention existant purge les détails et les agrégats selon les constantes
+par entité. Le hub `supervision/index.php` lit les détails pour les calculs
+exacts encore disponibles, applique les filtres croisés côté SQL et calcule le
+parcours sur l’ordre réel des événements d’une même visite. Il bascule
+explicitement sur les agrégats pour les périodes plus anciennes.
 
 ## File de vérification
 

@@ -61,3 +61,24 @@ deux soumissions simultanées ne consomment pas le même tour.
 clôture d’une ligne de file et l’écriture du registre sont transactionnelles ;
 la vue **Historique** continue donc d’exposer les décisions antérieures sans
 dépendre de l’état actif de la file.
+
+## Mesure d’audience
+
+Trois tables multientités et normalisées portent la supervision du portail :
+
+- `emergencyhouse_analytics_visit` conserve l’empreinte HMAC du visiteur, le
+  début et la dernière activité, les pages d’entrée et de sortie, le nombre de
+  pages, la durée active, l’engagement, la conversion et les catégories de
+  source, appareil et authentification ;
+- `emergencyhouse_analytics_event` référence une visite par `fk_visit` et
+  contient un type `page_view`, `action` ou `conversion`, un code contrôlé et,
+  seulement pour un contenu réellement public, `fk_campaign`,
+  `content_type` et `fk_content` ;
+- `emergencyhouse_analytics_daily` contient les métriques anonymisées par date,
+  dimension et contenu. Sa contrainte unique rend la reconstruction
+  quotidienne rejouable.
+
+Les tables ne possèdent aucune colonne d’adresse IP, URL, requête,
+User-Agent, utilisateur ou compte public. Le domaine référent ne contient ni
+chemin ni paramètre. L’empreinte visiteur est dérivée avec une clé propre au
+contexte d’entité et ne constitue pas une liaison avec les comptes.

@@ -63,4 +63,47 @@ document.addEventListener("DOMContentLoaded", function () {
 			});
 		});
 	});
+
+	var analyticsEndpoint = document.body.getAttribute("data-analytics-endpoint");
+	var analyticsToken = document.body.getAttribute("data-analytics-token");
+	var analyticsEngagement = document.body.getAttribute("data-analytics-engagement");
+	var analyticsThreshold = parseInt(document.body.getAttribute("data-analytics-threshold") || "10", 10);
+	if (analyticsEndpoint && analyticsToken && analyticsEngagement && analyticsThreshold > 0) {
+		var activeSeconds = 0;
+		var lastSentSeconds = 0;
+		var sendEngagement = function () {
+			if (activeSeconds < analyticsThreshold || activeSeconds === lastSentSeconds) return;
+			var data = new FormData();
+			data.append("token", analyticsToken);
+			data.append("action", "engage");
+			data.append("engagement_token", analyticsEngagement);
+			data.append("active_seconds", String(activeSeconds));
+			if (navigator.sendBeacon) {
+				navigator.sendBeacon(analyticsEndpoint, data);
+			} else if (window.fetch) {
+				window.fetch(analyticsEndpoint, {
+					method: "POST",
+					body: data,
+					credentials: "same-origin",
+					keepalive: true
+				}).catch(function () {});
+			}
+			lastSentSeconds = activeSeconds;
+		};
+		window.setInterval(function () {
+			if (document.visibilityState !== "hidden") {
+				activeSeconds += 1;
+				if (
+					activeSeconds === analyticsThreshold
+					|| activeSeconds - lastSentSeconds >= 30
+				) {
+					sendEngagement();
+				}
+			}
+		}, 1000);
+		document.addEventListener("visibilitychange", function () {
+			if (document.visibilityState === "hidden") sendEngagement();
+		});
+		window.addEventListener("pagehide", sendEngagement);
+	}
 });

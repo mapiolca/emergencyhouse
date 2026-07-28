@@ -101,6 +101,10 @@ if ($action === 'create' && emergencyhousePublicVerifyAuthenticatedPost($emergen
 			emergencyhousePublicTriggerUser($db)
 		);
 		if ($created instanceof EmergencyHouseSolicitation) {
+			$campaignId = $offer instanceof EmergencyHouseOffer
+				? (int) $offer->fk_campaign
+				: ($request instanceof EmergencyHouseRequest ? (int) $request->fk_campaign : 0);
+			emergencyhousePublicAnalyticsEvent('solicitation_created', true, 'solicitation_form', $account, $campaignId);
 			header('Location: '.emergencyhousePublicUrl('solicitation/view.php', array('id' => (int) $created->id, 'created' => 1)));
 			exit;
 		}
@@ -142,4 +146,3 @@ if (empty($choices)) {
 }
 print '</section>';
 emergencyhousePublicRenderFooter();
-

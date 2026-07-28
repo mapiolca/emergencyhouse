@@ -20,6 +20,8 @@ php test/numbering-model-contract.php
 php test/security-key-contract.php
 php test/public-url-contract.php
 php test/multicompany-visibility-contract.php
+php test/analytics-contract.php
+php test/verification-queue-contract.php
 ```
 
 Le script vérifie notamment :
@@ -64,16 +66,24 @@ Le script vérifie notamment :
 - la traduction bilingue de chaque message littéral affiché par les alertes
   publiques ;
 - l’unicité et la parité des traductions `fr_FR` et `en_US`.
+- le caractère désactivé par défaut de la collecte, les trois tables
+  multientités, le cookie fixe, l’opposition, le verrouillage concurrent, les
+  codes contrôlés, l’absence de données personnelles dans le schéma et le
+  raccordement du cron et de la rétention.
 
 Une passe de lint PHP doit également être exécutée sur tous les fichiers
 `*.php`.
 
 Résultats de la passe finale du 28 juillet 2026 :
 
-- lint PHP 8.5.7 : `121` fichiers PHP valides ;
-- contrats statiques : `618 contrats validés` ;
+- lint PHP 8.5.7 : `129` fichiers PHP valides ;
+- contrats statiques : `713 contrats validés` ;
+- mesure d’audience : tables sans donnée personnelle, collecte désactivée,
+  cookie fixe, opposition, engagement, verrouillage, agrégation, rétention,
+  filtres exacts, parcours ordonné, menu et conversions contrôlés validés ;
 - travaux planifiés : contrats de retour validés ;
 - visibilité Multicompany : `8 contrats` validés ;
+- file de vérification : `8 contrats` validés ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,

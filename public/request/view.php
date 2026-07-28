@@ -38,11 +38,16 @@ emergencyhousePublicRenderHeader(
 	false,
 	false,
 	array(
-		'description' => (string) $request->description_public,
-		'robots' => $isOwner ? 'noindex,nofollow' : 'noindex,follow',
-		'og_type' => 'article',
-	)
-);
+			'description' => (string) $request->description_public,
+			'robots' => $isOwner ? 'noindex,nofollow' : 'noindex,follow',
+			'og_type' => 'article',
+		),
+		array(
+			'campaign_id' => (int) $request->fk_campaign,
+			'content_type' => 'request',
+			'content_id' => (int) $request->id,
+		)
+	);
 print '<section class="eh-shell eh-section"><div class="eh-page-title"><p class="eh-eyebrow">'.$langs->trans('AccommodationRequest').'</p>';
 print '<h1>'.dol_escape_htmltag($request->title).'</h1><p>'.dol_escape_htmltag((string) $request->description_public).'</p></div>';
 if ($saved) {

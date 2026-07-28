@@ -968,7 +968,7 @@ preg_match_all(
 	$tableMatches,
 	PREG_SET_ORDER
 );
-emergencyhouseContract(count($tableMatches) === 45, 'Quarante-cinq tables InnoDB déclarées');
+emergencyhouseContract(count($tableMatches) === 48, 'Quarante-huit tables InnoDB déclarées');
 foreach ($tableMatches as $tableMatch) {
 	$tableName = $tableMatch[1];
 	$tableBody = $tableMatch[2];

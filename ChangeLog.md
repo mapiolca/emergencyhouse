@@ -2,6 +2,23 @@
 
 ## Non publié
 
+- Remplacement du menu **Statistiques** par le hub **Supervision**, en
+  conservant le droit `statistics/read`, les indicateurs métier et l’export
+  anonyme, avec vues Vue d’ensemble, Audience, Contenus, Parcours et Activité
+  métier, filtres croisés exacts sur les détails conservés, parcours ordonné
+  par visite, filtres Multicompany et graphiques natifs `DolGraph`.
+- Ajout d’une mesure d’audience first-party désactivée par défaut et
+  configurable par entité : visites, pages vues, engagement, rebond, sources,
+  appareils, contenus publics et conversions réussies, sans adresse IP brute,
+  URL complète, saisie, identifiant de compte ni User-Agent complet.
+- Ajout d’un cookie signé à expiration fixe de treize mois, d’une page publique
+  d’information et d’opposition, d’un signal d’engagement même origine borné
+  et limité en débit, et de l’exclusion des robots, ressources techniques et
+  aperçus privés.
+- Ajout des tables de visites, événements et agrégats quotidiens, du
+  verrouillage concurrent des visites, de l’agrégation via le cron statistique
+  existant et de la purge par défaut à 90 jours pour les détails et 25 mois
+  pour les agrégats.
 - Refonte de la page publique des offres : affichage global par défaut,
   aperçu de toutes les campagnes ouvertes avec compteurs, regroupement des
   résultats par campagne, recherche sur la commune ou la zone publique et

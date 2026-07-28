@@ -30,6 +30,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' &
 				? 'PublicAuthenticationFailed'
 				: 'ErrorInternalError';
 		} else {
+			emergencyhousePublicAnalyticsEvent('login_success', true, 'login', $account);
 			header('Location: '.($next !== '' ? $next : emergencyhousePublicUrl('account/index.php')));
 			exit;
 		}

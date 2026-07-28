@@ -27,6 +27,7 @@ if ($action === 'export' && emergencyhousePublicVerifyAuthenticatedPost($emergen
 	);
 	$json = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 	if (is_string($json)) {
+		emergencyhousePublicAnalyticsEvent('personal_data_exported', false, 'account_data', $account);
 		header('Content-Type: application/json; charset=UTF-8');
 		header('Content-Disposition: attachment; filename="emergencyhouse-personal-data.json"');
 		header('X-Content-Type-Options: nosniff');
@@ -38,6 +39,7 @@ if ($action === 'export' && emergencyhousePublicVerifyAuthenticatedPost($emergen
 
 if ($action === 'delete_request' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhousePublicAuth, 'account_delete_request')) {
 	if ($account->requestDeletion() > 0) {
+		emergencyhousePublicAnalyticsEvent('deletion_requested', false, 'account_data', $account);
 		$successKey = 'AccountDeletionRequested';
 	} else {
 		$errorKey = !empty($account->error) ? $account->error : 'ErrorAccountDeletionRequest';

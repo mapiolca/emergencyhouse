@@ -57,7 +57,8 @@ if ($action !== '' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhous
 				) < 0) {
 					dol_syslog(__FILE__.': '.$notificationService->error, LOG_WARNING);
 				}
-			$successKey = 'MessageSent';
+				emergencyhousePublicAnalyticsEvent('message_sent', false, 'solicitation_detail', $account);
+				$successKey = 'MessageSent';
 			} else {
 				$errorKey = $messageService->error;
 			}
@@ -66,6 +67,7 @@ if ($action !== '' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhous
 		$reasonCode = GETPOST('reason_code', 'alpha');
 		$result = $participantService->respond($account, $solicitation, $action, $reasonCode, $triggerUser);
 		if ($result >= 0) {
+			emergencyhousePublicAnalyticsEvent('solicitation_updated', false, 'solicitation_detail', $account);
 			$successKey = 'SolicitationUpdated';
 			$context = $participantService->fetchSolicitation($account, $id);
 			if (is_array($context)) {
@@ -77,6 +79,7 @@ if ($action !== '' && emergencyhousePublicVerifyAuthenticatedPost($emergencyhous
 	} elseif ($action === 'address_authorization') {
 		$authorized = GETPOSTINT('authorized') > 0;
 		if ($participantService->setAddressAuthorization($account, $solicitation, $authorized, $triggerUser) > 0) {
+			emergencyhousePublicAnalyticsEvent('address_sharing_updated', false, 'solicitation_detail', $account);
 			$successKey = $authorized ? 'AddressSharingAuthorized' : 'AddressSharingWithdrawn';
 			$context = $participantService->fetchSolicitation($account, $id);
 			if (is_array($context)) {

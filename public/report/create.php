@@ -45,6 +45,8 @@ if ($action === 'create' && emergencyhousePublicVerifyAuthenticatedPost($emergen
 		);
 		if (!$createdReport instanceof EmergencyHouseReport) {
 			$errorKey = $service->error;
+		} else {
+			emergencyhousePublicAnalyticsEvent('report_created', true, 'report_form', $account);
 		}
 	}
 } elseif ($action !== '') {

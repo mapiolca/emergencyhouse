@@ -93,6 +93,12 @@ $settingsByTab = array(
 		'EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES' => array('type' => 'int', 'default' => '10'),
 		'EMERGENCYHOUSE_VERIFICATION_CRITICAL_MINUTES' => array('type' => 'int', 'default' => '30'),
 	),
+	'analytics' => array(
+		'EMERGENCYHOUSE_ANALYTICS_SESSION_MINUTES' => array('type' => 'int', 'default' => '30'),
+		'EMERGENCYHOUSE_ANALYTICS_ENGAGEMENT_SECONDS' => array('type' => 'int', 'default' => '10'),
+		'EMERGENCYHOUSE_ANALYTICS_DETAIL_RETENTION_DAYS' => array('type' => 'int', 'default' => '90'),
+		'EMERGENCYHOUSE_ANALYTICS_AGGREGATE_RETENTION_MONTHS' => array('type' => 'int', 'default' => '25'),
+	),
 	'matching' => array(
 		'EMERGENCYHOUSE_MATCH_DISTANCE_WEIGHT' => array('type' => 'int', 'default' => '30'),
 		'EMERGENCYHOUSE_MATCH_CAPACITY_WEIGHT' => array('type' => 'int', 'default' => '25'),
@@ -289,6 +295,22 @@ if ($action === 'reconcile_members' && $tab === 'integrations') {
 			setEventMessages($langs->trans('VerificationThresholdsInvalid'), null, 'errors');
 		}
 	}
+	if ($tab === 'analytics') {
+		$sessionMinutes = (int) $values['EMERGENCYHOUSE_ANALYTICS_SESSION_MINUTES'];
+		$engagementSeconds = (int) $values['EMERGENCYHOUSE_ANALYTICS_ENGAGEMENT_SECONDS'];
+		$detailDays = (int) $values['EMERGENCYHOUSE_ANALYTICS_DETAIL_RETENTION_DAYS'];
+		$aggregateMonths = (int) $values['EMERGENCYHOUSE_ANALYTICS_AGGREGATE_RETENTION_MONTHS'];
+		if (
+			$sessionMinutes < 5 || $sessionMinutes > 1440
+			|| $engagementSeconds < 1 || $engagementSeconds > 300
+			|| $engagementSeconds >= $sessionMinutes * 60
+			|| $detailDays < 7 || $detailDays > 365
+			|| $aggregateMonths < 1 || $aggregateMonths > 25
+		) {
+			$error++;
+			setEventMessages($langs->trans('AnalyticsSettingsInvalid'), null, 'errors');
+		}
+	}
 	if ($tab === 'integrations') {
 		$memberTypeId = (int) $values['EMERGENCYHOUSE_ADHERENT_TYPE_ID'];
 		$memberType = $memberService->fetchUsableMemberType($memberTypeId, (int) $conf->entity);
@@ -450,6 +472,16 @@ if ($tab === 'providers') {
 }
 if ($tab === 'authentication') {
 	print '<div class="info">'.$langs->trans('OfferPublicationSecurityPolicyInfo').'</div>';
+}
+if ($tab === 'analytics') {
+	print '<div class="info">'.$langs->trans('AnalyticsConfigurationInfo').'</div>';
+	print '<p><a target="_blank" rel="noopener noreferrer" href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience">';
+	print $langs->trans('AnalyticsCnilGuidance').'</a></p>';
+	print '<table class="noborder centpercent">';
+	print '<tr class="liste_titre"><th>'.$langs->trans('BinaryOptions').'</th><th>'.$langs->trans('Value').'</th></tr>';
+	print '<tr class="oddeven"><td>'.$langs->trans('EMERGENCYHOUSE_ANALYTICS_ENABLED').'</td>';
+	print '<td>'.ajax_constantonoff('EMERGENCYHOUSE_ANALYTICS_ENABLED').'</td></tr>';
+	print '</table><br>';
 }
 if ($tab === 'portal') {
 	$previewUrl = dol_buildpath('/emergencyhouse/admin/public-preview.php', 1);

@@ -149,6 +149,13 @@ if (
 				$uploadedPhotos
 			);
 		if ($saved instanceof EmergencyHouseOffer) {
+			emergencyhousePublicAnalyticsEvent(
+				$submit ? 'offer_submitted' : 'offer_draft_saved',
+				$submit,
+				'offer_form',
+				$account,
+				(int) $saved->fk_campaign
+			);
 			header('Location: '.emergencyhousePublicUrl('offer/view.php', array('uuid' => $saved->public_uuid, 'saved' => 1)));
 			exit;
 		}

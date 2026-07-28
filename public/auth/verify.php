@@ -8,12 +8,16 @@ $errorKey = '';
 $account = $token !== '' ? $emergencyhousePublicAuth->consumeToken($token, 'email_verification') : false;
 if (!$account instanceof EmergencyHousePublicAccount) {
 	$errorKey = 'ErrorTokenInvalid';
-} elseif ($account->markEmailVerified() <= 0
-	|| !$emergencyhousePublicAuth->createSession($account, $emergencyhousePublicIp, $emergencyhousePublicUserAgent)) {
+} elseif ($account->markEmailVerified() <= 0) {
 	$errorKey = 'ErrorAccountVerification';
 } else {
-	header('Location: '.emergencyhousePublicUrl('account/index.php', array('verified' => 1)));
-	exit;
+	emergencyhousePublicAnalyticsEvent('email_verified', true, 'email_verification');
+	if (!$emergencyhousePublicAuth->createSession($account, $emergencyhousePublicIp, $emergencyhousePublicUserAgent)) {
+		$errorKey = 'ErrorAccountVerification';
+	} else {
+		header('Location: '.emergencyhousePublicUrl('account/index.php', array('verified' => 1)));
+		exit;
+	}
 }
 
 emergencyhousePublicRenderHeader($langs->trans('VerifyEmail'), null, 'login');
@@ -22,4 +26,3 @@ emergencyhousePublicAlert($errorKey, 'error');
 print '<a class="eh-button" href="'.dol_escape_htmltag(emergencyhousePublicUrl('auth/resend.php')).'">'.$langs->trans('ResendVerificationEmail').'</a>';
 print '</section>';
 emergencyhousePublicRenderFooter();
-

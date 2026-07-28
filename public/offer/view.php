@@ -66,10 +66,15 @@ emergencyhousePublicRenderHeader(
 	$offer->title,
 	$emergencyhousePublicAccount,
 	'offers',
-	false,
-	false,
-	$seo
-);
+		false,
+		false,
+		$seo,
+		array(
+			'campaign_id' => (int) $offer->fk_campaign,
+			'content_type' => 'offer',
+			'content_id' => (int) $offer->id,
+		)
+	);
 print '<section class="eh-shell eh-section"><div class="eh-page-title"><p class="eh-eyebrow">'.dol_escape_htmltag($housingLabel).'</p>';
 print '<h1>'.dol_escape_htmltag($offer->title).'</h1><p>'.dol_escape_htmltag((string) $offer->description_public).'</p></div>';
 if ($saved) {

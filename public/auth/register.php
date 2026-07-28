@@ -77,6 +77,7 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 					$errorKey = 'ErrorAccountVerificationPreparation';
 				} else {
 					$db->commit();
+					emergencyhousePublicAnalyticsEvent('registration_completed', true, 'register');
 					$notification = new EmergencyHouseNotificationService($db);
 					$link = emergencyhousePublicAbsoluteUrl('auth/verify.php', array('verification' => $verificationToken));
 					$mailResult = $notification->sendForAccount(

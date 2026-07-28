@@ -16,6 +16,7 @@ function emergencyhouseAdminPrepareHead()
 		'portal' => 'PublicPortal',
 		'authentication' => 'Authentication',
 		'verification' => 'Verification',
+		'analytics' => 'Supervision',
 		'matching' => 'Matching',
 		'notifications' => 'Notifications',
 		'providers' => 'Providers',
@@ -63,6 +64,25 @@ function emergencyhouseVerificationPrepareHead()
 			$langs->trans('VerificationHistory'),
 			'history',
 		),
+	);
+}
+
+/**
+ * Prepare Supervision dashboard tabs.
+ *
+ * @return array<int, array{0:string,1:string,2:string}>
+ */
+function emergencyhouseSupervisionPrepareHead()
+{
+	global $langs;
+
+	$base = dol_buildpath('/emergencyhouse/supervision/index.php', 1);
+	return array(
+		array($base.'?tab=overview', $langs->trans('Overview'), 'overview'),
+		array($base.'?tab=audience', $langs->trans('Audience'), 'audience'),
+		array($base.'?tab=contents', $langs->trans('Contents'), 'contents'),
+		array($base.'?tab=journeys', $langs->trans('Journeys'), 'journeys'),
+		array($base.'?tab=business', $langs->trans('BusinessActivity'), 'business'),
 	);
 }
 

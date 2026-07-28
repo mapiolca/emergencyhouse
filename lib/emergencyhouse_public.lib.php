@@ -336,11 +336,12 @@ function emergencyhousePublicUserAgent()
  *     robots?:'noindex,follow'|'noindex,nofollow',
  *     structured_data?:array<string, mixed>
  * } $seo Search metadata
+ * @param array{campaign_id?:int,content_type?:string,content_id?:int} $analyticsContext Audience context
  * @return void
  */
-function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false, array $seo = array())
+function emergencyhousePublicRenderHeader($title, $account = null, $active = '', $allowIndex = false, $preview = false, array $seo = array(), array $analyticsContext = array())
 {
-	global $langs;
+	global $langs, $emergencyhousePublicAnalytics;
 
 	$language = emergencyhousePublicLanguageTag();
 	$cssUrl = $preview
@@ -383,6 +384,30 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 	}
 	if (!$allowIndex && !headers_sent()) {
 		header('X-Robots-Tag: '.$robots, true);
+	}
+	$bodyAnalyticsAttributes = '';
+	if (
+		!$preview
+		&& isset($emergencyhousePublicAnalytics)
+		&& $emergencyhousePublicAnalytics instanceof EmergencyHousePublicAnalyticsService
+	) {
+		$scriptName = isset($_SERVER['SCRIPT_NAME']) && is_string($_SERVER['SCRIPT_NAME'])
+			? $_SERVER['SCRIPT_NAME']
+			: '';
+		$pageCode = http_response_code() === 404
+			? 'not_found'
+			: EmergencyHousePublicAnalyticsService::pageCodeFromScript($scriptName);
+		$trackingResult = $emergencyhousePublicAnalytics->recordPageView(
+			$pageCode,
+			$account instanceof EmergencyHousePublicAccount,
+			isset($analyticsContext['campaign_id']) ? (int) $analyticsContext['campaign_id'] : 0,
+			isset($analyticsContext['content_type']) ? (string) $analyticsContext['content_type'] : '',
+			isset($analyticsContext['content_id']) ? (int) $analyticsContext['content_id'] : 0
+		);
+		if ($trackingResult < 0) {
+			dol_syslog(__FUNCTION__.': audience page view failed', LOG_WARNING);
+		}
+		$bodyAnalyticsAttributes = $emergencyhousePublicAnalytics->getBodyAttributes(newToken());
 	}
 	print '<!doctype html>';
 	print '<html lang="'.dol_escape_htmltag($language).'"><head>';
@@ -432,7 +457,7 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 		print '<script defer src="'.DOL_URL_ROOT.'/includes/jquery/plugins/select2/dist/js/select2.full.min.js"></script>';
 	}
 	print '<script defer src="'.dol_escape_htmltag($jsUrl).'"></script>';
-	print '</head><body class="eh-public">';
+	print '</head><body class="eh-public"'.$bodyAnalyticsAttributes.'>';
 	print '<a class="eh-skip-link" href="#main">'.$langs->trans('SkipToContent').'</a>';
 	print '<header class="eh-site-header"><div class="eh-shell eh-header-inner">';
 	$homeUrl = $preview ? '#main' : emergencyhousePublicUrl();
@@ -532,6 +557,9 @@ function emergencyhousePublicRenderFooter($preview = false)
 	}
 	if (!$preview && $termsEnabled) {
 		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('terms.php')).'">'.$langs->trans('TermsOfUse').'</a></li>';
+	}
+	if (!$preview && getDolGlobalInt('EMERGENCYHOUSE_ANALYTICS_ENABLED', 0) === 1) {
+		print '<li><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('audience.php')).'">'.$langs->trans('AudienceMeasurement').'</a></li>';
 	}
 	print '<li><a href="'.dol_escape_htmltag($preview ? '#main' : emergencyhousePublicUrl('accessibility.php')).'">'.$langs->trans('Accessibility').'</a></li>';
 	print '</ul></nav></div></footer>';
@@ -641,7 +669,7 @@ function emergencyhousePublicSafeReturnUrl($value)
 		strpos($decodedRelativePath, "\0") !== false
 		|| preg_match('~(?:^|/)\.\.(?:/|$)~', $decodedRelativePath)
 		|| !preg_match(
-			'~^(?:index\.php|campaign\.php|accessibility\.php|contact\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
+				'~^(?:index\.php|campaign\.php|accessibility\.php|audience\.php|contact\.php|(?:account|allocation|auth|offer|report|request|solicitation)/[A-Za-z0-9_-]+\.php)$~',
 			$decodedRelativePath
 		)
 	) {
@@ -684,6 +712,42 @@ function emergencyhousePublicCsrfFields($auth = null, $action = '')
 		$html .= '<input type="hidden" name="public_token" value="'.dol_escape_htmltag($auth->csrfToken($action)).'">';
 	}
 	return $html;
+}
+
+/**
+ * Record a successful public action without exposing business or identity data.
+ *
+ * @param string $eventCode Controlled event code
+ * @param bool $conversion Conversion flag
+ * @param string $pageCode Controlled page code
+ * @param EmergencyHousePublicAccount|null $account Public account, used only as a boolean category
+ * @param int $campaignId Campaign ID
+ * @param string $contentType Public content type
+ * @param int $contentId Public content ID
+ * @return void
+ */
+function emergencyhousePublicAnalyticsEvent($eventCode, $conversion, $pageCode, $account = null, $campaignId = 0, $contentType = '', $contentId = 0)
+{
+	global $emergencyhousePublicAnalytics;
+
+	if (
+		!isset($emergencyhousePublicAnalytics)
+		|| !$emergencyhousePublicAnalytics instanceof EmergencyHousePublicAnalyticsService
+	) {
+		return;
+	}
+	$result = $emergencyhousePublicAnalytics->recordEvent(
+		$eventCode,
+		(bool) $conversion,
+		$pageCode,
+		$account instanceof EmergencyHousePublicAccount,
+		(int) $campaignId,
+		$contentType,
+		(int) $contentId
+	);
+	if ($result < 0) {
+		dol_syslog(__FUNCTION__.': audience event failed for '.$eventCode, LOG_WARNING);
+	}
 }
 
 /**

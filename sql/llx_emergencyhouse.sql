@@ -709,6 +709,69 @@ CREATE TABLE IF NOT EXISTS llx_emergencyhouse_stat_daily (
 	KEY idx_emergencyhouse_stat_campaign_date (entity, fk_campaign, metric_date)
 ) ENGINE=innodb;
 
+CREATE TABLE IF NOT EXISTS llx_emergencyhouse_analytics_visit (
+	rowid integer AUTO_INCREMENT PRIMARY KEY,
+	entity integer DEFAULT 1 NOT NULL,
+	visitor_hash varchar(128) NOT NULL,
+	date_start datetime NOT NULL,
+	date_last_activity datetime NOT NULL,
+	pageview_count integer DEFAULT 0 NOT NULL,
+	active_seconds integer DEFAULT 0 NOT NULL,
+	is_engaged integer DEFAULT 0 NOT NULL,
+	has_conversion integer DEFAULT 0 NOT NULL,
+	landing_page_code varchar(64) NOT NULL,
+	exit_page_code varchar(64) NOT NULL,
+	referrer_type varchar(32) DEFAULT 'direct' NOT NULL,
+	referrer_domain varchar(255) DEFAULT '' NOT NULL,
+	device_type varchar(16) DEFAULT 'desktop' NOT NULL,
+	auth_context varchar(16) DEFAULT 'anonymous' NOT NULL,
+	date_creation datetime NOT NULL,
+	tms timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	KEY idx_emergencyhouse_analytics_visit_date (entity, date_start),
+	KEY idx_emergencyhouse_analytics_visit_visitor (entity, visitor_hash, date_last_activity),
+	KEY idx_emergencyhouse_analytics_visit_engagement (entity, is_engaged, has_conversion, date_start),
+	KEY idx_emergencyhouse_analytics_visit_source (entity, referrer_type, device_type, date_start),
+	KEY idx_emergencyhouse_analytics_visit_referrer (entity, referrer_domain, date_start)
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_emergencyhouse_analytics_event (
+	rowid integer AUTO_INCREMENT PRIMARY KEY,
+	entity integer DEFAULT 1 NOT NULL,
+	fk_visit integer NOT NULL,
+	event_type varchar(16) NOT NULL,
+	event_code varchar(64) NOT NULL,
+	page_code varchar(64) NOT NULL,
+	fk_campaign integer DEFAULT 0 NOT NULL,
+	content_type varchar(16) DEFAULT '' NOT NULL,
+	fk_content integer DEFAULT 0 NOT NULL,
+	active_seconds integer DEFAULT 0 NOT NULL,
+	date_event datetime NOT NULL,
+	KEY idx_emergencyhouse_analytics_event_visit (entity, fk_visit, date_event),
+	KEY idx_emergencyhouse_analytics_event_date (entity, date_event),
+	KEY idx_emergencyhouse_analytics_event_code (entity, event_type, event_code, date_event),
+	KEY idx_emergencyhouse_analytics_event_content (entity, content_type, fk_content, date_event),
+	KEY idx_emergencyhouse_analytics_event_campaign (entity, fk_campaign, date_event)
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_emergencyhouse_analytics_daily (
+	rowid integer AUTO_INCREMENT PRIMARY KEY,
+	entity integer DEFAULT 1 NOT NULL,
+	metric_date date NOT NULL,
+	metric_code varchar(64) NOT NULL,
+	dimension_type varchar(32) DEFAULT '' NOT NULL,
+	dimension_code varchar(255) DEFAULT '' NOT NULL,
+	fk_campaign integer DEFAULT 0 NOT NULL,
+	content_type varchar(16) DEFAULT '' NOT NULL,
+	fk_content integer DEFAULT 0 NOT NULL,
+	metric_value double(24,8) NOT NULL,
+	date_calculation datetime NOT NULL,
+	UNIQUE KEY uk_emergencyhouse_analytics_daily (entity, metric_date, metric_code, dimension_type, dimension_code, fk_campaign, content_type, fk_content),
+	KEY idx_emergencyhouse_analytics_daily_date (entity, metric_date),
+	KEY idx_emergencyhouse_analytics_daily_metric (entity, metric_code, metric_date),
+	KEY idx_emergencyhouse_analytics_daily_content (entity, content_type, fk_content, metric_date),
+	KEY idx_emergencyhouse_analytics_daily_campaign (entity, fk_campaign, metric_date)
+) ENGINE=innodb;
+
 CREATE TABLE IF NOT EXISTS llx_emergencyhouse_external_link (
 	rowid integer AUTO_INCREMENT PRIMARY KEY,
 	entity integer DEFAULT 1 NOT NULL,

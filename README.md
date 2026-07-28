@@ -24,7 +24,8 @@ utilisateurs Dolibarr pour les particuliers.
 - sollicitations, consentement mutuel et messagerie chiffrée ;
 - allocations, capacité, séjours, incidents et signalements ;
 - révélation contrôlée et auditée des coordonnées et adresses exactes ;
-- statistiques agrégées, API REST optionnelle et convention PDF ;
+- espace **Supervision** réunissant statistiques métier et mesure d’audience
+  first-party optionnelle, API REST optionnelle et convention PDF ;
 - intégration native Dolibarr des droits, menus, triggers CRUD, Notifications,
   Agenda, travaux planifiés, documents, numérotation et Multicompany.
 
@@ -77,8 +78,11 @@ Après copie ou clonage :
 10. attribuer explicitement le droit **Vérifier les comptes et annonces** aux
     utilisateurs ou groupes qui participent à la rotation, puis vérifier les
     seuils orange et rouge dans l’onglet **Vérification** ;
-11. réaliser la recette de sécurité, de droits et Multicompany avant
-   l’ouverture publique.
+11. laisser la mesure d’audience désactivée ou l’activer explicitement par
+    entité dans l’onglet **Supervision**, après l’auto-évaluation de conformité
+    appropriée ;
+12. réaliser la recette de sécurité, de droits et Multicompany avant
+    l’ouverture publique.
 
 La désactivation est non destructive : les travaux planifiés Emergency House
 sont désactivés, mais leurs fréquences, paramètres et historiques ainsi que les
@@ -318,6 +322,35 @@ politiques officielles :
   renvoie vers `/admin/sms.php` pour installer et tester séparément le moteur
   SMS natif Dolibarr.
 
+## Supervision et mesure d’audience
+
+Le menu historique **Statistiques** devient **Supervision** sans modifier le
+droit stable `statistics/read`. Les onglets Vue d’ensemble, Audience,
+Contenus, Parcours et Activité métier utilisent les composants Dolibarr,
+notamment `DolGraph`, et conservent l’export CSV anonyme sous le droit
+`export/anonymous`. L’ancienne URL `statistics/index.php` redirige vers
+l’onglet Activité métier.
+
+La collecte est désactivée par défaut avec
+`EMERGENCYHOUSE_ANALYTICS_ENABLED=0`. Lorsqu’un administrateur l’active pour
+son entité, le portail crée un identifiant aléatoire first-party signé,
+HttpOnly, Secure et SameSite=Lax. Sa date d’expiration est fixée à treize mois
+à sa création et n’est pas renouvelée automatiquement. Aucune adresse IP,
+URL complète, requête, saisie, adresse électronique, User-Agent complet ou
+identifiant de compte n’est enregistré.
+
+La page publique `/audience.php` décrit la mesure et permet de s’y opposer.
+Le refus efface le cookie d’audience, pose uniquement le cookie technique
+d’opposition et interrompt immédiatement la collecte. Par défaut, les visites
+et événements détaillés sont supprimés après 90 jours et les agrégats
+quotidiens après 25 mois. Les paramètres de session, d’engagement et de
+conservation sont propres à chaque entité.
+
+Cette conception suit une approche compatible avec les critères de mesure
+d’audience publiés par la CNIL, sous réserve de l’auto-évaluation et des choix
+du responsable du traitement :
+<https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience>.
+
 ## Développement et validation
 
 La documentation technique est disponible dans [`docs/`](docs/), notamment :
@@ -335,6 +368,7 @@ Contrôles autonomes disponibles depuis la racine du module :
 php test/static-contracts.php
 php test/cron-contract.php
 php test/multicompany-visibility-contract.php
+php test/analytics-contract.php
 ```
 
 La validation complète exige une instance Dolibarr v20+, une base
