@@ -137,6 +137,14 @@ emergencyhouseAnalyticsContract(
 	&& strpos($supervision, 'emergencyhouseSupervisionGetBreakdown') !== false,
 	'Filtres croisés et parcours ordonné appliqués aux détails conservés'
 );
+emergencyhouseAnalyticsContract(
+	strpos($supervision, "price2num((float) \$overview['bounce_rate'], 'MT')") !== false
+	&& strpos($supervision, "price2num((float) \$overview['pages_per_visit'], 'MT')") !== false
+	&& strpos($supervision, "price2num((float) \$overview['conversion_rate'], 'MT')") !== false
+	&& strpos($supervision, "return \$langs->transnoentitiesnoconv(\$known[\$dimension][\$code]);") !== false
+	&& strpos($supervision, "\$graph->SetLegend(array(") !== false,
+	'Ratios normalisés selon MAIN_MAX_DECIMALS_TOT et légendes DolGraph en UTF-8'
+);
 foreach (array(
 	'registration_completed' => 'public/auth/register.php',
 	'email_verified' => 'public/auth/verify.php',

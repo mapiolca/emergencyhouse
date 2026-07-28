@@ -12,6 +12,8 @@
 - Correction de la soumission du sélecteur de langue avec un champ POST dédié,
   sans collision avec le paramètre `lang` de l’URL, et déplacement du
   sélecteur dans une quatrième colonne du pied de page.
+- Correction des accents dans les légendes des graphiques de supervision et
+  normalisation des nombres selon `MAIN_MAX_DECIMALS_TOT`.
 - Localisation des URL publiques et des courriels transactionnels, ajout des
   balises `hreflang`, des variantes localisées au sitemap, de
   `Content-Language` et du rendu RTL pour l’arabe.

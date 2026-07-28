@@ -239,7 +239,7 @@ print '</form>';
 
 if ($tab === 'overview') {
 	emergencyhouseSupervisionPrintKpis($langs, $overview, $exactPeriod);
-	emergencyhouseSupervisionPrintLineGraph($langs->trans('AudienceTrend'), $dailySeries, 'emergencyhouse_audience_trend');
+	emergencyhouseSupervisionPrintLineGraph($langs, $dailySeries, 'emergencyhouse_audience_trend');
 } elseif ($tab === 'audience') {
 	emergencyhouseSupervisionPrintKpis($langs, $overview, $exactPeriod);
 	$sources = emergencyhouseSupervisionGetBreakdown($supervision, $exactPeriod, $filteredEntities, $dateStart, $dateEnd, $filters, 'source', 'visits', 20);
@@ -248,13 +248,13 @@ if ($tab === 'overview') {
 	$authContexts = emergencyhouseSupervisionGetBreakdown($supervision, $exactPeriod, $filteredEntities, $dateStart, $dateEnd, $filters, 'authentication', 'visits', 20);
 	$referrerDomains = emergencyhouseSupervisionGetBreakdown($supervision, $exactPeriod, $filteredEntities, $dateStart, $dateEnd, $filters, 'referrer_domain', 'visits', 50);
 	print '<div class="fichecenter"><div class="fichehalfleft">';
-	emergencyhouseSupervisionPrintPieGraph($langs, $langs->trans('TrafficSources'), is_array($sources) ? $sources : array(), 'source', 'emergencyhouse_sources');
-	emergencyhouseSupervisionPrintPieGraph($langs, $langs->trans('NewAndReturningVisitors'), is_array($visitorTypes) ? $visitorTypes : array(), 'visitor_type', 'emergencyhouse_visitors');
+	emergencyhouseSupervisionPrintPieGraph($langs, $langs->transnoentitiesnoconv('TrafficSources'), is_array($sources) ? $sources : array(), 'source', 'emergencyhouse_sources');
+	emergencyhouseSupervisionPrintPieGraph($langs, $langs->transnoentitiesnoconv('NewAndReturningVisitors'), is_array($visitorTypes) ? $visitorTypes : array(), 'visitor_type', 'emergencyhouse_visitors');
 	print '</div><div class="fichehalfright">';
-	emergencyhouseSupervisionPrintPieGraph($langs, $langs->trans('Devices'), is_array($devices) ? $devices : array(), 'device', 'emergencyhouse_devices');
-	emergencyhouseSupervisionPrintPieGraph($langs, $langs->trans('AuthenticationContext'), is_array($authContexts) ? $authContexts : array(), 'authentication', 'emergencyhouse_auth');
+	emergencyhouseSupervisionPrintPieGraph($langs, $langs->transnoentitiesnoconv('Devices'), is_array($devices) ? $devices : array(), 'device', 'emergencyhouse_devices');
+	emergencyhouseSupervisionPrintPieGraph($langs, $langs->transnoentitiesnoconv('AuthenticationContext'), is_array($authContexts) ? $authContexts : array(), 'authentication', 'emergencyhouse_auth');
 	print '</div></div>';
-	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->trans('ExternalReferrerDomains'), is_array($referrerDomains) ? $referrerDomains : array(), 'referrer_domain');
+	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->transnoentitiesnoconv('ExternalReferrerDomains'), is_array($referrerDomains) ? $referrerDomains : array(), 'referrer_domain');
 } elseif ($tab === 'contents') {
 	$landingPages = emergencyhouseSupervisionGetBreakdown($supervision, $exactPeriod, $filteredEntities, $dateStart, $dateEnd, $filters, 'landing_page', 'visits', 50);
 	$exitPages = emergencyhouseSupervisionGetBreakdown($supervision, $exactPeriod, $filteredEntities, $dateStart, $dateEnd, $filters, 'exit_page', 'visits', 50);
@@ -271,11 +271,11 @@ if ($tab === 'overview') {
 		array_pop($topContents);
 	}
 	print '<div class="fichecenter"><div class="fichehalfleft">';
-	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->trans('LandingPages'), is_array($landingPages) ? $landingPages : array(), 'landing_page');
+	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->transnoentitiesnoconv('LandingPages'), is_array($landingPages) ? $landingPages : array(), 'landing_page');
 	print '</div><div class="fichehalfright">';
-	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->trans('ExitPages'), is_array($exitPages) ? $exitPages : array(), 'exit_page');
+	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->transnoentitiesnoconv('ExitPages'), is_array($exitPages) ? $exitPages : array(), 'exit_page');
 	print '</div></div>';
-	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->trans('MostViewedPages'), is_array($topPages) ? $topPages : array(), 'page');
+	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->transnoentitiesnoconv('MostViewedPages'), is_array($topPages) ? $topPages : array(), 'page');
 	emergencyhouseSupervisionPrintPaginationFormStart($tab, $period, $dateStartInput, $dateEndInput, $campaignId, $pageCode, $source, $device, $contentType, $searchEntities);
 	print_barre_liste(
 		$langs->trans('MostViewedContents'),
@@ -302,7 +302,7 @@ if ($tab === 'overview') {
 		: $supervision->getFunnel($filteredEntities, $dateStart, $dateEnd);
 	emergencyhouseSupervisionPrintFunnel($langs, is_array($funnel) ? $funnel : array(), $exactPeriod);
 	$conversions = emergencyhouseSupervisionGetBreakdown($supervision, $exactPeriod, $filteredEntities, $dateStart, $dateEnd, $filters, 'conversion', 'conversions', 100);
-	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->trans('SuccessfulConversions'), is_array($conversions) ? $conversions : array(), 'conversion');
+	emergencyhouseSupervisionPrintBreakdownTable($langs, $langs->transnoentitiesnoconv('SuccessfulConversions'), is_array($conversions) ? $conversions : array(), 'conversion');
 } else {
 	emergencyhouseSupervisionPrintBusinessActivity(
 		$db,
@@ -401,17 +401,17 @@ function emergencyhouseSupervisionGetBreakdown($service, $exact, $entities, $dat
 function emergencyhouseSupervisionPrintKpis($langs, $overview, $exact)
 {
 	$metrics = array(
-		'page_views' => array('PageViews', price((float) $overview['page_views'], 0, $langs)),
-		'visits' => array('Visits', price((float) $overview['visits'], 0, $langs)),
-		'unique_visitors' => array($exact ? 'UniqueVisitors' : 'DailyUniqueVisitors', price((float) $overview['unique_visitors'], 0, $langs)),
-		'bounce_rate' => array('BounceRate', price((float) $overview['bounce_rate'], 1, $langs).'%'),
+		'page_views' => array('PageViews', price(price2num((float) $overview['page_views'], 'MT'), 0, $langs)),
+		'visits' => array('Visits', price(price2num((float) $overview['visits'], 'MT'), 0, $langs)),
+		'unique_visitors' => array($exact ? 'UniqueVisitors' : 'DailyUniqueVisitors', price(price2num((float) $overview['unique_visitors'], 'MT'), 0, $langs)),
+		'bounce_rate' => array('BounceRate', price(price2num((float) $overview['bounce_rate'], 'MT'), 0, $langs).'%'),
 		'average_duration' => array('AverageActiveDuration', emergencyhouseSupervisionDuration((int) round($overview['average_duration']))),
-		'pages_per_visit' => array('PagesPerVisit', price((float) $overview['pages_per_visit'], 2, $langs)),
-		'conversion_rate' => array('ConversionRate', price((float) $overview['conversion_rate'], 1, $langs).'%'),
+		'pages_per_visit' => array('PagesPerVisit', price(price2num((float) $overview['pages_per_visit'], 'MT'), 0, $langs)),
+		'conversion_rate' => array('ConversionRate', price(price2num((float) $overview['conversion_rate'], 'MT'), 0, $langs).'%'),
 	);
 	print '<table class="noborder centpercent"><tr class="liste_titre">';
 	foreach ($metrics as $metric) {
-		print '<th class="center">'.dol_escape_htmltag($langs->trans($metric[0])).'</th>';
+		print '<th class="center">'.dol_escape_htmltag($langs->transnoentitiesnoconv($metric[0])).'</th>';
 	}
 	print '</tr><tr class="oddeven">';
 	foreach ($metrics as $metric) {
@@ -432,11 +432,15 @@ function emergencyhouseSupervisionPrintLineGraph($langs, $data, $graphId)
 	$graph->setWidth('100%');
 	$graph->setHeight('280');
 	$graph->setShowLegend(1);
-	print '<table class="noborder nohover centpercent"><tr class="liste_titre"><th>'.$langs->trans('AudienceTrend').'</th></tr>';
+	print '<table class="noborder nohover centpercent"><tr class="liste_titre"><th>'
+		.dol_escape_htmltag($langs->transnoentitiesnoconv('AudienceTrend')).'</th></tr>';
 	print '<tr class="oddeven"><td class="center">';
 	if (!empty($data)) {
 		$graph->SetData($data);
-		$graph->SetLegend(array($langs->trans('PageViews'), $langs->trans('Visits')));
+		$graph->SetLegend(array(
+			$langs->transnoentitiesnoconv('PageViews'),
+			$langs->transnoentitiesnoconv('Visits'),
+		));
 		$graph->SetType(array('lines', 'lines'));
 		$graph->draw($graphId);
 		print $graph->show();
@@ -490,7 +494,7 @@ function emergencyhouseSupervisionPrintBreakdownTable($langs, $title, $rows, $di
 	print '<th>'.dol_escape_htmltag($title).'</th><th class="right">'.$langs->trans('Value').'</th></tr>';
 	foreach ($rows as $row) {
 		print '<tr class="oddeven"><td>'.dol_escape_htmltag(emergencyhouseSupervisionDimensionLabel($langs, $dimension, $row['code'])).'</td>';
-		print '<td class="right">'.dol_escape_htmltag(price($row['value'], 0, $langs)).'</td></tr>';
+		print '<td class="right">'.dol_escape_htmltag(price(price2num($row['value'], 'MT'), 0, $langs)).'</td></tr>';
 	}
 	if (empty($rows)) {
 		print '<tr class="oddeven"><td colspan="2"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
@@ -521,7 +525,7 @@ function emergencyhouseSupervisionPrintContentTable($langs, $rows, $showEnvironm
 		print '<td>'.dol_escape_htmltag($langs->trans(ucfirst($row['content_type']))).'</td>';
 		print '<td>'.dol_escape_htmltag($row['campaign_ref']).'</td>';
 		print '<td>'.dol_escape_htmltag($row['content_label']).'</td>';
-		print '<td class="right">'.dol_escape_htmltag(price($row['value'], 0, $langs)).'</td></tr>';
+		print '<td class="right">'.dol_escape_htmltag(price(price2num($row['value'], 'MT'), 0, $langs)).'</td></tr>';
 	}
 	if (empty($rows)) {
 		print '<tr class="oddeven"><td colspan="'.($showEnvironment ? 5 : 4).'"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
@@ -551,8 +555,10 @@ function emergencyhouseSupervisionPrintFunnel($langs, $funnel, $exact)
 		$value = isset($funnel[$code]) ? (float) $funnel[$code] : 0.0;
 		$rate = $previous > 0 ? ($value * 100 / $previous) : 0.0;
 		print '<tr class="oddeven"><td>'.dol_escape_htmltag($langs->trans($label)).'</td>';
-		print '<td class="right">'.dol_escape_htmltag(price($value, 0, $langs)).'</td>';
-		print '<td class="right">'.dol_escape_htmltag($exact && $previous > 0 ? price($rate, 1, $langs).'%' : '—').'</td></tr>';
+		print '<td class="right">'.dol_escape_htmltag(price(price2num($value, 'MT'), 0, $langs)).'</td>';
+		print '<td class="right">'.dol_escape_htmltag(
+			$exact && $previous > 0 ? price(price2num($rate, 'MT'), 0, $langs).'%' : '—'
+		).'</td></tr>';
 		$previous = $value;
 	}
 	print '</table>';
@@ -678,7 +684,9 @@ function emergencyhouseSupervisionPrintBusinessActivity(
 		print '<td>'.dol_escape_htmltag(emergencyhouseSupervisionBusinessMetricLabel($langs, (string) $row->metric_code)).'</td>';
 		$dimensionCode = (string) $row->dimension_code;
 		print '<td>'.dol_escape_htmltag($dimensionCode !== '' ? $dimensionCode : $langs->trans('All')).'</td>';
-		print '<td class="right">'.dol_escape_htmltag(price((float) $row->metric_value, 0, $langs)).'</td></tr>';
+		print '<td class="right">'.dol_escape_htmltag(
+			price(price2num((float) $row->metric_value, 'MT'), 0, $langs)
+		).'</td></tr>';
 	}
 	if ($count === 0) {
 		print '<tr class="oddeven"><td colspan="'.($showEnvironment ? 6 : 5).'"><span class="opacitymedium">'.$langs->trans('NoRecordFound').'</span></td></tr>';
@@ -774,14 +782,14 @@ function emergencyhouseSupervisionDimensionLabel($langs, $dimension, $code)
 		),
 	);
 	if (isset($known[$dimension][$code])) {
-		return $langs->trans($known[$dimension][$code]);
+		return $langs->transnoentitiesnoconv($known[$dimension][$code]);
 	}
 	if (in_array($dimension, array('page', 'landing_page', 'exit_page'), true)) {
 		$key = 'AnalyticsPage'.str_replace(' ', '', ucwords(str_replace('_', ' ', $code)));
-		$translated = $langs->trans($key);
+		$translated = $langs->transnoentitiesnoconv($key);
 		return $translated !== $key ? $translated : ucwords(str_replace('_', ' ', $code));
 	}
-	return $code !== '' ? $code : $langs->trans('Unknown');
+	return $code !== '' ? $code : $langs->transnoentitiesnoconv('Unknown');
 }
 
 /**
