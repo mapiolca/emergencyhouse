@@ -530,6 +530,7 @@ LoginIntroduction=Accédez à vos offres, demandes, sollicitations et séjours.
 PasswordlessLogin=Connexion par lien temporaire
 PasswordlessLoginHelp=Recevez par e-mail un lien de connexion à usage unique.
 SendLoginLink=Envoyer le lien de connexion
+MagicLinkGenericConfirmation=Si un compte actif et vérifié correspond à cette adresse, un lien de connexion va être envoyé.
 ForgotPassword=Mot de passe oublié
 ForgotPasswordHelp=Recevez un lien sécurisé pour choisir un nouveau mot de passe.
 SendResetLink=Envoyer le lien de réinitialisation

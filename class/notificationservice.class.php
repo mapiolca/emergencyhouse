@@ -46,9 +46,10 @@ class EmergencyHouseNotificationService
 	 * @param array<string, scalar|null>   $payload Template values
 	 * @param string                      $idempotencyKey Idempotency source
 	 * @param int                         $priority Priority
+	 * @param bool                        $sendImmediately Send now through Dolibarr mail transport
 	 * @return int
 	 */
-	public function queueForAccount($account, $campaignId, $eventCode, $templateCode, array $payload, $idempotencyKey, $priority = 50)
+	public function queueForAccount($account, $campaignId, $eventCode, $templateCode, array $payload, $idempotencyKey, $priority = 50, $sendImmediately = false)
 	{
 		$profile = $account->getDecryptedProfile();
 		if (!is_array($profile)) {
@@ -65,7 +66,8 @@ class EmergencyHouseNotificationService
 			$templateCode,
 			$payload,
 			$idempotencyKey,
-			$priority
+			$priority,
+			$sendImmediately
 		);
 	}
 
@@ -82,9 +84,10 @@ class EmergencyHouseNotificationService
 	 * @param array<string, scalar|null> $payload Template values
 	 * @param string                    $idempotencySource Idempotency source
 	 * @param int                       $priority Priority
+	 * @param bool                      $sendImmediately Send now through Dolibarr mail transport
 	 * @return int
 	 */
-	public function queueEmail($entity, $campaignId, $accountId, $recipient, $locale, $eventCode, $templateCode, array $payload, $idempotencySource, $priority = 50)
+	public function queueEmail($entity, $campaignId, $accountId, $recipient, $locale, $eventCode, $templateCode, array $payload, $idempotencySource, $priority = 50, $sendImmediately = false)
 	{
 		if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
 			$this->error = 'ErrorInvalidEmail';
@@ -116,6 +119,9 @@ class EmergencyHouseNotificationService
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
 			return -1;
+		}
+		if ($sendImmediately) {
+			return $this->sendPendingByIdempotencyKey((int) $entity, $idempotencyKey);
 		}
 		return 1;
 	}
@@ -272,12 +278,32 @@ class EmergencyHouseNotificationService
 	}
 
 	/**
+	 * Send one freshly queued record through Dolibarr's native mail transport.
+	 *
+	 * The queue remains the retry ledger when the transport reports a failure.
+	 *
+	 * @param int    $entity Entity
+	 * @param string $idempotencyKey Queue idempotency key
+	 * @return int 1 when sent or already processed, -1 on failure
+	 */
+	private function sendPendingByIdempotencyKey($entity, $idempotencyKey)
+	{
+		$record = $this->claimNext($entity, $idempotencyKey);
+		if (!is_array($record)) {
+			return $this->error === '' ? 1 : -1;
+		}
+
+		return $this->sendClaimed($record) ? 1 : -1;
+	}
+
+	/**
 	 * Claim one queue row.
 	 *
-	 * @param int $entity Entity
+	 * @param int    $entity Entity
+	 * @param string $idempotencyKey Optional exact queue key
 	 * @return array<string, int|string|null>|false
 	 */
-	private function claimNext($entity)
+	private function claimNext($entity, $idempotencyKey = '')
 	{
 		$lockToken = bin2hex(random_bytes(16));
 		$this->db->begin();
@@ -286,6 +312,9 @@ class EmergencyHouseNotificationService
 		$sql .= ' WHERE entity = '.((int) $entity).' AND status = 0';
 		$sql .= " AND next_attempt <= '".$this->db->idate(dol_now())."'";
 		$sql .= ' AND (locked_at IS NULL OR locked_at < \''.$this->db->idate(dol_time_plus_duree(dol_now(), -15, 'i')).'\')';
+		if ($idempotencyKey !== '') {
+			$sql .= " AND idempotency_key = '".$this->db->escape($idempotencyKey)."'";
+		}
 		$sql .= ' ORDER BY priority ASC, date_creation ASC';
 		$sql .= $this->db->plimit(1);
 		$sql .= ' FOR UPDATE';
@@ -358,12 +387,17 @@ class EmergencyHouseNotificationService
 		}
 		$subject = $this->render((string) $template['subject'], $payload);
 		$body = $this->render((string) $template['body'], $payload);
-		$from = getDolGlobalString('MAIN_INFO_SOCIETE_MAIL', '');
+		$from = getDolGlobalString('MAIN_MAIL_EMAIL_FROM', '');
+		if ($from === '') {
+			$from = getDolGlobalString('MAIN_INFO_SOCIETE_MAIL', '');
+		}
 		if ($from === '') {
 			$this->markFailure($record, 'ErrorSenderEmailMissing');
 			return false;
 		}
 
+		// CMailFile applies the native SMTP/send mode, mail hooks, forced
+		// recipients and MAIN_MAIL_AUTOCOPY_TO permanent BCC configuration.
 		$mail = new CMailFile(
 			$subject,
 			$recipient,
@@ -378,9 +412,9 @@ class EmergencyHouseNotificationService
 			-1,
 			'',
 			'',
+			'emergencyhouse-notification-'.((int) $record['id']),
 			'',
-			'',
-			'emergencyhouse'
+			'standard'
 		);
 		if (!empty($mail->error) || !$mail->sendfile()) {
 			$errorCode = !empty($mail->error) ? 'ErrorMailTransport' : 'ErrorMailSend';
@@ -468,6 +502,8 @@ class EmergencyHouseNotificationService
 	 */
 	private function markFailure(array $record, $errorCode)
 	{
+		$this->error = $errorCode;
+		dol_syslog(__METHOD__.': '.$errorCode.' for notification row '.((int) $record['id']), LOG_ERR);
 		$attempt = max(1, (int) $record['attempt_count']);
 		$maxAttempts = max(1, getDolGlobalInt('EMERGENCYHOUSE_NOTIFICATION_MAX_ATTEMPTS', 6));
 		$status = $attempt >= $maxAttempts ? 3 : 0;

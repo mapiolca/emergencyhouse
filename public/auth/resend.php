@@ -33,7 +33,8 @@ if ($action === 'resend' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUE
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
 					'account-verification-resend|'.$account->id.'|'.$verificationToken,
-					10
+					10,
+					true
 				);
 			}
 		}

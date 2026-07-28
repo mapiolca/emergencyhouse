@@ -62,6 +62,12 @@ Dolibarr. Une file transactionnelle propre au module est réservée aux comptes
 publics, qui ne sont pas des utilisateurs Dolibarr et ne peuvent donc pas être
 traités comme tels par le module Notifications.
 
+Cette file ne remplace pas le transport de messagerie : chaque envoi passe par
+`CMailFile` et hérite des réglages globaux Dolibarr, notamment du serveur SMTP,
+de l’expéditeur et de la copie cachée permanente. Les messages d’accès au
+compte sont tentés immédiatement ; les échecs restent en file pour reprise par
+le travail planifié natif.
+
 ## Cartographie
 
 Les tuiles OpenStreetMap peuvent être utilisées avec attribution et cache

@@ -54,10 +54,10 @@ Le script vérifie notamment :
 Une passe de lint PHP doit également être exécutée sur tous les fichiers
 `*.php`.
 
-Résultats de la passe finale du 27 juillet 2026 :
+Résultats de la passe finale du 28 juillet 2026 :
 
 - lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `476 contrats validés` ;
+- contrats statiques : `491 contrats validés` ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,

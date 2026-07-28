@@ -48,7 +48,7 @@ class EmergencyHouseCron
 		$service = new EmergencyHouseNotificationService($this->db);
 		$result = $service->processQueue(getDolGlobalInt('EMERGENCYHOUSE_NOTIFICATION_BATCH_SIZE', 25));
 		$this->error = $service->error;
-		return $result;
+		return $result >= 0 && $this->error === '' ? $result : -1;
 	}
 
 	/**

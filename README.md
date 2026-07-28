@@ -128,6 +128,13 @@ publics Emergency House, et non des utilisateurs ou contacts Dolibarr
 abonnables dans le module Notifications. Aucun écran local ne remplace la
 configuration native des notifications back-office.
 
+Le transport des courriels reste entièrement celui de Dolibarr via
+`CMailFile` : mode d’envoi, serveur SMTP, expéditeur, hooks de messagerie,
+destinataires forcés et copie cachée permanente. Les courriels indispensables
+à l’accès au compte sont envoyés immédiatement ; la file transactionnelle et
+le travail planifié natif assurent uniquement les reprises sur erreur et les
+notifications métier différées.
+
 ## Secrets
 
 Deux clés techniques distinctes sont gérées sous les noms fixes :

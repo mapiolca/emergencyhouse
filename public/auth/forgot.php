@@ -33,7 +33,8 @@ if ($action === 'request' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQU
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
 					'password-reset|'.$account->id.'|'.$resetToken,
-					10
+					10,
+					true
 				);
 			}
 		}

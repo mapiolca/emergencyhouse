@@ -189,6 +189,43 @@ emergencyhouseContract(
 	'Activation et désactivation synchronisées des travaux planifiés natifs'
 );
 
+$notificationService = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'notificationservice.class.php'
+);
+emergencyhouseContract(
+	strpos($notificationService, "require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';") !== false
+		&& strpos($notificationService, 'new CMailFile(') !== false
+		&& strpos($notificationService, "getDolGlobalString('MAIN_MAIL_EMAIL_FROM'") !== false
+		&& strpos($notificationService, "MAIN_MAIL_AUTOCOPY_TO permanent BCC") !== false
+		&& strpos($notificationService, "'standard'") !== false,
+	'Transport de courriel natif Dolibarr avec copie cachée permanente'
+);
+$publicAuthenticationMailControllers = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
+).emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'forgot.php'
+).emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'resend.php'
+).emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'login.php'
+);
+preg_match_all(
+	'/queueForAccount\\([\\s\\S]*?\\n\\s*10,\\s*\\n\\s*true\\s*\\n\\s*\\)/',
+	$publicAuthenticationMailControllers,
+	$immediateMailMatches
+);
+emergencyhouseContract(
+	isset($immediateMailMatches[0]) && count($immediateMailMatches[0]) === 4,
+	'Quatre courriels d’accès au compte envoyés immédiatement'
+);
+emergencyhouseContract(
+	strpos($notificationService, 'private function sendPendingByIdempotencyKey(') !== false
+		&& strpos($notificationService, '$this->markFailure($record, $errorCode);') !== false
+		&& strpos($notificationService, 'next_attempt = ') !== false
+		&& strpos($descriptor, "'method' => 'processNotificationQueue'") !== false,
+	'File de reprise conservée après un échec du transport natif'
+);
+
 $setupPath = $root.DIRECTORY_SEPARATOR.'admin'.DIRECTORY_SEPARATOR.'setup.php';
 $setup = emergencyhouseReadRequired($setupPath);
 emergencyhouseContract(
@@ -534,11 +571,19 @@ preg_match_all(
 	$publicAlertMatches
 );
 $publicAlertKeys = isset($publicAlertMatches[1]) ? array_values(array_unique($publicAlertMatches[1])) : array();
+preg_match_all(
+	"/\\$(?:errorKey|noticeKey)\\s*=\\s*'([A-Za-z][A-Za-z0-9_]*)'/",
+	$publicControllers,
+	$publicAssignedAlertMatches
+);
+if (isset($publicAssignedAlertMatches[1])) {
+	$publicAlertKeys = array_values(array_unique(array_merge($publicAlertKeys, $publicAssignedAlertMatches[1])));
+}
 sort($publicAlertKeys);
 foreach ($publicAlertKeys as $publicAlertKey) {
 	emergencyhouseContract(
 		isset($frTranslations[$publicAlertKey]) && isset($enTranslations[$publicAlertKey]),
-		'Message public littéral traduit : '.$publicAlertKey
+		'Message public traduit : '.$publicAlertKey
 	);
 }
 

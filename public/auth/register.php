@@ -76,7 +76,8 @@ if ($action === 'register' && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQ
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
 					'account-verification|'.$account->id.'|'.$verificationToken,
-					10
+					10,
+					true
 				);
 				if ($queued <= 0) {
 					$errorKey = 'ErrorVerificationEmailQueue';

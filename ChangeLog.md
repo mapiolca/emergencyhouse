@@ -37,6 +37,14 @@
 - La connexion publique distingue désormais des identifiants incorrects d’une
   panne technique ; les échecs internes de recherche de compte, de limitation
   de débit et de création de session sont journalisés sans exposer de secret.
+- La demande de connexion par lien temporaire affiche désormais sa confirmation
+  générique bilingue au lieu d’être remplacée par une erreur interne.
+- Les courriels de vérification, réinitialisation et connexion temporaire sont
+  désormais envoyés immédiatement par `CMailFile`, avec le transport,
+  l’expéditeur et la copie cachée permanente configurés dans Dolibarr ; la file
+  et le travail planifié natif restent disponibles pour les reprises sur erreur.
+- Les erreurs du transport de messagerie sont maintenant visibles dans le
+  résultat du travail planifié et journalisées sans adresse ni contenu sensible.
 - Remplacement des helpers de permissions dans les déclarations de menus par
   `$user->hasRight()` afin que Dolibarr puisse évaluer nativement leur
   visibilité, avec rattachement du tableau de bord au droit de lecture des

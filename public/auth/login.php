@@ -51,7 +51,8 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' &
 						'SERVICE_NAME' => $langs->trans('EmergencyHouse'),
 					),
 					'magic-login|'.$account->id.'|'.$magicToken,
-					10
+					10,
+					true
 				);
 			}
 		}

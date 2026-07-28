@@ -530,6 +530,7 @@ LoginIntroduction=Access your offers, requests, solicitations and stays.
 PasswordlessLogin=Sign in with a temporary link
 PasswordlessLoginHelp=Receive a one-time sign-in link by email.
 SendLoginLink=Send the sign-in link
+MagicLinkGenericConfirmation=If an active and verified account matches this address, a sign-in link will be sent.
 ForgotPassword=Forgot password
 ForgotPasswordHelp=Receive a secure link to choose a new password.
 SendResetLink=Send reset link
