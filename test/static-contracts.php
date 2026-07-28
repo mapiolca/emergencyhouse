@@ -553,6 +553,7 @@ emergencyhouseContract(
 		&& strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/tpl/document_actions_post_headers.tpl.php';") !== false
 		&& strpos($objectCard, "getMultidirOutput(\$object, 'emergencyhouse', 1)") !== false
 		&& strpos($objectCard, "getMultidirOutput(\$object, 'emergencyhouse', 1, 'outputrel')") !== false
+		&& strpos($objectCard, "\$relativepathwithnofile .= '/';") !== false
 		&& strpos($objectCard, "\$moreparam = '&tab=documents';") !== false
 		&& strpos($objectCard, "trans('NbOfAttachedFiles')") !== false
 		&& strpos($objectCard, "trans('TotalSizeOfAttachedFiles')") !== false

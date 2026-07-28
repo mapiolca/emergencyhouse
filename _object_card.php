@@ -226,6 +226,9 @@ if ($documentsTabRequested) {
 		&& strpos($resolvedRelativePath, 'error-') !== 0) {
 		$upload_dir = $resolvedUploadDir;
 		$relativepathwithnofile = trim($resolvedRelativePath, '/\\');
+		if ($relativepathwithnofile !== '') {
+			$relativepathwithnofile .= '/';
+		}
 		$documentStorageReady = true;
 	}
 }
