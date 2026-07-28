@@ -136,6 +136,16 @@ emergencyhouseContract(
 	'Pictogramme natif house-user déclaré pour le module'
 );
 emergencyhouseContract(
+	strpos($descriptor, "'css' => array('/emergencyhouse/css/emergencyhouse.css.php')") !== false
+		&& strpos($descriptor, "'prefix' => img_picto('', \$this->picto, 'class=\"paddingright pictofixedwidth valignmiddle\"')") !== false
+		&& is_file($root.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'emergencyhouse.css.php')
+		&& strpos(
+			emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'css'.DIRECTORY_SEPARATOR.'emergencyhouse.css.php'),
+			'div.mainmenu.emergencyhouse::before'
+		) !== false,
+	'Pictogramme house-user déclaré dans le menu haut pour les gestionnaires natifs'
+);
+emergencyhouseContract(
 	strpos($descriptor, "\$this->version = '1.0.0';") !== false,
 	'Version du descripteur 1.0.0'
 );
