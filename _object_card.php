@@ -221,17 +221,6 @@ if ($action === 'set_status' && $permissionToWrite) {
 		exit;
 	}
 	setEventMessages(emergencyhouseGetUserErrorMessage($capacity->error), null, 'errors');
-} elseif ($action === 'save_notes' && $permissionToWrite && property_exists($object, 'note_public')) {
-	$object->note_public = GETPOST('note_public', 'restricthtml');
-	$object->note_private = GETPOST('note_private', 'restricthtml');
-	$object->context['trigger_reason'] = 'notes_update';
-	$object->context['changed_fields'] = array('note_public', 'note_private');
-	if ($object->update($user) > 0) {
-		setEventMessages($langs->trans('NotesSaved'), null, 'mesgs');
-		header('Location: '.$_SERVER['PHP_SELF'].'?id='.((int) $object->id).'&tab=notes');
-		exit;
-	}
-	setEventMessages(emergencyhouseGetUserErrorMessage((string) $object->error), null, 'errors');
 } elseif ($action === 'builddoc'
 	&& $permissionToWrite
 	&& emergencyhouseCanDo($user, 'sensitive', 'contact', $object)
@@ -300,6 +289,11 @@ if ($action === 'set_status' && $permissionToWrite) {
 	}
 }
 
+$permissionnote = $permissionToWrite && property_exists($object, 'note_public');
+if ($tab === 'notes' && $permissionnote) {
+	include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';
+}
+
 $revealedAddress = false;
 if ($action === 'reveal_address' && $object instanceof EmergencyHouseOffer) {
 	$justification = trim(GETPOST('justification', 'restricthtml'));
@@ -316,17 +310,14 @@ print dol_get_fiche_head($head, $tab, $langs->trans($configuration['title']), -1
 print dol_banner_tab($object, 'ref', '', 1, 'ref', 'ref');
 
 if ($tab === 'notes' && property_exists($object, 'note_public')) {
-	print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'?id='.((int) $object->id).'&tab=notes">';
-	print '<input type="hidden" name="token" value="'.newToken().'">';
-	print '<input type="hidden" name="action" value="save_notes">';
-	print '<table class="border centpercent">';
-	print '<tr><td class="titlefield">'.$langs->trans('NotePublic').'</td><td><textarea class="flat centpercent" name="note_public" rows="8">'.dol_escape_htmltag((string) $object->note_public).'</textarea></td></tr>';
-	print '<tr><td>'.$langs->trans('NotePrivate').'</td><td><textarea class="flat centpercent" name="note_private" rows="8">'.dol_escape_htmltag((string) $object->note_private).'</textarea></td></tr>';
-	print '</table>';
-	if ($permissionToWrite) {
-		print '<div class="center"><button class="button button-save" type="submit">'.$langs->trans('Save').'</button></div>';
-	}
-	print '</form>';
+	$form = new Form($db);
+	$cssclass = 'titlefield';
+	$moreparam = '&tab=notes';
+	print '<div class="fichecenter">';
+	print '<div class="underbanner clearboth"></div>';
+	include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';
+	print '</div>';
+	print '<div class="clearboth"></div>';
 } elseif ($tab === 'documents' && property_exists($object, 'model_pdf')) {
 	$formfile = new FormFile($db);
 	$uploadDir = getMultidirOutput($object, 'emergencyhouse', 1);

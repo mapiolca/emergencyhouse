@@ -521,6 +521,18 @@ emergencyhouseContract(
 		&& strpos($matchCard, 'dolGetButtonAction(') !== false,
 	'Actions de fiche placées dans la barre native après dégagement des colonnes'
 );
+emergencyhouseContract(
+	strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';") !== false
+		&& strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';") !== false
+		&& strpos($objectCard, "\$moreparam = '&tab=notes';") !== false
+		&& strpos($objectCard, "action\" value=\"save_notes") === false
+		&& strpos($commonObject, 'public function update_note(') !== false
+		&& strpos($commonObject, "\$this->context['trigger_reason'] = 'notes_update';") !== false
+		&& strpos($commonObject, "SET '.\$field.' = ") !== false
+		&& strpos($commonObject, "' AND entity = '.((int) \$this->entity)") !== false
+		&& strpos($commonObject, "\$this->call_trigger(\$this->trigger_prefix.'_UPDATE', \$user)") !== false,
+	'Notes rendues et enregistrées avec la structure native Dolibarr'
+);
 
 $encryptionService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'encryptionservice.class.php');
 emergencyhouseContract(

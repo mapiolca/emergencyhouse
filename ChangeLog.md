@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Remplacement du formulaire spécifique des notes d’objet par les actions et le
+  modèle natifs Dolibarr, avec édition séparée des notes publique et privée et
+  conservation des triggers CRUD du module.
 - Chargement des domaines de traduction natifs `companies` et `other` sur le
   portail public afin de traduire les libellés standards d’adresse et de
   sécurité, avec correction des libellés bilingues de sélection, navigation,
