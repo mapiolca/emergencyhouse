@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS llx_emergencyhouse_campaign_territory (
 CREATE TABLE IF NOT EXISTS llx_emergencyhouse_public_account (
 	rowid integer AUTO_INCREMENT PRIMARY KEY,
 	entity integer DEFAULT 1 NOT NULL,
+	fk_member integer NULL,
 	public_uuid varchar(64) NOT NULL,
 	firstname_encrypted longtext NOT NULL,
 	lastname_encrypted longtext NOT NULL,
@@ -127,6 +128,7 @@ CREATE TABLE IF NOT EXISTS llx_emergencyhouse_public_account (
 	import_key varchar(14) NULL,
 	UNIQUE KEY uk_emergencyhouse_account_uuid (public_uuid),
 	UNIQUE KEY uk_emergencyhouse_account_email (entity, email_hash),
+	UNIQUE KEY uk_emergencyhouse_account_member (entity, fk_member),
 	KEY idx_emergencyhouse_account_phone (entity, phone_hash),
 	KEY idx_emergencyhouse_account_status (entity, status),
 	KEY idx_emergencyhouse_account_activity (entity, last_activity)

@@ -49,7 +49,7 @@ class modEmergencyHouse extends DolibarrModules
 		$this->phpmin = array(8, 0);
 		$this->need_dolibarr_version = array(20, 0);
 		$this->langfiles = array('emergencyhouse@emergencyhouse');
-		$this->depends = array();
+		$this->depends = array('modAdherent');
 		$this->requiredby = array();
 		$this->conflictwith = array();
 		$this->config_page_url = array('setup.php@emergencyhouse');
@@ -323,6 +323,9 @@ class modEmergencyHouse extends DolibarrModules
 		if (!$this->ensureSecurityKeys()) {
 			return -1;
 		}
+		if (!$this->ensureMemberLinkSchema()) {
+			return -1;
+		}
 		$this->ensureDefaultConstants((int) $conf->entity);
 		if (!$this->migrateLegacyNumberingModels((int) $conf->entity)) {
 			return -1;
@@ -484,6 +487,7 @@ class modEmergencyHouse extends DolibarrModules
 			'EMERGENCYHOUSE_SMS_PROVIDER' => array('disabled', 'chaine'),
 			'EMERGENCYHOUSE_API_ENABLED' => array('0', 'yesno'),
 			'EMERGENCYHOUSE_PHOTOS_ENABLED' => array('0', 'yesno'),
+			'EMERGENCYHOUSE_ADHERENT_TYPE_ID' => array('0', 'chaine'),
 			'EMERGENCYHOUSE_SESSION_IDLE_MINUTES' => array('120', 'chaine'),
 			'EMERGENCYHOUSE_TOKEN_TTL_MINUTES' => array('30', 'chaine'),
 			'EMERGENCYHOUSE_MAX_LOGIN_ATTEMPTS' => array('5', 'chaine'),
@@ -522,6 +526,51 @@ class modEmergencyHouse extends DolibarrModules
 				dolibarr_set_const($this->db, $name, $definition[0], $definition[1], 0, '', $entity);
 			}
 		}
+	}
+
+	/**
+	 * Add the public-account/member relation on existing installations.
+	 *
+	 * @return bool
+	 */
+	private function ensureMemberLinkSchema()
+	{
+		$table = MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql = "SHOW COLUMNS FROM ".$table." LIKE 'fk_member'";
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+		if ($this->db->num_rows($resql) === 0) {
+			if (!$this->db->query('ALTER TABLE '.$table.' ADD COLUMN fk_member integer NULL AFTER entity')) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+
+		$indexFound = false;
+		$resql = $this->db->query('SHOW INDEX FROM '.$table);
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+		while (is_object($obj = $this->db->fetch_object($resql))) {
+			if (isset($obj->Key_name) && (string) $obj->Key_name === 'uk_emergencyhouse_account_member') {
+				$indexFound = true;
+				break;
+			}
+		}
+		if (!$indexFound) {
+			$sql = 'ALTER TABLE '.$table;
+			$sql .= ' ADD UNIQUE KEY uk_emergencyhouse_account_member (entity, fk_member)';
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

@@ -23,6 +23,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 dol_include_once('/emergencyhouse/core/modules/emergencyhouse/doc/pdf_emergencyhouse_agreement.modules.php');
 dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
+dol_include_once('/emergencyhouse/class/memberservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
@@ -38,6 +39,9 @@ if (!emergencyhouseCanDo($user, 'configuration', 'write')) {
 
 $action = GETPOST('action', 'aZ09');
 $tab = GETPOST('tab', 'aZ09');
+$memberReconciliationResult = null;
+$memberReconciliationAfterId = max(0, GETPOSTINT('member_after_id'));
+$memberService = new EmergencyHouseMemberService($db);
 if (empty($tab)) {
 	$tab = 'general';
 }
@@ -120,7 +124,7 @@ $settingsByTab = array(
 	),
 	'integrations' => array(
 		'EMERGENCYHOUSE_DATAPOLICY_MODE' => array('type' => 'string', 'default' => 'disabled'),
-		'EMERGENCYHOUSE_ADHERENT_MODE' => array('type' => 'string', 'default' => 'disabled'),
+		'EMERGENCYHOUSE_ADHERENT_TYPE_ID' => array('type' => 'int', 'default' => '0'),
 		'EMERGENCYHOUSE_RESOURCE_MODE' => array('type' => 'string', 'default' => 'disabled'),
 	),
 	'multicompany' => array(
@@ -151,9 +155,28 @@ $settingHelpKeys = array(
 	'EMERGENCYHOUSE_RATE_LIMIT_HOUR' => 'HelpRateLimitHour',
 	'EMERGENCYHOUSE_RATE_LIMIT_DAY' => 'HelpRateLimitDay',
 	'EMERGENCYHOUSE_CSP_EXTRA_CONNECT_SRC' => 'HelpCspExtraConnectSrc',
+	'EMERGENCYHOUSE_ADHERENT_TYPE_ID' => 'HelpMemberType',
 );
 
-if ($action === 'set_numbering_model') {
+if ($action === 'reconcile_members' && $tab === 'integrations') {
+	if (!$memberService->isReady((int) $conf->entity)) {
+		setEventMessages($langs->trans($memberService->error), null, 'errors');
+	} else {
+		$memberReconciliationResult = $memberService->reconcileVerifiedAccounts(
+			(int) $conf->entity,
+			$user,
+			max(1, getDolGlobalInt('EMERGENCYHOUSE_JOB_BATCH_SIZE', 100)),
+			$memberReconciliationAfterId
+		);
+		$hasMemberReconciliationIssues = $memberReconciliationResult['conflicts'] > 0
+			|| $memberReconciliationResult['errors'] > 0;
+		setEventMessages(
+			$langs->trans('MemberReconciliationBatchCompleted'),
+			null,
+			$hasMemberReconciliationIssues ? 'warnings' : 'mesgs'
+		);
+	}
+} elseif ($action === 'set_numbering_model') {
 	$constant = GETPOST('constant', 'aZ09');
 	$value = GETPOST('value', 'aZ09');
 	if (!isset($numberingConstants[$constant]) || $value !== $numberingConstants[$constant]['model']) {
@@ -252,6 +275,14 @@ if ($action === 'set_numbering_model') {
 		if ($sum !== 100) {
 			$error++;
 			setEventMessages($langs->trans('MatchingWeightsMustEqual100'), null, 'errors');
+		}
+	}
+	if ($tab === 'integrations') {
+		$memberTypeId = (int) $values['EMERGENCYHOUSE_ADHERENT_TYPE_ID'];
+		$memberType = $memberService->fetchUsableMemberType($memberTypeId, (int) $conf->entity);
+		if (!$memberType instanceof AdherentType) {
+			$error++;
+			setEventMessages($langs->trans($memberService->error), null, 'errors');
 		}
 	}
 	if ($tab === 'portal') {
@@ -527,6 +558,11 @@ if (isset($settingsByTab[$tab])) {
 			);
 		} elseif ($name === 'EMERGENCYHOUSE_SMS_PROVIDER') {
 			$options = array('disabled' => $langs->trans('Disabled'));
+		} elseif ($name === 'EMERGENCYHOUSE_ADHERENT_TYPE_ID') {
+			$options = array('' => $langs->trans('SelectMemberType'));
+			foreach ($memberService->getAvailableMemberTypes((int) $conf->entity) as $memberTypeId => $memberTypeLabel) {
+				$options[$memberTypeId] = $langs->trans($memberTypeLabel);
+			}
 		} elseif (substr($name, -5) === '_MODE') {
 			$options = array('disabled' => $langs->trans('Disabled'), 'enabled' => $langs->trans('Enabled'));
 		} elseif ($name === 'EMERGENCYHOUSE_LOG_LEVEL') {
@@ -555,7 +591,8 @@ if (isset($settingsByTab[$tab])) {
 		} elseif ($name === 'EMERGENCYHOUSE_FREE_TEXT') {
 			print '<textarea class="flat centpercent" rows="5" name="'.dol_escape_htmltag($name).'">'.dol_escape_htmltag($value).'</textarea>';
 		} elseif (!empty($options)) {
-			print $form->selectarray($name, $options, $value, 0, 0, 0, '', 0, 0, 0, '', 'minwidth300');
+			$selectAttributes = $name === 'EMERGENCYHOUSE_ADHERENT_TYPE_ID' ? 'required' : '';
+			print $form->selectarray($name, $options, $value, 0, 0, 0, $selectAttributes, 0, 0, 0, '', 'minwidth300');
 			print ajax_combobox($name);
 		} elseif ($definition['type'] === 'int') {
 			print '<input class="flat minwidth100" type="number" min="0" name="'.dol_escape_htmltag($name).'" value="'.((int) $value).'">';
@@ -579,6 +616,48 @@ if (isset($settingsByTab[$tab])) {
 	print '</table>';
 	print '<div class="center"><input class="button button-save" type="submit" value="'.$langs->trans('Save').'"></div>';
 	print '</form>';
+}
+
+if ($tab === 'integrations') {
+	$memberReady = $memberService->isReady((int) $conf->entity);
+	print '<br>'.load_fiche_titre($langs->trans('MemberReconciliation'), '', 'members');
+	print '<div class="'.($memberReady ? 'info' : 'warning').'">';
+	print $langs->trans($memberReady ? 'MemberIntegrationReady' : $memberService->error);
+	print '</div>';
+	if (is_array($memberReconciliationResult)) {
+		print '<table class="noborder centpercent">';
+		print '<tr class="liste_titre"><th>'.$langs->trans('MemberReconciliationMetric').'</th>';
+		print '<th class="right">'.$langs->trans('Value').'</th></tr>';
+		$memberMetrics = array(
+			'MemberAccountsProcessed' => $memberReconciliationResult['processed'],
+			'MembersCreated' => $memberReconciliationResult['created'],
+			'MembersLinked' => $memberReconciliationResult['linked'],
+			'DraftMembersValidated' => $memberReconciliationResult['validated'],
+			'MemberAccountsSkipped' => $memberReconciliationResult['skipped'],
+			'MemberConflicts' => $memberReconciliationResult['conflicts'],
+			'MemberErrors' => $memberReconciliationResult['errors'],
+			'MemberAccountsRemaining' => $memberReconciliationResult['remaining'],
+		);
+		foreach ($memberMetrics as $memberMetricLabel => $memberMetricValue) {
+			print '<tr class="oddeven"><td>'.$langs->trans($memberMetricLabel).'</td>';
+			print '<td class="right">'.((int) $memberMetricValue).'</td></tr>';
+		}
+		print '</table>';
+	}
+	if ($memberReady) {
+		$nextMemberId = is_array($memberReconciliationResult)
+			? (int) $memberReconciliationResult['next_id']
+			: 0;
+		print '<form method="POST" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+		print '<input type="hidden" name="action" value="reconcile_members">';
+		print '<input type="hidden" name="tab" value="integrations">';
+		print '<input type="hidden" name="member_after_id" value="'.$nextMemberId.'">';
+		print '<p class="center"><button class="button" type="submit">';
+		print $langs->trans($nextMemberId > 0 ? 'ContinueMemberReconciliation' : 'StartMemberReconciliation');
+		print '</button></p></form>';
+	}
+	print '<div class="opacitymedium small">'.$langs->trans('MemberReconciliationHelp').'</div>';
 }
 
 if ($tab === 'general') {

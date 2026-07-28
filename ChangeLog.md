@@ -10,6 +10,13 @@
   sollicitation et de gravité dans les fiches et listes du back-office ; ajout
   du lien natif **Retour à la liste** dans les bannières et navigation
   précédent/suivant désormais fondée sur les identifiants `rowid`.
+- Création et validation immédiates d’un adhérent natif lors de chaque
+  inscription publique, avec type configuré par entité, rapprochement strict
+  par e-mail et transaction empêchant tout compte ou adhérent orphelin.
+- Ajout de la liaison unique `fk_member`, de sa migration idempotente, d’une
+  reprise CSRF par lots des comptes actifs vérifiés, du lien back-office et des
+  métadonnées d’adhésion dans l’export personnel ; l’anonymisation du compte
+  détache la liaison sans supprimer l’adhérent.
 - Correction de la traduction bilingue de la durée maximale facultative et
   regroupement compact des sélecteurs natifs jour, mois et année sur les
   formulaires publics d’offre et de demande.

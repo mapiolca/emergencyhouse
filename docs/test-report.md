@@ -19,6 +19,7 @@ php test/cron-contract.php
 php test/numbering-model-contract.php
 php test/security-key-contract.php
 php test/public-url-contract.php
+php test/multicompany-visibility-contract.php
 ```
 
 Le script vérifie notamment :
@@ -43,6 +44,16 @@ Le script vérifie notamment :
   panne technique, avec journalisation des erreurs internes de session ;
 - l’activation et la désactivation synchronisées des neuf travaux planifiés,
   sans suppression de leur configuration ;
+- la dépendance au module natif Adhérents, la migration idempotente de
+  `fk_member` et l’unicité de la liaison par entité ;
+- la création et la validation exclusivement via l’objet natif `Adherent`,
+  sans utilisateur, tiers, mot de passe membre, cotisation ni trigger
+  EmergencyHouse supplémentaire ;
+- le rapprochement strict des adhérents par e-mail normalisé et entité, le
+  refus des correspondances ambiguës et des statuts incompatibles ;
+- la transaction de l’inscription, la configuration obligatoire du type
+  d’adhérent, la reprise administrateur protégée par CSRF et le détachement
+  lors de l’anonymisation ;
 - le retour natif `0` des neuf travaux planifiés en cas de succès, avec les
   compteurs métier conservés dans la sortie du travail ;
 - le contrat d’URL racine du répertoire public et l’absence de liens de
@@ -59,8 +70,10 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 
 Résultats de la passe finale du 28 juillet 2026 :
 
-- lint PHP 8.5.7 : tous les fichiers PHP valides ;
-- contrats statiques : `491 contrats validés` ;
+- lint PHP 8.5.7 : `121` fichiers PHP valides ;
+- contrats statiques : `618 contrats validés` ;
+- travaux planifiés : contrats de retour validés ;
+- visibilité Multicompany : `8 contrats` validés ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres
   d’activation distincts validés ;
 - URL publique : racine configurée, liens de pages, lien de notification,
@@ -85,6 +98,15 @@ Résultats de la passe finale du 28 juillet 2026 :
 - matrice complète des droits et comptes administrateurs ;
 - deux entités Multicompany et documents dans l’entité propriétaire ;
 - parcours public avec deux comptes et consentements distincts ;
+- création d’un adhérent validé à l’inscription et maintien du compte portail
+  en attente jusqu’à la vérification de l’adresse e-mail ;
+- rapprochement d’un adhérent validé, validation d’un brouillon, refus des
+  doublons, résiliés, exclus et personnes morales, avec rollback complet ;
+- reprise par lots de comptes actifs et vérifiés, rejouabilité, compteurs et
+  anonymisation détachant la liaison sans supprimer l’adhérent ;
+- types d’adhérents distincts sur deux entités, sans fuite ni liaison croisée ;
+- confirmation qu’aucun utilisateur, tiers, mot de passe membre ou paiement de
+  cotisation n’est créé ;
 - domaine public dont la racine documentaire pointe sur `public/` : accueil,
   ressources `/assets/`, navigation, formulaires, redirections et liens
   reçus par courriel ;

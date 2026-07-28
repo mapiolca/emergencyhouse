@@ -352,6 +352,12 @@ données, sous réserve des durées nécessaires à la gestion d’un séjour en
 d’une obligation légale. La fermeture du compte ne met pas fin aux engagements
 d’un séjour déjà commencé.
 
+La suppression ou l’anonymisation du compte du portail ne supprime pas
+automatiquement la fiche d’adhérent associée. Cette fiche relève d’un cycle
+administratif distinct, notamment lorsque des cotisations, justificatifs ou
+obligations légales doivent être conservés. Une demande portant également sur
+ce registre est instruite séparément selon les règles applicables.
+
 ## 16. Données personnelles et confidentialité
 
 Le traitement des données personnelles, les finalités, bases légales,
