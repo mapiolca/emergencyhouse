@@ -8,23 +8,42 @@ dol_include_once('/emergencyhouse/class/listingservice.class.php');
 $mine = GETPOSTINT('mine') > 0;
 $page = max(0, GETPOSTINT('page'));
 $limit = 24;
-$offset = $page * $limit;
 $campaignId = GETPOSTINT('campaign');
 $town = trim(GETPOST('town', 'alphanohtml'));
 $listingService = new EmergencyHouseListingService($db);
-$campaigns = emergencyhousePublicCampaignOptions($db);
-
-if ($campaignId <= 0 && !empty($campaigns)) {
-	$campaignId = (int) $campaigns[0]['id'];
-}
+$campaigns = array();
+$campaignOfferCounts = array();
+$totalOffers = 0;
+$totalPages = 1;
 
 if ($mine) {
 	$account = emergencyhousePublicRequireAccount($emergencyhousePublicAccount);
-	$offers = $listingService->fetchOwnedOffers($account, $limit, $offset);
+	$offers = $listingService->fetchOwnedOffers($account, $limit, $page * $limit);
 	$pageTitle = $langs->trans('MyOffers');
 } else {
 	$account = $emergencyhousePublicAccount;
-	$offers = $campaignId > 0 ? $listingService->fetchPublicOffers($campaignId, $limit, $offset, $town) : array();
+	$campaignRows = $listingService->fetchPublicOfferCampaigns($town);
+	if (is_array($campaignRows)) {
+		$campaigns = $campaignRows;
+	}
+	foreach ($campaigns as $campaign) {
+		$currentCampaignId = isset($campaign['rowid']) ? (int) $campaign['rowid'] : 0;
+		if ($currentCampaignId <= 0) {
+			continue;
+		}
+		$campaignOfferCounts[$currentCampaignId] = isset($campaign['offer_count'])
+			? max(0, (int) $campaign['offer_count'])
+			: 0;
+	}
+	if ($campaignId > 0 && !isset($campaignOfferCounts[$campaignId])) {
+		$campaignId = 0;
+	}
+	$totalOffers = $campaignId > 0
+		? $campaignOfferCounts[$campaignId]
+		: array_sum($campaignOfferCounts);
+	$totalPages = max(1, (int) ceil($totalOffers / $limit));
+	$page = min($page, $totalPages - 1);
+	$offers = $listingService->fetchPublicOffers($campaignId, $limit, $page * $limit, $town);
 	$pageTitle = $langs->trans('AvailableOffers');
 }
 if (!is_array($offers)) {
@@ -53,33 +72,83 @@ print '</div>';
 if (!$mine) {
 	$campaignOptions = array();
 	foreach ($campaigns as $campaign) {
-		$campaignOptions[(int) $campaign['id']] = (string) $campaign['label'];
+		$currentCampaignId = isset($campaign['rowid']) ? (int) $campaign['rowid'] : 0;
+		if ($currentCampaignId > 0) {
+			$campaignOptions[$currentCampaignId] = isset($campaign['label']) ? (string) $campaign['label'] : '';
+		}
 	}
-	print '<form method="GET" action="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/index.php')).'" class="eh-toolbar">';
-	print '<div class="eh-field"><label for="campaign">'.$langs->trans('Campaign').'</label>';
-	print emergencyhousePublicSelect('campaign', $campaignOptions, $campaignId, false);
-	print '</div>';
-	print '<div class="eh-field"><label for="town">'.$langs->trans('TownOrPublicZone').'</label>';
-	print '<input type="search" id="town" name="town" maxlength="255" value="'.dol_escape_htmltag($town).'"></div>';
-	print '<button class="eh-button eh-button-small" type="submit">'.$langs->trans('Search').'</button>';
-	print '</form>';
+	if (!empty($campaignOptions)) {
+		print '<form method="GET" action="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/index.php')).'" class="eh-toolbar">';
+		print '<div class="eh-field"><label for="campaign">'.$langs->trans('Campaign').'</label>';
+		print emergencyhousePublicSelect(
+			'campaign',
+			$campaignOptions,
+			$campaignId,
+			true,
+			$langs->trans('AllCampaigns')
+		);
+		print '</div>';
+		print '<div class="eh-field"><label for="town">'.$langs->trans('TownOrPublicZone').'</label>';
+		print '<input type="search" id="town" name="town" maxlength="255" value="'.dol_escape_htmltag($town).'"></div>';
+		print '<button class="eh-button eh-button-small" type="submit">'.$langs->trans('Search').'</button>';
+		print '</form>';
+	}
+
+	if (!empty($campaigns)) {
+		print '<section class="eh-campaign-overview eh-section-tight" aria-labelledby="campaign-overview-title">';
+		print '<div class="eh-section-heading"><div><h2 id="campaign-overview-title">'.$langs->trans('CampaignsOverview').'</h2>';
+		print '<p>'.$langs->trans('CampaignsOverviewHelp').'</p></div></div>';
+		print '<div class="eh-campaign-overview-grid">';
+		foreach ($campaigns as $campaign) {
+			$currentCampaignId = isset($campaign['rowid']) ? (int) $campaign['rowid'] : 0;
+			if ($currentCampaignId <= 0) {
+				continue;
+			}
+			$summaryParams = array('campaign' => $currentCampaignId);
+			if ($town !== '') {
+				$summaryParams['town'] = $town;
+			}
+			$summaryUrl = emergencyhousePublicUrl('offer/index.php', $summaryParams);
+			$summarySelected = $campaignId === $currentCampaignId;
+			$summaryLabel = isset($campaign['label']) ? (string) $campaign['label'] : '';
+			print '<article class="eh-campaign-summary'.($summarySelected ? ' is-selected' : '').'">';
+			print '<h3><a href="'.dol_escape_htmltag($summaryUrl).'"'.($summarySelected ? ' aria-current="true"' : '').'>';
+			print dol_escape_htmltag($summaryLabel).'</a></h3>';
+			print '<p class="eh-card-meta"><span>'.$langs->trans(
+				'CampaignFromDate',
+				emergencyhousePublicDatabaseDate($db, $campaign['date_start'] ?? null)
+			).'</span>';
+			if (!empty($campaign['date_end'])) {
+				print '<span>'.$langs->trans(
+					'UntilDate',
+					emergencyhousePublicDatabaseDate($db, $campaign['date_end'])
+				).'</span>';
+			}
+			$campaignOfferCount = $campaignOfferCounts[$currentCampaignId];
+			print '</p><span class="eh-badge">'.$langs->trans(
+				$campaignOfferCount === 1 ? 'CampaignAvailableOfferCountOne' : 'CampaignAvailableOfferCount',
+				$campaignOfferCount
+			).'</span>';
+			print '</article>';
+		}
+		print '</div></section>';
+	}
 }
 
-if (empty($offers)) {
+if (!$mine && empty($campaigns)) {
+	print '<div class="eh-empty eh-section-tight"><h2>'.$langs->trans('NoActiveCampaign').'</h2>';
+	print '<p>'.$langs->trans('NoActiveCampaignHelp').'</p></div>';
+} elseif (empty($offers)) {
 	print '<div class="eh-empty eh-section-tight"><h2>'.$langs->trans($mine ? 'NoOwnedOffer' : 'NoPublicOffer').'</h2>';
 	print '<p>'.$langs->trans($mine ? 'NoOwnedOfferHelp' : 'NoPublicOfferHelp').'</p></div>';
-} else {
+} elseif ($mine) {
 	print '<div class="eh-card-grid eh-section-tight">';
 	foreach ($offers as $offer) {
 		$viewUrl = emergencyhousePublicUrl('offer/view.php', array('uuid' => (string) $offer['public_uuid']));
 		print '<article class="eh-card">';
 		print '<div class="eh-card-meta">';
-		if ($mine) {
-			print emergencyhousePublicListingStatus('offer', (int) $offer['status']);
-			print '<span>'.dol_escape_htmltag((string) $offer['campaign_label']).'</span>';
-		} else {
-			print '<span>'.$langs->trans('AvailablePlacesCount', (int) $offer['capacity_available']).'</span>';
-		}
+		print emergencyhousePublicListingStatus('offer', (int) $offer['status']);
+		print '<span>'.dol_escape_htmltag((string) $offer['campaign_label']).'</span>';
 		print '</div>';
 		print '<h2><a class="eh-card-link" href="'.dol_escape_htmltag($viewUrl).'">'.dol_escape_htmltag((string) $offer['title']).'</a></h2>';
 		print '<p class="eh-card-meta"><span>'.dol_escape_htmltag((string) $offer['public_zone']).'</span>';
@@ -88,23 +157,90 @@ if (empty($offers)) {
 			emergencyhousePublicDatabaseDate($db, $offer['date_start'])
 		).'</span></p>';
 		print '<div class="eh-card-footer"><a href="'.dol_escape_htmltag($viewUrl).'">'.$langs->trans('ViewOffer').'</a>';
-		if ($mine) {
-			print '<a href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php', array('id' => (int) $offer['rowid']))).'">'.$langs->trans('Edit').'</a>';
-		}
+		print '<a href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php', array('id' => (int) $offer['rowid']))).'">'.$langs->trans('Edit').'</a>';
 		print '</div></article>';
 	}
 	print '</div>';
 	if (count($offers) === $limit) {
-		$params = array('page' => $page + 1);
-		if ($mine) {
-			$params['mine'] = 1;
-		} else {
-			$params['campaign'] = $campaignId;
-			if ($town !== '') {
-				$params['town'] = $town;
-			}
-		}
+		$params = array('page' => $page + 1, 'mine' => 1);
 		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/index.php', $params)).'">'.$langs->trans('Next').'</a></p>';
+	}
+} else {
+	/** @var array<int, array{label:string,slug:string,offers:array<int, array<string, int|string|null>>}> $offerGroups */
+	$offerGroups = array();
+	foreach ($offers as $offer) {
+		$offerCampaignId = isset($offer['fk_campaign']) ? (int) $offer['fk_campaign'] : 0;
+		if ($offerCampaignId <= 0) {
+			continue;
+		}
+		if (!isset($offerGroups[$offerCampaignId])) {
+			$offerGroups[$offerCampaignId] = array(
+				'label' => isset($offer['campaign_label']) ? (string) $offer['campaign_label'] : '',
+				'slug' => isset($offer['campaign_slug']) ? (string) $offer['campaign_slug'] : '',
+				'offers' => array(),
+			);
+		}
+		$offerGroups[$offerCampaignId]['offers'][] = $offer;
+	}
+	print '<div class="eh-offer-groups">';
+	foreach ($offerGroups as $offerCampaignId => $offerGroup) {
+		$campaignPageUrl = emergencyhousePublicUrl('campaign.php', array('slug' => $offerGroup['slug']));
+		$campaignOfferCount = $campaignOfferCounts[$offerCampaignId] ?? count($offerGroup['offers']);
+		print '<section class="eh-offer-campaign-group" aria-labelledby="offer-campaign-'.$offerCampaignId.'">';
+		print '<div class="eh-offer-campaign-heading"><div><p class="eh-eyebrow">'.$langs->trans('Campaign').'</p>';
+		print '<h2 id="offer-campaign-'.$offerCampaignId.'">'.dol_escape_htmltag($offerGroup['label']).'</h2></div>';
+		print '<div class="eh-offer-campaign-actions"><span class="eh-badge">'.$langs->trans(
+			$campaignOfferCount === 1 ? 'CampaignAvailableOfferCountOne' : 'CampaignAvailableOfferCount',
+			$campaignOfferCount
+		).'</span>';
+		print '<a href="'.dol_escape_htmltag($campaignPageUrl).'">'.$langs->trans('ViewCampaign').'</a></div></div>';
+		print '<div class="eh-card-grid">';
+		foreach ($offerGroup['offers'] as $offer) {
+			$viewUrl = emergencyhousePublicUrl('offer/view.php', array('uuid' => (string) $offer['public_uuid']));
+			print '<article class="eh-card">';
+			print '<div class="eh-card-meta"><span>'.$langs->trans(
+				'AvailablePlacesCount',
+				(int) $offer['capacity_available']
+			).'</span></div>';
+			print '<h3><a class="eh-card-link" href="'.dol_escape_htmltag($viewUrl).'">';
+			print dol_escape_htmltag((string) $offer['title']).'</a></h3>';
+			print '<p class="eh-card-meta"><span>'.dol_escape_htmltag((string) $offer['public_zone']).'</span>';
+			print '<span>'.$langs->trans(
+				'AvailabilityFromDate',
+				emergencyhousePublicDatabaseDate($db, $offer['date_start'])
+			).'</span></p>';
+			print '<div class="eh-card-footer"><a href="'.dol_escape_htmltag($viewUrl).'">'.$langs->trans('ViewOffer').'</a></div>';
+			print '</article>';
+		}
+		print '</div></section>';
+	}
+	print '</div>';
+
+	if ($totalPages > 1) {
+		$paginationParams = array();
+		if ($campaignId > 0) {
+			$paginationParams['campaign'] = $campaignId;
+		}
+		if ($town !== '') {
+			$paginationParams['town'] = $town;
+		}
+		print '<nav class="eh-pagination" aria-label="'.$langs->trans('Pagination').'">';
+		if ($page > 0) {
+			$previousParams = $paginationParams;
+			$previousParams['page'] = $page - 1;
+			print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(
+				emergencyhousePublicUrl('offer/index.php', $previousParams)
+			).'">'.$langs->trans('Previous').'</a>';
+		}
+		print '<span class="eh-pagination-status">'.$langs->trans('PaginationPageOf', $page + 1, $totalPages).'</span>';
+		if ($page + 1 < $totalPages) {
+			$nextParams = $paginationParams;
+			$nextParams['page'] = $page + 1;
+			print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(
+				emergencyhousePublicUrl('offer/index.php', $nextParams)
+			).'">'.$langs->trans('Next').'</a>';
+		}
+		print '</nav>';
 	}
 }
 print '</section>';

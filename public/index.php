@@ -36,6 +36,10 @@ emergencyhousePublicRenderHeader(
 		'structured_data' => emergencyhousePublicHomeStructuredData($homeCanonical),
 	)
 );
+print '<section class="eh-shell eh-home-evolution-banner" aria-labelledby="home-evolution-notice-title">';
+print '<div class="eh-alert eh-alert-info"><strong id="home-evolution-notice-title">';
+print $langs->trans('HomeEvolutionNoticeTitle').'</strong>';
+print '<p>'.$langs->trans('HomeEvolutionNoticeText').'</p></div></section>';
 print '<section class="eh-hero"><div class="eh-shell eh-hero-grid"><div>';
 print '<p class="eh-eyebrow">'.$langs->trans('SolidarityAccommodation').'</p>';
 print '<h1>'.$langs->trans('PublicHeroTitle').'</h1>';

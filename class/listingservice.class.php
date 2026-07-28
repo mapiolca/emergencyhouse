@@ -876,32 +876,81 @@ class EmergencyHouseListingService
 	}
 
 	/**
-	 * List safe public offers without encrypted or exact fields.
+	 * List open public campaigns with the number of matching available offers.
 	 *
-	 * @param int $campaignId Campaign ID
-	 * @param int $limit Limit
-	 * @param int $offset Offset
-	 * @param string $town Town filter
+	 * Campaigns without offers remain in the result so the public overview can
+	 * explain why a campaign has no current accommodation.
+	 *
+	 * @param string $town Town or public zone filter
 	 * @return array<int, array<string, int|string|null>>|false
 	 */
-	public function fetchPublicOffers($campaignId, $limit = 24, $offset = 0, $town = '')
+	public function fetchPublicOfferCampaigns($town = '')
+	{
+		global $conf;
+
+		$sql = 'SELECT c.rowid, c.slug, c.label, c.date_start, c.date_end, COUNT(o.rowid) AS offer_count';
+		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_campaign AS c';
+		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'emergencyhouse_offer AS o';
+		$sql .= ' ON o.entity = c.entity AND o.fk_campaign = c.rowid';
+		$sql .= ' AND o.status = '.EmergencyHouseOffer::STATUS_PUBLISHED;
+		$sql .= ' AND o.capacity_available > 0';
+		if ($town !== '') {
+			$townFilter = $this->db->escape($town);
+			$sql .= " AND (o.town LIKE '%".$townFilter."%' OR o.public_zone LIKE '%".$townFilter."%')";
+		}
+		$sql .= ' WHERE c.entity = '.((int) $conf->entity);
+		$sql .= ' AND c.status = '.EmergencyHouseCampaign::STATUS_PUBLISHED;
+		$sql .= " AND c.date_start <= '".$this->db->idate(dol_now())."'";
+		$sql .= " AND (c.date_end IS NULL OR c.date_end >= '".$this->db->idate(dol_now())."')";
+		$sql .= ' GROUP BY c.rowid, c.slug, c.label, c.date_start, c.date_end';
+		$sql .= ' ORDER BY c.date_start DESC, c.rowid DESC';
+		return $this->fetchSafeRows($sql);
+	}
+
+	/**
+	 * List safe public offers without encrypted or exact fields.
+	 *
+	 * A campaign ID of 0 returns offers from every currently open campaign.
+	 * Positive IDs retain the targeted behavior used by campaign pages.
+	 *
+	 * @param int $campaignId Campaign ID, or 0 for every open campaign
+	 * @param int $limit Limit
+	 * @param int $offset Offset
+	 * @param string $town Town or public zone filter
+	 * @return array<int, array<string, int|string|null>>|false
+	 */
+	public function fetchPublicOffers($campaignId = 0, $limit = 24, $offset = 0, $town = '')
 	{
 		global $conf;
 
 		$sql = 'SELECT o.rowid, o.public_uuid, o.ref, o.fk_campaign, o.fk_housing_type, o.public_zone,';
 		$sql .= ' o.town, o.date_start, o.date_end, o.capacity_available, o.title, o.description_public, o.verification_status, o.tms,';
-		$sql .= ' h.label AS housing_type_label';
+		$sql .= ' h.label AS housing_type_label, c.slug AS campaign_slug, c.label AS campaign_label,';
+		$sql .= ' c.date_start AS campaign_date_start, c.date_end AS campaign_date_end';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_offer AS o';
+		$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'emergencyhouse_campaign AS c';
+		$sql .= ' ON c.rowid = o.fk_campaign AND c.entity = o.entity';
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_emergencyhouse_housing_type AS h';
 		$sql .= ' ON h.rowid = o.fk_housing_type AND h.entity = o.entity';
 		$sql .= ' WHERE o.entity = '.((int) $conf->entity);
-		$sql .= ' AND o.fk_campaign = '.((int) $campaignId);
+		if ($campaignId > 0) {
+			$sql .= ' AND o.fk_campaign = '.((int) $campaignId);
+		} else {
+			$sql .= ' AND c.status = '.EmergencyHouseCampaign::STATUS_PUBLISHED;
+			$sql .= " AND c.date_start <= '".$this->db->idate(dol_now())."'";
+			$sql .= " AND (c.date_end IS NULL OR c.date_end >= '".$this->db->idate(dol_now())."')";
+		}
 		$sql .= ' AND o.status = '.EmergencyHouseOffer::STATUS_PUBLISHED;
 		$sql .= ' AND o.capacity_available > 0';
 		if ($town !== '') {
-			$sql .= " AND o.town LIKE '%".$this->db->escape($town)."%'";
+			$townFilter = $this->db->escape($town);
+			$sql .= " AND (o.town LIKE '%".$townFilter."%' OR o.public_zone LIKE '%".$townFilter."%')";
 		}
-		$sql .= ' ORDER BY o.date_start ASC, o.rowid DESC';
+		if ($campaignId > 0) {
+			$sql .= ' ORDER BY o.date_start ASC, o.rowid DESC';
+		} else {
+			$sql .= ' ORDER BY c.date_start DESC, c.rowid DESC, o.date_start ASC, o.rowid DESC';
+		}
 		$sql .= $this->db->plimit(min(100, max(1, $limit)), max(0, $offset));
 		return $this->fetchSafeRows($sql);
 	}

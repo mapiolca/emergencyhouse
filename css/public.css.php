@@ -86,6 +86,20 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-card-link { color: inherit !important; text-decoration: none; }
 .eh-card-link::after { content: ""; }
 .eh-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--eh-border); }
+.eh-home-evolution-banner { padding-top: 18px; }
+.eh-home-evolution-banner .eh-alert { margin: 0; }
+.eh-home-evolution-banner p { margin: 6px 0 0; }
+.eh-campaign-overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.eh-campaign-summary { min-width: 0; padding: 18px; border: 1px solid var(--eh-border); border-radius: 14px; background: var(--eh-paper); }
+.eh-campaign-summary.is-selected { border-color: var(--eh-primary); box-shadow: 0 0 0 3px rgba(12,107,88,.1); }
+.eh-campaign-summary h3 { margin: 0 0 8px; font-size: 19px; line-height: 1.25; }
+.eh-campaign-summary h3 a { color: var(--eh-ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.eh-campaign-summary .eh-badge { margin-top: 10px; }
+.eh-offer-campaign-group { padding-block: 32px; border-top: 1px solid var(--eh-border); }
+.eh-offer-campaign-group:first-child { border-top: 0; }
+.eh-offer-campaign-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.eh-offer-campaign-heading h2 { margin: 0; font-size: clamp(24px, 4vw, 34px); line-height: 1.1; }
+.eh-offer-campaign-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
 .eh-photo-manager, .eh-offer-gallery { margin-bottom: 24px; }
 .eh-photo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
 .eh-photo-card { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--eh-border); border-radius: 14px; background: var(--eh-paper); }
@@ -203,7 +217,8 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-description-list dd { margin: 5px 0 0; font-weight: 650; }
 .eh-tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .eh-preference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.eh-pagination { display: flex; justify-content: center; margin-top: 28px; }
+.eh-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 28px; }
+.eh-pagination-status { color: var(--eh-muted); font-weight: 750; }
 .eh-list-cards { display: grid; gap: 16px; }
 .eh-list-card { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .eh-list-card h2, .eh-list-card p { margin-bottom: 6px; margin-top: 0; }
@@ -225,6 +240,7 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 	.eh-site-header nav ul { flex-wrap: wrap; }
 	.eh-hero-grid, .eh-dashboard-grid { grid-template-columns: 1fr; }
 	.eh-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.eh-campaign-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-preference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.eh-footer-grid { grid-template-columns: 2fr 1fr; }
@@ -234,9 +250,13 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 	.eh-shell { width: min(calc(100% - 24px), var(--eh-shell)); }
 	.eh-brand small { display: none; }
 	.eh-card-grid, .eh-field-grid, .eh-choice-grid, .eh-footer-grid, .eh-description-list, .eh-preference-grid, .eh-contact-layout { grid-template-columns: 1fr; }
+	.eh-campaign-overview-grid { grid-template-columns: 1fr; }
 	.eh-field-full { grid-column: auto; }
 	.eh-stat-grid { grid-template-columns: 1fr 1fr; }
 	.eh-section-heading { align-items: start; flex-direction: column; }
+	.eh-offer-campaign-heading { align-items: start; flex-direction: column; }
+	.eh-offer-campaign-actions { align-items: flex-start; justify-content: flex-start; }
+	.eh-pagination { flex-wrap: wrap; }
 	.eh-form { padding: 18px; }
 	.eh-form-actions { justify-content: stretch; }
 	.eh-form-actions .eh-button { flex: 1 1 100%; }
@@ -251,5 +271,5 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 }
 
 @media (forced-colors: active) {
-	.eh-button, .eh-card, .eh-form, .eh-alert { border: 1px solid CanvasText; }
+	.eh-button, .eh-card, .eh-form, .eh-alert, .eh-campaign-summary { border: 1px solid CanvasText; }
 }

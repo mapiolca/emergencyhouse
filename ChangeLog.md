@@ -2,6 +2,16 @@
 
 ## Non publié
 
+- Refonte de la page publique des offres : affichage global par défaut,
+  aperçu de toutes les campagnes ouvertes avec compteurs, regroupement des
+  résultats par campagne, recherche sur la commune ou la zone publique et
+  pagination conservant les filtres.
+- Ajout sur l’accueil d’une bannière bilingue indiquant que le service évolue
+  en permanence grâce aux retours utilisateurs et que ses améliorations sont
+  accélérées face à l’urgence dans le Sud-Ouest.
+- Ajout des traductions propres au module pour toutes les actions de changement
+  d’état du back-office, notamment **Suspendre** et **Expirer**, afin d’éviter
+  l’affichage de clés anglaises brutes selon la version de Dolibarr.
 - Correction de l’édition publique d’une offre : la campagne cible est
   désormais validée comme publiée, ouverte et rattachée à la même entité avant
   d’être enregistrée dans la transaction de mise à jour.

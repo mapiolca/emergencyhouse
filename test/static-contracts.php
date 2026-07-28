@@ -394,6 +394,9 @@ $publicRequestEditor = emergencyhouseReadRequired(
 $publicRequestIndex = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'request'.DIRECTORY_SEPARATOR.'index.php'
 );
+$publicOfferIndex = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'offer'.DIRECTORY_SEPARATOR.'index.php'
+);
 $registerController = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'auth'.DIRECTORY_SEPARATOR.'register.php'
 );
@@ -401,6 +404,44 @@ emergencyhouseContract(
 	strpos($publicRequestIndex, "\$campaign->public_visibility_mode === 'offers_requests'") !== false
 		&& strpos($publicRequestIndex, "array('requests', 'both')") === false,
 	'Les demandes publiques sont exposées pour le mode de campagne Offres et demandes'
+);
+emergencyhouseContract(
+	strpos($publicOfferIndex, '$campaignId = (int) $campaigns[0]') === false
+		&& strpos($publicOfferIndex, '$listingService->fetchPublicOfferCampaigns($town)') !== false
+		&& strpos($publicOfferIndex, "\$langs->trans('AllCampaigns')") !== false
+		&& strpos($publicOfferIndex, 'emergencyhousePublicSelect(') !== false,
+	'Vue publique des offres ouverte par défaut sur toutes les campagnes'
+);
+emergencyhouseContract(
+	strpos($listingService, 'public function fetchPublicOfferCampaigns($town = \'\')') !== false
+		&& strpos($listingService, 'COUNT(o.rowid) AS offer_count') !== false
+		&& strpos($listingService, 'LEFT JOIN \'.MAIN_DB_PREFIX.\'emergencyhouse_offer AS o') !== false
+		&& strpos($listingService, 'AND c.status = \'.EmergencyHouseCampaign::STATUS_PUBLISHED') !== false
+		&& strpos($listingService, 'AND c.date_start <=') !== false
+		&& strpos($listingService, 'c.date_end IS NULL OR c.date_end >=') !== false,
+	'Synthèse des campagnes ouvertes conservant les campagnes sans offre'
+);
+emergencyhouseContract(
+	strpos($listingService, 'public function fetchPublicOffers($campaignId = 0') !== false
+		&& strpos($listingService, 'INNER JOIN \'.MAIN_DB_PREFIX.\'emergencyhouse_campaign AS c') !== false
+		&& strpos($listingService, 'if ($campaignId > 0) {') !== false
+		&& substr_count($listingService, "o.public_zone LIKE '%\".\$townFilter.\"%'") >= 2
+		&& strpos($listingService, 'ORDER BY c.date_start DESC, c.rowid DESC, o.date_start ASC, o.rowid DESC') !== false,
+	'Offres globales filtrées par commune ou zone et ordonnées par campagne'
+);
+emergencyhouseContract(
+	strpos($publicOfferIndex, '$offerGroups[$offerCampaignId]') !== false
+		&& strpos($publicOfferIndex, 'class="eh-offer-campaign-group"') !== false
+		&& strpos($publicOfferIndex, "'campaign.php', array('slug' => \$offerGroup['slug'])") !== false
+		&& strpos($publicOfferIndex, '$page = min($page, $totalPages - 1);') !== false,
+	'Résultats paginés regroupés par campagne avec page hors limites normalisée'
+);
+emergencyhouseContract(
+	strpos($publicOfferIndex, "\$paginationParams['campaign'] = \$campaignId;") !== false
+		&& strpos($publicOfferIndex, "\$paginationParams['town'] = \$town;") !== false
+		&& strpos($publicOfferIndex, "trans('PaginationPageOf'") !== false
+		&& strpos($publicOfferIndex, '$listingService->fetchOwnedOffers($account, $limit, $page * $limit)') !== false,
+	'Pagination publique conservant les filtres sans modifier Mes offres'
 );
 emergencyhouseContract(
 	strpos($registerController, '$db->begin();') !== false
@@ -527,6 +568,13 @@ emergencyhouseContract(
 		&& strpos($publicHome, "emergencyhousePublicUrl('contact.php')") !== false
 		&& strpos($preview, 'id="preview-contact"') !== false,
 	'Page Nous contacter visible dans la navigation, l’accueil, le pied et l’aperçu'
+);
+emergencyhouseContract(
+	strpos($publicHome, 'class="eh-shell eh-home-evolution-banner"') !== false
+		&& strpos($publicHome, "trans('HomeEvolutionNoticeTitle')") !== false
+		&& strpos($publicHome, "trans('HomeEvolutionNoticeText')") !== false
+		&& strpos($publicStyles, '.eh-home-evolution-banner {') !== false,
+	'Bannière d’évolution permanente visible sur l’accueil'
 );
 emergencyhouseContract(
 	strpos($publicContact, "getDolGlobalInt('MAIN_SECURITY_ENABLECAPTCHA'") !== false
@@ -913,6 +961,25 @@ emergencyhouseContract(empty($missingInFrench), 'Toutes les clés anglaises exis
 emergencyhouseContract(count($frTranslations) >= 1000, 'Catalogue français complet');
 emergencyhouseContract(count($enTranslations) >= 1000, 'Catalogue anglais complet');
 
+$statusTransitionsStart = strpos($objectCard, 'function emergencyhouseCardAllowedStatuses(');
+$statusTransitionsEnd = $statusTransitionsStart === false
+	? false
+	: strpos($objectCard, 'function emergencyhouseCardRenderField(', $statusTransitionsStart);
+$statusTransitions = $statusTransitionsStart !== false && $statusTransitionsEnd !== false
+	? substr($objectCard, $statusTransitionsStart, $statusTransitionsEnd - $statusTransitionsStart)
+	: '';
+preg_match_all("/=> '([A-Za-z][A-Za-z0-9]*)'/", $statusTransitions, $statusTransitionMatches);
+$statusTransitionLabels = isset($statusTransitionMatches[1])
+	? array_values(array_unique($statusTransitionMatches[1]))
+	: array();
+emergencyhouseContract(!empty($statusTransitionLabels), 'Actions de changement d’état détectées');
+foreach ($statusTransitionLabels as $statusTransitionLabel) {
+	emergencyhouseContract(
+		isset($frTranslations[$statusTransitionLabel], $enTranslations[$statusTransitionLabel]),
+		'Action de changement d’état traduite : '.$statusTransitionLabel
+	);
+}
+
 $publicInit = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'_init.php');
 emergencyhouseContract(
 	strpos($publicInit, "\$langs->loadLangs(array('main', 'companies', 'other', 'emergencyhouse@emergencyhouse'));") !== false,
@@ -1047,6 +1114,16 @@ $requiredTranslations = array(
 	'ObjectToVerify',
 	'VerifiedObject',
 	'CompatibilityOfferPhotos',
+	'HomeEvolutionNoticeTitle',
+	'HomeEvolutionNoticeText',
+	'AllCampaigns',
+	'CampaignsOverview',
+	'CampaignsOverviewHelp',
+	'CampaignAvailableOfferCountOne',
+	'CampaignAvailableOfferCount',
+	'PaginationPageOf',
+	'Suspend',
+	'Expire',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',
 	'Notify_EMERGENCYHOUSE_REQUEST_DELETE',
