@@ -426,8 +426,9 @@ emergencyhouseContract(
 );
 emergencyhouseContract(
 	strpos($publicLibrary, "emergencyhousePublicUrl('campaign-request.php')") !== false
-		&& strpos($publicCampaignRequest, "'campaign_request'") !== false,
-	'Formulaire de nouvelle campagne accessible depuis la navigation publique'
+		&& strpos($publicCampaignRequest, "'campaign_request'") !== false
+		&& strpos($publicLibrary, "emergencyhousePublicNavItem(\n\t\t'campaign_request'") === false,
+	'Formulaire de nouvelle campagne accessible sans encombrer la navigation principale'
 );
 emergencyhouseContract(
 	strpos($listingService, "c.public_visibility_mode = 'offers_requests'") !== false

@@ -193,12 +193,13 @@ historique n’est pas supprimée lors d’une mise à jour.
 
 ### Demande publique de campagne
 
-La page `/campaign-request.php` est accessible depuis la navigation, le pied
-de page et la section des campagnes de l’accueil. Elle permet à un visiteur,
-avec ou sans compte public, de transmettre ses coordonnées, la zone concernée,
-le type d’urgence, la période et une description détaillée. Les coordonnées
-d’un compte authentifié sont préremplies. Le formulaire précise qu’elles
-deviendront les coordonnées officielles de la campagne si celle-ci est validée.
+La page `/campaign-request.php` est accessible depuis les actions principales
+du bandeau d’accueil, le pied de page et la section des campagnes. Elle permet
+à un visiteur, avec ou sans compte public, de transmettre ses coordonnées, la
+zone concernée, le type d’urgence, la période et une description détaillée.
+Les coordonnées d’un compte authentifié sont préremplies. Le formulaire précise
+qu’elles deviendront les coordonnées officielles de la campagne si celle-ci est
+validée.
 
 Une demande valide crée l’objet Campagne natif du module avec sa référence,
 son trigger CRUD `CREATE` et le statut **Brouillon**. Sa visibilité reste
