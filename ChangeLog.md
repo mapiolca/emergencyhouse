@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Alignement des tuiles d’indicateurs du tableau de bord sur le composant
+  statistique natif Dolibarr, avec libellés lisibles et compteurs hiérarchisés.
 - Ajout du référencement contrôlé du portail : accueil et pages de confiance
   indexables, campagnes actives indexables sur opt-in, offres, demandes et
   espaces personnels maintenus hors index.

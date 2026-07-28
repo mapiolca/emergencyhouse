@@ -59,14 +59,16 @@ if (emergencyhouseCanDo($user, 'configuration', 'write')) {
 	print $langs->trans('OpenPublicPreview').'</a></div>';
 }
 print '<div class="fichecenter"><div class="fichehalfleft">';
-print '<div class="box flexcontainer flexwrap">';
+print '<div class="box flexcontainer">';
 foreach ($counts as $code => $count) {
 	$definition = $definitions[$code];
-	print '<div class="boxstatsborder boxstats">';
-	print '<a href="'.dol_buildpath($definition['url'], 1).'">';
-	print '<span class="boxstatsindicator thumbstatistic">'.img_picto('', $definition['picto']).'</span>';
-	print '<span class="boxstatstext">'.$langs->trans($definition['label']).'</span>';
-	print '<span class="boxstatsvalue">'.((int) $count).'</span></a></div>';
+	$label = $langs->trans($definition['label']);
+	print '<a href="'.dol_buildpath($definition['url'], 1).'" class="boxstatsindicator thumbstat nobold nounderline">';
+	print '<div class="boxstats" title="'.dol_escape_htmltag($label).'">';
+	print '<span class="boxstatstext">'.img_picto('', $definition['picto']).' <span>'.$label.'</span></span><br>';
+	print '<span class="boxstatsindicator">'.((int) $count).'</span>';
+	print '</div>';
+	print '</a>';
 }
 print '</div>';
 print '</div><div class="fichehalfright">';
