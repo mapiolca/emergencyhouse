@@ -367,6 +367,7 @@ Contrôles autonomes disponibles depuis la racine du module :
 ```bash
 php test/static-contracts.php
 php test/cron-contract.php
+php test/agenda-element-contract.php
 php test/multicompany-visibility-contract.php
 php test/analytics-contract.php
 ```

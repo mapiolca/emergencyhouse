@@ -28,6 +28,71 @@ class ActionsEmergencyHouse
 	}
 
 	/**
+	 * Resolve qualified Emergency House element types for native Dolibarr links.
+	 *
+	 * Unqualified element types are deliberately ignored to avoid collisions
+	 * with objects provided by Dolibarr or another external module.
+	 *
+	 * @param array<string, mixed> $parameters Hook parameters
+	 * @param object               $object Object
+	 * @param string               $action Action
+	 * @param HookManager          $hookmanager Hook manager
+	 * @return int
+	 */
+	public function getElementProperties($parameters, &$object, &$action, $hookmanager)
+	{
+		$this->results = array();
+		$elementType = isset($parameters['elementType']) && is_string($parameters['elementType'])
+			? $parameters['elementType']
+			: '';
+
+		/** @var array<string, array{element: string, classname: string}> $definitions */
+		$definitions = array(
+			'campaign@emergencyhouse' => array(
+				'element' => 'campaign',
+				'classname' => 'EmergencyHouseCampaign',
+			),
+			'offer@emergencyhouse' => array(
+				'element' => 'offer',
+				'classname' => 'EmergencyHouseOffer',
+			),
+			'request@emergencyhouse' => array(
+				'element' => 'request',
+				'classname' => 'EmergencyHouseRequest',
+			),
+			'solicitation@emergencyhouse' => array(
+				'element' => 'solicitation',
+				'classname' => 'EmergencyHouseSolicitation',
+			),
+			'allocation@emergencyhouse' => array(
+				'element' => 'allocation',
+				'classname' => 'EmergencyHouseAllocation',
+			),
+			'report@emergencyhouse' => array(
+				'element' => 'report',
+				'classname' => 'EmergencyHouseReport',
+			),
+		);
+		if (!isset($definitions[$elementType])) {
+			return 0;
+		}
+
+		$definition = $definitions[$elementType];
+		$element = $definition['element'];
+		$this->results = array(
+			'module' => 'emergencyhouse',
+			'element' => $element,
+			'table_element' => 'emergencyhouse_'.$element,
+			'subelement' => $element,
+			'classpath' => 'emergencyhouse/class',
+			'classfile' => $element,
+			'classname' => $definition['classname'],
+		);
+
+		return 0;
+	}
+
+	/**
 	 * Return the unique Multicompany definition.
 	 *
 	 * @return array<string, array<string, mixed>>

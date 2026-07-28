@@ -115,8 +115,11 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 		if ($result <= 0) {
 			return $result;
 		}
-		if (!$notrigger && $this->call_trigger($this->trigger_prefix.'_CREATE', $user) < 0) {
-			return -1;
+		if (!$notrigger) {
+			$this->prepareAgendaTriggerMessages('CREATE');
+			if ($this->call_trigger($this->trigger_prefix.'_CREATE', $user) < 0) {
+				return -1;
+			}
 		}
 		return $result;
 	}
@@ -222,14 +225,17 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 			$this->db->rollback();
 			return -1;
 		}
-		if (!$notrigger && $this->call_trigger($this->trigger_prefix.'_UPDATE', $user) < 0) {
-			if ($field === 'note_public') {
-				$this->note_public = $previousNote;
-			} else {
-				$this->note_private = $previousNote;
+		if (!$notrigger) {
+			$this->prepareAgendaTriggerMessages('UPDATE');
+			if ($this->call_trigger($this->trigger_prefix.'_UPDATE', $user) < 0) {
+				if ($field === 'note_public') {
+					$this->note_public = $previousNote;
+				} else {
+					$this->note_private = $previousNote;
+				}
+				$this->db->rollback();
+				return -1;
 			}
-			$this->db->rollback();
-			return -1;
 		}
 
 		$this->db->commit();
@@ -298,6 +304,7 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 		}
 
 		if (!$notrigger) {
+			$this->prepareAgendaTriggerMessages('UPDATE');
 			$triggerResult = $this->call_trigger($this->trigger_prefix.'_UPDATE', $user);
 			if ($triggerResult < 0) {
 				return -1;
@@ -317,6 +324,7 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 	{
 		$this->db->begin();
 		if (!$notrigger) {
+			$this->prepareAgendaTriggerMessages('DELETE');
 			$triggerResult = $this->call_trigger($this->trigger_prefix.'_DELETE', $user);
 			if ($triggerResult < 0) {
 				$this->db->rollback();
@@ -332,6 +340,46 @@ abstract class EmergencyHouseCommonObject extends CommonObject
 
 		$this->db->commit();
 		return $result;
+	}
+
+	/**
+	 * Provide translated labels to the native Agenda trigger.
+	 *
+	 * A caller may set a more specific business message before the CRUD
+	 * trigger. Such messages take precedence over these generic labels.
+	 *
+	 * @param string $crudAction CREATE, UPDATE or DELETE
+	 * @return void
+	 */
+	protected function prepareAgendaTriggerMessages($crudAction)
+	{
+		/** @var Translate|null $langs */
+		global $langs;
+
+		if (!is_object($langs)) {
+			return;
+		}
+
+		$translationKeys = array(
+			'CREATE' => 'EmergencyHouseAgendaObjectCreated',
+			'UPDATE' => 'EmergencyHouseAgendaObjectUpdated',
+			'DELETE' => 'EmergencyHouseAgendaObjectDeleted',
+		);
+		if (!isset($translationKeys[$crudAction])) {
+			return;
+		}
+		if (!is_array($this->context)) {
+			$this->context = array();
+		}
+
+		$langs->load('emergencyhouse@emergencyhouse');
+		$message = $langs->transnoentities($translationKeys[$crudAction], $this->ref);
+		if (empty($this->context['actionmsg'])) {
+			$this->context['actionmsg'] = $message;
+		}
+		if (empty($this->context['actionmsg2'])) {
+			$this->context['actionmsg2'] = $message;
+		}
 	}
 
 	/**

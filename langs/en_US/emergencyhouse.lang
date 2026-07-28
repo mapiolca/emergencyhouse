@@ -303,6 +303,9 @@ EmergencyHouseCronProcessedCount=Processed records: %s
 EmergencyHouseCronProvidersHealthy=The provider configuration is valid.
 
 # Native notification labels
+EmergencyHouseAgendaObjectCreated=Record %s created in Emergency House
+EmergencyHouseAgendaObjectUpdated=Record %s updated in Emergency House
+EmergencyHouseAgendaObjectDeleted=Record %s deleted from Emergency House
 Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE=Emergency House campaign created
 Notify_EMERGENCYHOUSE_CAMPAIGN_UPDATE=Emergency House campaign updated
 Notify_EMERGENCYHOUSE_CAMPAIGN_DELETE=Emergency House campaign deleted

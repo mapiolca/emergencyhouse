@@ -16,6 +16,7 @@ Les contrôles suivants sont exécutables depuis la racine du module :
 ```bash
 php test/static-contracts.php
 php test/cron-contract.php
+php test/agenda-element-contract.php
 php test/numbering-model-contract.php
 php test/security-key-contract.php
 php test/public-url-contract.php
@@ -58,6 +59,9 @@ Le script vérifie notamment :
   lors de l’anonymisation ;
 - le retour natif `0` des neuf travaux planifiés en cas de succès, avec les
   compteurs métier conservés dans la sortie du travail ;
+- la résolution native des six types d’objets Emergency House qualifiés dans
+  l’Agenda, sans capture des types non qualifiés, et les libellés bilingues des
+  événements CRUD ;
 - le contrat d’URL racine du répertoire public et l’absence de liens de
   notification contournant le constructeur commun ;
 - la présence des guides Sécurité et fournisseurs ;
@@ -76,12 +80,14 @@ Une passe de lint PHP doit également être exécutée sur tous les fichiers
 
 Résultats de la passe finale du 28 juillet 2026 :
 
-- lint PHP 8.5.7 : `129` fichiers PHP valides ;
-- contrats statiques : `713 contrats validés` ;
+- lint PHP 8.5.7 : `130` fichiers PHP valides ;
+- contrats statiques : `716 contrats validés` ;
 - mesure d’audience : tables sans donnée personnelle, collecte désactivée,
   cookie fixe, opposition, engagement, verrouillage, agrégation, rétention,
   filtres exacts, parcours ordonné, menu et conversions contrôlés validés ;
 - travaux planifiés : contrats de retour validés ;
+- Agenda : résolution des six objets qualifiés et libellés CRUD bilingues
+  validés ;
 - visibilité Multicompany : `8 contrats` validés ;
 - file de vérification : `8 contrats` validés ;
 - modèles de numérotation : six noms, descriptions, préfixes et périmètres

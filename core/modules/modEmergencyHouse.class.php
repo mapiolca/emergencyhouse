@@ -60,6 +60,7 @@ class modEmergencyHouse extends DolibarrModules
 			'hooks' => array(
 				'data' => array(
 					'notification',
+					'elementproperties',
 					'multicompanyexternalmodulesharing',
 					'multicompanyexternalmodules',
 					'multicompanysharingoptions',

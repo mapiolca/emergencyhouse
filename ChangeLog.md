@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Correction de la résolution native des six objets Emergency House depuis
+  l’Agenda via le hook `elementproperties`, et ajout de libellés bilingues aux
+  événements CRUD afin d’éviter l’affichage littéral de `UPDATEInDolibarr`.
 - Remplacement du menu **Statistiques** par le hub **Supervision**, en
   conservant le droit `statistics/read`, les indicateurs métier et l’export
   anonyme, avec vues Vue d’ensemble, Audience, Contenus, Parcours et Activité

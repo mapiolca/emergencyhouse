@@ -303,6 +303,9 @@ EmergencyHouseCronProcessedCount=Nombre d’éléments traités : %s
 EmergencyHouseCronProvidersHealthy=La configuration des fournisseurs est valide.
 
 # Native notification labels
+EmergencyHouseAgendaObjectCreated=Enregistrement %s créé dans Emergency House
+EmergencyHouseAgendaObjectUpdated=Enregistrement %s modifié dans Emergency House
+EmergencyHouseAgendaObjectDeleted=Enregistrement %s supprimé dans Emergency House
 Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE=Création d'une campagne Emergency House
 Notify_EMERGENCYHOUSE_CAMPAIGN_UPDATE=Modification d'une campagne Emergency House
 Notify_EMERGENCYHOUSE_CAMPAIGN_DELETE=Suppression d'une campagne Emergency House
