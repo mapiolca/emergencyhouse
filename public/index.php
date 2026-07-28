@@ -66,9 +66,15 @@ if (empty($campaigns)) {
 		if (!empty($campaign->description_public)) {
 			print '<p>'.dol_escape_htmltag(dol_trunc((string) $campaign->description_public, 240)).'</p>';
 		}
-		print '<div class="eh-card-meta"><span>'.$langs->trans('FromDate', dol_print_date($db->jdate($campaign->date_start), 'day')).'</span>';
+		print '<div class="eh-card-meta"><span>'.$langs->trans(
+			'CampaignFromDate',
+			emergencyhousePublicDatabaseDate($db, $campaign->date_start)
+		).'</span>';
 		if (!empty($campaign->date_end)) {
-			print '<span>'.$langs->trans('UntilDate', dol_print_date($db->jdate($campaign->date_end), 'day')).'</span>';
+			print '<span>'.$langs->trans(
+				'UntilDate',
+				emergencyhousePublicDatabaseDate($db, $campaign->date_end)
+			).'</span>';
 		}
 		print '</div><div class="eh-card-footer">';
 		print '<span class="eh-badge">'.$langs->trans('AvailablePlacesCount', emergencyhousePublicApproximateCount((int) $campaign->place_count)).'</span>';

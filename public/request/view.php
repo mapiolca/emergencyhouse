@@ -57,11 +57,17 @@ print '<div><dt>'.$langs->trans('Campaign').'</dt><dd>'.($campaignLoaded ? dol_e
 print '<div><dt>'.$langs->trans('PeopleToAccommodate').'</dt><dd>'.$langs->trans('PeopleCount', (int) $request->remaining_count).'</dd></div>';
 print '<div><dt>'.$langs->trans('DesiredZone').'</dt><dd>'.dol_escape_htmltag($request->desired_zone).'</dd></div>';
 print '<div><dt>'.$langs->trans('SearchRadiusKm').'</dt><dd>'.((int) $request->search_radius).' km</dd></div>';
-print '<div><dt>'.$langs->trans('NeededPeriod').'</dt><dd>'.$langs->trans('FromDate', dol_print_date((int) $request->date_start, 'day'));
+print '<div><dt>'.$langs->trans('NeededPeriod').'</dt><dd>'.$langs->trans(
+	'NeedFromDate',
+	emergencyhousePublicDatabaseDate($db, (int) $request->date_start)
+);
 if (!empty($request->duration_unknown)) {
 	print ' · '.$langs->trans('DurationUnknown');
 } elseif (!empty($request->date_end)) {
-	print ' · '.$langs->trans('UntilDate', dol_print_date((int) $request->date_end, 'day'));
+	print ' · '.$langs->trans(
+		'UntilDate',
+		emergencyhousePublicDatabaseDate($db, (int) $request->date_end)
+	);
 }
 print '</dd></div>';
 print '<div><dt>'.$langs->trans('UrgencyLevel').'</dt><dd>'.$langs->trans('UrgencyLevelValue'.((int) $request->urgency_level)).'</dd></div>';

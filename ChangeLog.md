@@ -2,6 +2,8 @@
 
 ## Non publié
 
+- Correction de l’affichage des dates de début et de fin sur les cartes et
+  fiches du portail public, notamment pour les campagnes actives.
 - Amélioration du tableau **État opérationnel** avec des en-têtes de colonnes,
   des badges de statut natifs Dolibarr et la traduction de **Travaux planifiés**.
 - Masquage de l’onglet de réglages **Multicompany** tant que le module

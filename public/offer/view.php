@@ -63,9 +63,15 @@ print '<div class="eh-dashboard-grid"><article class="eh-card">';
 print '<h2>'.$langs->trans('OfferDetails').'</h2><dl class="eh-description-list">';
 print '<div><dt>'.$langs->trans('Campaign').'</dt><dd>'.($campaignLoaded ? dol_escape_htmltag($campaign->label) : $langs->trans('Unavailable')).'</dd></div>';
 print '<div><dt>'.$langs->trans('PublicZone').'</dt><dd>'.dol_escape_htmltag($offer->public_zone).'</dd></div>';
-print '<div><dt>'.$langs->trans('Availability').'</dt><dd>'.$langs->trans('FromDate', dol_print_date((int) $offer->date_start, 'day'));
+print '<div><dt>'.$langs->trans('Availability').'</dt><dd>'.$langs->trans(
+	'AvailabilityFromDate',
+	emergencyhousePublicDatabaseDate($db, (int) $offer->date_start)
+);
 if (!empty($offer->date_end)) {
-	print ' · '.$langs->trans('UntilDate', dol_print_date((int) $offer->date_end, 'day'));
+	print ' · '.$langs->trans(
+		'UntilDate',
+		emergencyhousePublicDatabaseDate($db, (int) $offer->date_end)
+	);
 }
 print '</dd></div>';
 print '<div><dt>'.$langs->trans('CapacityAvailable').'</dt><dd>'.$langs->trans('PlacesCount', (int) $offer->capacity_available).'</dd></div>';

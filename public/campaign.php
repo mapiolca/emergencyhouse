@@ -63,6 +63,18 @@ print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emerg
 print '</div></div>';
 print '<aside class="eh-card"><h2>'.$langs->trans('OfficialInformation').'</h2>';
 print '<p>'.dol_escape_htmltag((string) $campaign->description_public).'</p>';
+print '<p><strong>'.$langs->trans('CampaignPeriod').'</strong><br>';
+print $langs->trans(
+	'CampaignFromDate',
+	emergencyhousePublicDatabaseDate($db, (int) $campaign->date_start)
+);
+if (!empty($campaign->date_end)) {
+	print ' · '.$langs->trans(
+		'UntilDate',
+		emergencyhousePublicDatabaseDate($db, (int) $campaign->date_end)
+	);
+}
+print '</p>';
 print '<p><strong>'.$langs->trans('OfficialPhone').'</strong><br><a href="tel:'.dol_escape_htmltag((string) $campaign->official_phone).'">'.dol_escape_htmltag((string) $campaign->official_phone).'</a></p>';
 print '<p class="eh-card-meta">'.$langs->trans('LastUpdateAt', dol_print_date((int) $campaign->tms, 'dayhour')).'</p>';
 print '</aside></div></section>';

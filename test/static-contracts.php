@@ -628,6 +628,28 @@ emergencyhouseContract(count($frTranslations) >= 1000, 'Catalogue français comp
 emergencyhouseContract(count($enTranslations) >= 1000, 'Catalogue anglais complet');
 
 $publicUserInterfacePhp = $publicControllers."\n".$publicLibrary;
+$publicDateTranslationPlaceholders = array(
+	'CampaignFromDate' => 1,
+	'AvailabilityFromDate' => 1,
+	'NeedFromDate' => 1,
+	'UntilDate' => 1,
+	'AllocationSummary' => 2,
+);
+foreach ($publicDateTranslationPlaceholders as $translationKey => $placeholderCount) {
+	emergencyhouseContract(
+		isset($frTranslations[$translationKey], $enTranslations[$translationKey])
+			&& substr_count($frTranslations[$translationKey], '%s') === $placeholderCount
+			&& substr_count($enTranslations[$translationKey], '%s') === $placeholderCount,
+		'Paramètres de date publics traduits : '.$translationKey
+	);
+}
+emergencyhouseContract(
+	strpos($publicControllers, "trans('FromDate',") === false
+		&& strpos($publicControllers, "trans(\n\t\t\t'CampaignFromDate',") !== false
+		&& strpos($publicControllers, "trans('CampaignPeriod')") !== false
+		&& strpos($publicControllers, 'emergencyhousePublicDatabaseDate($db, $campaign->date_start)') !== false,
+	'Dates de campagne rendues avec des traductions paramétrées sur les pages publiques'
+);
 preg_match_all(
 	"/(?:trans|transnoentitiesnoconv)\\(\\s*['\"]([A-Za-z][A-Za-z0-9_]*)['\"]/",
 	$publicUserInterfacePhp,

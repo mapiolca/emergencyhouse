@@ -26,9 +26,16 @@ if (empty($allocations)) {
 		print '<p class="eh-eyebrow">'.dol_escape_htmltag((string) $allocation['campaign_label']).'</p>';
 		print '<h2><a href="'.dol_escape_htmltag(emergencyhousePublicUrl('allocation/view.php', array('id' => (int) $allocation['rowid']))).'">';
 		print dol_escape_htmltag((string) $allocation['ref']).'</a></h2>';
-		print '<p>'.$langs->trans('AllocationSummary', (int) $allocation['quantity'], dol_print_date($db->jdate($allocation['date_start']), 'day'));
+		print '<p>'.$langs->trans(
+			'AllocationSummary',
+			(int) $allocation['quantity'],
+			emergencyhousePublicDatabaseDate($db, $allocation['date_start'])
+		);
 		if (!empty($allocation['date_end'])) {
-			print ' '.$langs->trans('UntilDate', dol_print_date($db->jdate($allocation['date_end']), 'day'));
+			print ' '.$langs->trans(
+				'UntilDate',
+				emergencyhousePublicDatabaseDate($db, $allocation['date_end'])
+			);
 		}
 		print '</p><p class="eh-help">'.$langs->trans($role === 'host' ? 'HostRole' : 'RequesterRole').'</p></div>';
 		print emergencyhousePublicWorkflowStatus('allocation', (int) $allocation['status']);
