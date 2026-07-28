@@ -23,6 +23,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 dol_include_once('/emergencyhouse/class/allocation.class.php');
 dol_include_once('/emergencyhouse/class/campaign.class.php');
 dol_include_once('/emergencyhouse/class/capacityservice.class.php');
@@ -30,6 +31,7 @@ dol_include_once('/emergencyhouse/class/encryptionservice.class.php');
 dol_include_once('/emergencyhouse/class/messageservice.class.php');
 dol_include_once('/emergencyhouse/class/moderationservice.class.php');
 dol_include_once('/emergencyhouse/class/offer.class.php');
+dol_include_once('/emergencyhouse/class/publicaccount.class.php');
 dol_include_once('/emergencyhouse/class/report.class.php');
 dol_include_once('/emergencyhouse/class/request.class.php');
 dol_include_once('/emergencyhouse/class/sensitivedataservice.class.php');
@@ -78,7 +80,7 @@ $configurations = array(
 		'fields' => array(
 			'title' => 'Title',
 			'fk_campaign' => 'Campaign',
-			'fk_account' => 'PublicAccount',
+			'fk_account' => 'DepositedBy',
 			'public_zone' => 'PublicZone',
 			'zip' => 'Zip',
 			'town' => 'Town',
@@ -181,6 +183,7 @@ $configuration = $configurations[$emergencyhouseCardType];
 $id = GETPOSTINT('id');
 $tab = GETPOST('tab', 'aZ09');
 $action = GETPOST('action', 'aZ09');
+$confirm = GETPOST('confirm', 'alpha');
 if ($tab === '') {
 	$tab = 'card';
 }
@@ -194,6 +197,38 @@ if (!emergencyhouseCanDo($user, $configuration['permission_object'], $configurat
 	accessforbidden();
 }
 $permissionToWrite = emergencyhouseCanDo($user, $configuration['permission_object'], 'write', $object);
+$documentsTabRequested = $tab === 'documents' && property_exists($object, 'model_pdf');
+$documentStorageReady = false;
+$upload_dir = '';
+$relativepathwithnofile = '';
+$permissiontoadd = $permissionToWrite ? 1 : 0;
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
+if (getDolGlobalString('MAIN_DOC_SORT_FIELD') !== '') {
+	$sortfield = getDolGlobalString('MAIN_DOC_SORT_FIELD');
+}
+if (getDolGlobalString('MAIN_DOC_SORT_ORDER') !== '') {
+	$sortorder = getDolGlobalString('MAIN_DOC_SORT_ORDER');
+}
+if ($sortfield === '') {
+	$sortfield = 'name';
+}
+if ($sortorder === '') {
+	$sortorder = 'ASC';
+}
+if ($documentsTabRequested) {
+	$resolvedUploadDir = getMultidirOutput($object, 'emergencyhouse', 1);
+	$resolvedRelativePath = getMultidirOutput($object, 'emergencyhouse', 1, 'outputrel');
+	if (is_string($resolvedUploadDir)
+		&& $resolvedUploadDir !== ''
+		&& strpos($resolvedUploadDir, 'error-') !== 0
+		&& is_string($resolvedRelativePath)
+		&& strpos($resolvedRelativePath, 'error-') !== 0) {
+		$upload_dir = $resolvedUploadDir;
+		$relativepathwithnofile = trim($resolvedRelativePath, '/\\');
+		$documentStorageReady = true;
+	}
+}
 
 if ($action === 'set_status' && $permissionToWrite) {
 	$newStatus = GETPOSTINT('new_status');
@@ -293,6 +328,16 @@ $permissionnote = $permissionToWrite && property_exists($object, 'note_public');
 if ($tab === 'notes' && $permissionnote) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';
 }
+if ($documentsTabRequested && $documentStorageReady) {
+	$documentMutationRequested = GETPOST('sendit', 'alpha') !== ''
+		|| GETPOST('linkit', 'restricthtml') !== ''
+		|| in_array($action, array('confirm_deletefile', 'confirm_updateline', 'renamefile'), true);
+	if ($documentMutationRequested && !$permissiontoadd) {
+		accessforbidden();
+	}
+	$backtopage = $_SERVER['PHP_SELF'].'?id='.((int) $object->id).'&tab=documents';
+	include DOL_DOCUMENT_ROOT.'/core/actions_linkedfiles.inc.php';
+}
 
 $revealedAddress = false;
 if ($action === 'reveal_address' && $object instanceof EmergencyHouseOffer) {
@@ -309,6 +354,7 @@ $head = emergencyhouseObjectPrepareHead($object);
 print dol_get_fiche_head($head, $tab, $langs->trans($configuration['title']), -1, $object->picto);
 print dol_banner_tab($object, 'ref', '', 1, 'ref', 'ref');
 
+$ficheHeadClosed = false;
 if ($tab === 'notes' && property_exists($object, 'note_public')) {
 	$form = new Form($db);
 	$cssclass = 'titlefield';
@@ -319,35 +365,80 @@ if ($tab === 'notes' && property_exists($object, 'note_public')) {
 	print '</div>';
 	print '<div class="clearboth"></div>';
 } elseif ($tab === 'documents' && property_exists($object, 'model_pdf')) {
-	$formfile = new FormFile($db);
-	$uploadDir = getMultidirOutput($object, 'emergencyhouse', 1);
-	$moduleSubdir = trim((string) getMultidirOutput($object, 'emergencyhouse', 1, 'outputrel'), '/\\');
-	$urlSource = $_SERVER['PHP_SELF'].'?id='.((int) $object->id).'&tab=documents';
-	$models = $object instanceof EmergencyHouseAllocation
-		? array('emergencyhouse_agreement' => $langs->trans('EmergencyHouseAgreement'))
-		: array();
-	print $formfile->showdocuments(
-		'emergencyhouse',
-		$moduleSubdir,
-		(string) $uploadDir,
-		$urlSource,
-		($permissionToWrite
+	if (!$documentStorageReady) {
+		print '<div class="error">'.$langs->trans('DocumentStorageUnavailable').'</div>';
+	} else {
+		$form = new Form($db);
+		$formfile = new FormFile($db);
+		$filearray = dol_dir_list(
+			$upload_dir,
+			'files',
+			0,
+			'',
+			'(\.meta|_preview.*\.png)$',
+			$sortfield,
+			strtolower($sortorder) === 'desc' ? SORT_DESC : SORT_ASC,
+			1
+		);
+		if (!is_array($filearray)) {
+			$filearray = array();
+		}
+		$totalSize = 0;
+		foreach ($filearray as $file) {
+			if (isset($file['size'])) {
+				$totalSize += (int) $file['size'];
+			}
+		}
+
+		print '<div class="fichecenter">';
+		print '<div class="underbanner clearboth"></div>';
+		print '<table class="border tableforfield centpercent">';
+		print '<tr><td class="titlefield">'.$langs->trans('NbOfAttachedFiles').'</td>';
+		print '<td colspan="3">'.count($filearray).'</td></tr>';
+		print '<tr><td>'.$langs->trans('TotalSizeOfAttachedFiles').'</td>';
+		print '<td colspan="3">'.dol_print_size($totalSize, 1, 1).'</td></tr>';
+		print '</table>';
+		print '</div>';
+
+		print dol_get_fiche_end();
+		$ficheHeadClosed = true;
+
+		$canGenerateAgreement = $object instanceof EmergencyHouseAllocation
+			&& $permissionToWrite
 			&& emergencyhouseCanDo($user, 'sensitive', 'contact', $object)
-			&& emergencyhouseCanDo($user, 'sensitive', 'address', $object)) ? $models : 0,
-		$permissionToWrite ? 1 : 0,
-		(string) $object->model_pdf,
-		1,
-		0,
-		0,
-		0,
-		0,
-		'',
-		'',
-		'',
-		'',
-		'',
-		$object
-	);
+			&& emergencyhouseCanDo($user, 'sensitive', 'address', $object);
+		if ($canGenerateAgreement) {
+			$urlSource = $_SERVER['PHP_SELF'].'?id='.((int) $object->id).'&tab=documents';
+			$models = array('emergencyhouse_agreement' => $langs->trans('EmergencyHouseAgreement'));
+			print $formfile->showdocuments(
+				'emergencyhouse',
+				$relativepathwithnofile,
+				'',
+				$urlSource,
+				$models,
+				0,
+				(string) $object->model_pdf,
+				1,
+				0,
+				0,
+				0,
+				0,
+				'',
+				'',
+				'',
+				'',
+				'',
+				$object
+			);
+		}
+
+		$modulepart = 'emergencyhouse';
+		$permission = $permissiontoadd;
+		$permtoedit = $permissiontoadd;
+		$param = '&id='.((int) $object->id).'&tab=documents&entity='.((int) $object->entity);
+		$moreparam = '&tab=documents';
+		include DOL_DOCUMENT_ROOT.'/core/tpl/document_actions_post_headers.tpl.php';
+	}
 } elseif ($tab === 'agenda') {
 	if (isModEnabled('agenda')) {
 		$formActions = new FormActions($db);
@@ -480,7 +571,9 @@ if ($tab === 'notes' && property_exists($object, 'note_public')) {
 	print '</div></div><div class="clearboth"></div>';
 }
 
-print dol_get_fiche_end();
+if (!$ficheHeadClosed) {
+	print dol_get_fiche_end();
+}
 if ($tab === 'card' && $permissionToWrite) {
 	$allowedStatuses = emergencyhouseCardAllowedStatuses($object);
 	if (!empty($allowedStatuses)
@@ -592,6 +685,9 @@ function emergencyhouseCardRenderField($db, $object, $field)
 	if (in_array($field, array('date_start', 'date_end', 'actual_start', 'actual_end', 'date_read', 'date_response', 'date_expiration', 'date_closure'), true)) {
 		return empty($value) ? '' : dol_print_date((int) $value, 'dayhour');
 	}
+	if ($field === 'fk_account') {
+		return emergencyhouseCardRenderPublicAccount($db, $object, (int) $value);
+	}
 	$linkedTypes = array(
 		'fk_campaign' => array('EmergencyHouseCampaign', 'campaign'),
 		'fk_offer' => array('EmergencyHouseOffer', 'offer'),
@@ -648,6 +744,45 @@ function emergencyhouseCardRenderField($db, $object, $field)
 		return $langs->trans('UrgencyLevelValue'.((int) $value));
 	}
 	return nl2br(dol_escape_htmltag((string) $value));
+}
+
+/**
+ * Render the public account owning a record without exposing its technical ID.
+ *
+ * @param DoliDB                     $db Database
+ * @param EmergencyHouseCommonObject $object Context object
+ * @param int                        $accountId Public account ID
+ * @return string
+ */
+function emergencyhouseCardRenderPublicAccount($db, $object, $accountId)
+{
+	global $langs, $user;
+
+	if ($accountId <= 0) {
+		return '<span class="opacitymedium">'.$langs->trans('PublicAccountUnavailable').'</span>';
+	}
+	if (!emergencyhouseCanDo($user, 'sensitive', 'contact', $object)) {
+		return '<span class="opacitymedium">'.$langs->trans('PublicIdentityProtected').'</span>';
+	}
+
+	$account = new EmergencyHousePublicAccount($db);
+	if ($account->fetch($accountId, (int) $object->entity) <= 0) {
+		return '<span class="opacitymedium">'.$langs->trans('PublicAccountUnavailable').'</span>';
+	}
+	if ((int) $account->status === EmergencyHousePublicAccount::STATUS_ANONYMIZED) {
+		return '<span class="opacitymedium">'.$langs->trans('PublicAccountAnonymized').'</span>';
+	}
+
+	$identity = $account->getDecryptedIdentity();
+	if (!is_array($identity)) {
+		return '<span class="opacitymedium">'.$langs->trans('EncryptedValueUnavailable').'</span>';
+	}
+	$displayName = trim(dolGetFirstLastname($identity['firstname'], $identity['lastname']));
+	if ($displayName === '') {
+		return '<span class="opacitymedium">'.$langs->trans('PublicAccountUnavailable').'</span>';
+	}
+
+	return img_picto('', 'user', 'class="pictofixedwidth"').dol_escape_htmltag($displayName);
 }
 
 /**

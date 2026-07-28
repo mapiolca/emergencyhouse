@@ -513,6 +513,20 @@ emergencyhouseContract(
 );
 $objectCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'_object_card.php');
 $matchCard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'match'.DIRECTORY_SEPARATOR.'card.php');
+$offerClass = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'offer.class.php');
+$publicAccountClass = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'publicaccount.class.php'
+);
+emergencyhouseContract(
+	strpos($objectCard, "'fk_account' => 'DepositedBy'") !== false
+		&& strpos($offerClass, "'fk_account' => array('type' => 'integer', 'label' => 'DepositedBy'") !== false
+		&& strpos($objectCard, "emergencyhouseCanDo(\$user, 'sensitive', 'contact', \$object)") !== false
+		&& strpos($objectCard, '$account->fetch($accountId, (int) $object->entity)') !== false
+		&& strpos($objectCard, '$account->getDecryptedIdentity()') !== false
+		&& strpos($objectCard, "trans('PublicIdentityProtected')") !== false
+		&& strpos($publicAccountClass, 'public function getDecryptedIdentity()') !== false,
+	'Propriétaire de l’offre résolu sans identifiant brut et soumis au droit sensible'
+);
 emergencyhouseContract(
 	strpos($objectCard, "print '</div></div><div class=\"clearboth\"></div>';") !== false
 		&& substr_count($objectCard, 'dolGetButtonAction(') >= 3
@@ -532,6 +546,18 @@ emergencyhouseContract(
 		&& strpos($commonObject, "' AND entity = '.((int) \$this->entity)") !== false
 		&& strpos($commonObject, "\$this->call_trigger(\$this->trigger_prefix.'_UPDATE', \$user)") !== false,
 	'Notes rendues et enregistrées avec la structure native Dolibarr'
+);
+emergencyhouseContract(
+	strpos($objectCard, "require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';") !== false
+		&& strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/actions_linkedfiles.inc.php';") !== false
+		&& strpos($objectCard, "include DOL_DOCUMENT_ROOT.'/core/tpl/document_actions_post_headers.tpl.php';") !== false
+		&& strpos($objectCard, "getMultidirOutput(\$object, 'emergencyhouse', 1)") !== false
+		&& strpos($objectCard, "getMultidirOutput(\$object, 'emergencyhouse', 1, 'outputrel')") !== false
+		&& strpos($objectCard, "\$moreparam = '&tab=documents';") !== false
+		&& strpos($objectCard, "trans('NbOfAttachedFiles')") !== false
+		&& strpos($objectCard, "trans('TotalSizeOfAttachedFiles')") !== false
+		&& strpos($objectCard, "\$permissiontoadd = \$permissionToWrite ? 1 : 0;") !== false,
+	'Fichiers joints gérés par le contrôleur et le modèle documentaires natifs'
 );
 
 $encryptionService = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'encryptionservice.class.php');

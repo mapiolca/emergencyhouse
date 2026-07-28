@@ -371,15 +371,35 @@ class EmergencyHousePublicAccount
 	}
 
 	/**
+	 * Return only the decrypted identity fields.
+	 *
+	 * @return array{firstname:string, lastname:string}|false
+	 */
+	public function getDecryptedIdentity()
+	{
+		$context = $this->encryptionContext();
+		$firstname = $this->encryption->decrypt($this->firstname_encrypted, $context.'|firstname');
+		$lastname = $this->encryption->decrypt($this->lastname_encrypted, $context.'|lastname');
+		if (!is_string($firstname) || !is_string($lastname)) {
+			$this->error = $this->encryption->error;
+			return false;
+		}
+
+		return array('firstname' => $firstname, 'lastname' => $lastname);
+	}
+
+	/**
 	 * Return decrypted profile fields.
 	 *
 	 * @return array{firstname:string, lastname:string, email:string, phone:string}|false
 	 */
 	public function getDecryptedProfile()
 	{
+		$identity = $this->getDecryptedIdentity();
+		if (!is_array($identity)) {
+			return false;
+		}
 		$context = $this->encryptionContext();
-		$firstname = $this->encryption->decrypt($this->firstname_encrypted, $context.'|firstname');
-		$lastname = $this->encryption->decrypt($this->lastname_encrypted, $context.'|lastname');
 		$email = $this->encryption->decrypt($this->email_encrypted, $context.'|email');
 		$phone = '';
 		if (is_string($this->phone_encrypted) && $this->phone_encrypted !== '') {
@@ -390,11 +410,16 @@ class EmergencyHousePublicAccount
 			}
 			$phone = $decryptedPhone;
 		}
-		if (!is_string($firstname) || !is_string($lastname) || !is_string($email)) {
+		if (!is_string($email)) {
 			$this->error = $this->encryption->error;
 			return false;
 		}
-		return array('firstname' => $firstname, 'lastname' => $lastname, 'email' => $email, 'phone' => $phone);
+		return array(
+			'firstname' => $identity['firstname'],
+			'lastname' => $identity['lastname'],
+			'email' => $email,
+			'phone' => $phone,
+		);
 	}
 
 	/**

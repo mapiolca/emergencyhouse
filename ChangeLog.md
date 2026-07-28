@@ -2,6 +2,14 @@
 
 ## Non publié
 
+- Reprise de l’onglet **Fichiers joints** sur le contrôleur et le modèle
+  documentaires natifs Dolibarr : résumé des fichiers, ajout classique ou par
+  glisser-déposer natif, liens, aperçu, téléchargement, renommage et suppression
+  selon les droits, dans le répertoire Multicompany de l’objet.
+- Remplacement de l’identifiant technique du compte public sur la fiche d’offre
+  par le libellé **Déposée par** : le nom est résolu depuis le compte lié et
+  affiché uniquement avec le droit sur les coordonnées sensibles, sans
+  déchiffrer l’e-mail ni le téléphone ; sinon, l’identité reste protégée.
 - Remplacement du formulaire spécifique des notes d’objet par les actions et le
   modèle natifs Dolibarr, avec édition séparée des notes publique et privée et
   conservation des triggers CRUD du module.

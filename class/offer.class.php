@@ -104,7 +104,7 @@ class EmergencyHouseOffer extends EmergencyHouseCommonObject
 		$this->fields = array_merge(self::commonFields(), array(
 			'public_uuid' => array('type' => 'varchar(64)', 'label' => 'PublicUuid', 'enabled' => 1, 'visible' => -2, 'notnull' => 1, 'position' => 12),
 			'fk_campaign' => array('type' => 'integer:EmergencyHouseCampaign:emergencyhouse/class/campaign.class.php', 'label' => 'Campaign', 'enabled' => 1, 'visible' => 1, 'notnull' => 1, 'index' => 1, 'position' => 20),
-			'fk_account' => array('type' => 'integer', 'label' => 'PublicAccount', 'enabled' => 1, 'visible' => -2, 'notnull' => 1, 'index' => 1, 'position' => 30),
+			'fk_account' => array('type' => 'integer', 'label' => 'DepositedBy', 'enabled' => 1, 'visible' => -2, 'notnull' => 1, 'index' => 1, 'position' => 30),
 			'fk_housing_type' => array('type' => 'integer', 'label' => 'HousingType', 'enabled' => 1, 'visible' => 1, 'notnull' => 1, 'position' => 40),
 			'address_encrypted' => array('type' => 'text', 'label' => 'Address', 'enabled' => 1, 'visible' => -2, 'notnull' => 1, 'position' => 50),
 			'zip' => array('type' => 'varchar(25)', 'label' => 'Zip', 'enabled' => 1, 'visible' => 1, 'notnull' => 1, 'position' => 60),
