@@ -139,7 +139,7 @@ print '<article class="eh-card"><h2>'.$langs->trans('ConversationContext').'</h2
 print '<div><dt>'.$langs->trans('Offer').'</dt><dd>'.($offerLoaded ? dol_escape_htmltag($offer->title) : $langs->trans('Unavailable')).'</dd></div>';
 print '<div><dt>'.$langs->trans('Request').'</dt><dd>'.($requestLoaded ? dol_escape_htmltag($request->title) : $langs->trans('Unavailable')).'</dd></div>';
 print '<div><dt>'.$langs->trans('YourRole').'</dt><dd>'.$langs->trans($role === 'host' ? 'HostRole' : 'RequesterRole').'</dd></div>';
-print '<div><dt>'.$langs->trans('Direction').'</dt><dd>'.$langs->trans($isInitiator ? 'OutgoingSolicitation' : 'IncomingSolicitation').'</dd></div>';
+print '<div><dt>'.$langs->trans('SolicitationDirection').'</dt><dd>'.$langs->trans($isInitiator ? 'OutgoingSolicitation' : 'IncomingSolicitation').'</dd></div>';
 print '</dl></article>';
 
 print '<section class="eh-section-tight"><h2>'.$langs->trans('Messages').'</h2>';

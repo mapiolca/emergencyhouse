@@ -33,9 +33,8 @@ if (empty($solicitations)) {
 	}
 	print '</div>';
 	if (count($solicitations) === $limit) {
-		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('solicitation/index.php', array('page' => $page + 1))).'">'.$langs->trans('NextPage').'</a></p>';
+		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('solicitation/index.php', array('page' => $page + 1))).'">'.$langs->trans('Next').'</a></p>';
 	}
 }
 print '</section>';
 emergencyhousePublicRenderFooter();
-

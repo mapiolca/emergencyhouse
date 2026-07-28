@@ -151,7 +151,7 @@ if (!$supportEmailAvailable) {
 	print '<input id="contact_email" type="email" name="contact_email" required maxlength="255" autocomplete="email" inputmode="email" value="'.dol_escape_htmltag($email).'"></div>';
 	print '<div class="eh-field"><label for="contact_phone">'.$langs->trans('Phone').'</label>';
 	print '<input id="contact_phone" type="tel" name="contact_phone" maxlength="40" autocomplete="tel" inputmode="tel" value="'.dol_escape_htmltag($phone).'"></div>';
-	print '<div class="eh-field"><label for="contact_subject">'.$langs->trans('Subject').'</label>';
+	print '<div class="eh-field"><label for="contact_subject">'.$langs->trans('ContactSubject').'</label>';
 	print '<input id="contact_subject" name="contact_subject" required maxlength="180" value="'.dol_escape_htmltag($subject).'"></div>';
 	print '<div class="eh-field eh-field-full"><label for="contact_message">'.$langs->trans('Message').'</label>';
 	print '<textarea id="contact_message" name="contact_message" required minlength="20" maxlength="5000">'.dol_escape_htmltag($message).'</textarea>';

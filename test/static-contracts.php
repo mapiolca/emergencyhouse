@@ -666,8 +666,8 @@ emergencyhouseContract(count($enTranslations) >= 1000, 'Catalogue anglais comple
 
 $publicInit = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'_init.php');
 emergencyhouseContract(
-	strpos($publicInit, "\$langs->loadLangs(array('main', 'companies', 'emergencyhouse@emergencyhouse'));") !== false,
-	'Domaine natif companies chargé pour les libellés d’adresse du portail public'
+	strpos($publicInit, "\$langs->loadLangs(array('main', 'companies', 'other', 'emergencyhouse@emergencyhouse'));") !== false,
+	'Domaines natifs companies et other chargés sur le portail public'
 );
 
 $publicUserInterfacePhp = $publicControllers."\n".$publicLibrary;
@@ -774,6 +774,8 @@ $requiredTranslations = array(
 	'OperationalComponent',
 	'OperationalStatus',
 	'ScheduledJobs',
+	'SelectAnOption',
+	'ContactSubject',
 	'Notify_EMERGENCYHOUSE_CAMPAIGN_CREATE',
 	'Notify_EMERGENCYHOUSE_OFFER_UPDATE',
 	'Notify_EMERGENCYHOUSE_REQUEST_DELETE',
@@ -787,6 +789,12 @@ foreach ($requiredTranslations as $translationKey) {
 		'Traduction bilingue : '.$translationKey
 	);
 }
+emergencyhouseContract(
+	strpos($publicControllers, "trans('Direction')") === false
+		&& strpos($publicControllers, "trans('NextPage')") === false
+		&& strpos($publicControllers, "trans('Subject')") === false,
+	'Clés publiques non résolues remplacées par leurs traductions natives ou bilingues'
+);
 
 $dashboard = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'index.php');
 emergencyhouseContract(

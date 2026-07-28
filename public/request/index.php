@@ -104,7 +104,7 @@ if (empty($requests)) {
 		} else {
 			$params['campaign'] = $campaignId;
 		}
-		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('request/index.php', $params)).'">'.$langs->trans('NextPage').'</a></p>';
+		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('request/index.php', $params)).'">'.$langs->trans('Next').'</a></p>';
 	}
 }
 print '</section>';

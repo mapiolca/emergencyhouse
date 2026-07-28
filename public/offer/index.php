@@ -104,7 +104,7 @@ if (empty($offers)) {
 				$params['town'] = $town;
 			}
 		}
-		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/index.php', $params)).'">'.$langs->trans('NextPage').'</a></p>';
+		print '<p class="eh-pagination"><a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/index.php', $params)).'">'.$langs->trans('Next').'</a></p>';
 	}
 }
 print '</section>';

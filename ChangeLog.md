@@ -2,9 +2,10 @@
 
 ## Non publié
 
-- Chargement du domaine de traduction natif `companies` sur le portail public
-  afin de traduire les libellés standards d’adresse, de code postal, de ville
-  et de pays.
+- Chargement des domaines de traduction natifs `companies` et `other` sur le
+  portail public afin de traduire les libellés standards d’adresse et de
+  sécurité, avec correction des libellés bilingues de sélection, navigation,
+  sollicitation et contact.
 - Alignement des états du back-office sur les badges natifs Dolibarr et
   repositionnement des actions de fiche dans leur barre native, sous le
   contenu principal.

@@ -29,7 +29,7 @@ if (!$res) {
 dol_include_once('/emergencyhouse/class/publicauthservice.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
 
-$langs->loadLangs(array('main', 'companies', 'emergencyhouse@emergencyhouse'));
+$langs->loadLangs(array('main', 'companies', 'other', 'emergencyhouse@emergencyhouse'));
 
 if (!isModEnabled('emergencyhouse') || !getDolGlobalInt('EMERGENCYHOUSE_PUBLIC_PORTAL_ENABLED', 0)) {
 	http_response_code(503);
