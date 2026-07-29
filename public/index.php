@@ -45,8 +45,8 @@ print '<p class="eh-eyebrow">'.$langs->trans('SolidarityAccommodation').'</p>';
 print '<h1>'.$langs->trans('PublicHeroTitle').'</h1>';
 print '<p class="eh-lead">'.$langs->trans('PublicHeroDescription').'</p>';
 print '<div class="eh-actions">';
-print '<a class="eh-button" href="'.dol_escape_htmltag(emergencyhousePublicUrl('request/edit.php')).'">'.$langs->trans('NeedAccommodationCta').'</a>';
-print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php')).'">'.$langs->trans('OfferAccommodationCta').'</a>';
+print '<a class="eh-button eh-button-need" href="'.dol_escape_htmltag(emergencyhousePublicUrl('request/edit.php')).'">'.$langs->trans('NeedAccommodationCta').'</a>';
+print '<a class="eh-button eh-button-offer" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php')).'">'.$langs->trans('OfferAccommodationCta').'</a>';
 print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('contact.php')).'">'.$langs->trans('ContactUs').'</a>';
 print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('campaign-request.php')).'">'
 	.$langs->trans('RequestCampaignCreation').'</a>';

@@ -15,6 +15,8 @@ if (!headers_sent()) {
 	--eh-primary: #0c6b58;
 	--eh-primary-dark: #084c40;
 	--eh-accent: #ef8153;
+	--eh-need: #a84319;
+	--eh-need-dark: #843314;
 	--eh-success: #237a50;
 	--eh-warning: #9c5b08;
 	--eh-danger: #a52d2d;
@@ -69,6 +71,10 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
 .eh-button { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 8px; padding: 11px 19px; border: 1px solid transparent; border-radius: 12px; background: var(--eh-primary); color: #fff !important; font-weight: 750; text-decoration: none; cursor: pointer; }
 .eh-button:hover { background: var(--eh-primary-dark); }
+.eh-button-need { background: var(--eh-need); color: #fff !important; }
+.eh-button-need:hover { background: var(--eh-need-dark); }
+.eh-button-offer { background: var(--eh-primary); color: #fff !important; }
+.eh-button-offer:hover { background: var(--eh-primary-dark); }
 .eh-button-secondary { border-color: var(--eh-border); background: var(--eh-paper); color: var(--eh-ink) !important; }
 .eh-button-secondary:hover { background: #edf3f1; }
 .eh-button-danger { background: var(--eh-danger); }

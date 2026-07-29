@@ -708,6 +708,17 @@ emergencyhouseContract(
 	'Bannière d’évolution permanente visible sur l’accueil'
 );
 emergencyhouseContract(
+	strpos($publicHome, 'class="eh-button eh-button-need"') !== false
+		&& strpos($publicHome, 'class="eh-button eh-button-offer"') !== false
+		&& strpos($preview, 'class="eh-button eh-button-need"') !== false
+		&& strpos($preview, 'class="eh-button eh-button-offer"') !== false
+		&& strpos($publicStyles, '--eh-need: #a84319;') !== false
+		&& strpos($publicStyles, '--eh-need-dark: #843314;') !== false
+		&& strpos($publicStyles, '.eh-button-need {') !== false
+		&& strpos($publicStyles, '.eh-button-offer {') !== false,
+	'Actions principales de l’accueil différenciées par des couleurs accessibles'
+);
+emergencyhouseContract(
 	strpos($publicContact, "getDolGlobalInt('MAIN_SECURITY_ENABLECAPTCHA'") !== false
 		&& strpos($publicContact, "\$_SESSION['dol_antispam_value']") !== false
 		&& strpos($publicContact, 'hash_equals(') !== false

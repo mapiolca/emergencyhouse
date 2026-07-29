@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Différenciation visuelle des deux actions principales de l’accueil public :
+  orange accessible pour la demande d’hébergement et vert pour la proposition,
+  avec un rendu identique dans l’aperçu privé du portail.
 - Ajout au portail public d’un formulaire multilingue de demande de nouvelle
   campagne, accessible sans compte, protégé par CSRF, captcha et limitation de
   débit ; chaque demande crée une campagne privée en brouillon, numérotée et
