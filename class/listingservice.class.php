@@ -50,17 +50,16 @@ class EmergencyHouseListingService
 	 * @param array<string, int|string|null> $data Typed offer data
 	 * @param array<int, array{code?:string,number?:float|int|null}> $features Feature values keyed by dictionary ID
 	 * @param User $triggerUser Dolibarr trigger user, anonymous on public pages
-	 * @param bool $submit Submit for operator verification
 	 * @param array<string, mixed> $uploadedPhotos PHP multiple-upload field
 	 * @return EmergencyHouseOffer|false
 	 */
-	public function createOffer($account, array $data, array $features, $triggerUser, $submit, array $uploadedPhotos = array())
+	public function createOffer($account, array $data, array $features, $triggerUser, array $uploadedPhotos = array())
 	{
 		$campaign = $this->fetchPublishedCampaign((int) $account->entity, (int) ($data['fk_campaign'] ?? 0));
 		if (!$campaign instanceof EmergencyHouseCampaign) {
 			return false;
 		}
-		if ($submit && empty($account->email_verified)) {
+		if (empty($account->email_verified)) {
 			$this->error = 'ErrorEmailVerificationRequired';
 			return false;
 		}
@@ -101,10 +100,10 @@ class EmergencyHouseListingService
 		$offer->direct_solicitation_enabled = array_key_exists('direct_solicitation_enabled', $data)
 			? (!empty($data['direct_solicitation_enabled']) ? 1 : 0)
 			: 1;
-		$offer->status = $submit ? EmergencyHouseOffer::STATUS_PENDING : EmergencyHouseOffer::STATUS_DRAFT;
+		$offer->status = EmergencyHouseOffer::STATUS_PENDING;
 		$offer->date_expiration = $this->listingExpiration($campaign, $offer->date_start);
 		$offer->context['public_account_id'] = (int) $account->id;
-		$offer->context['trigger_reason'] = $submit ? 'public_submission' : 'public_draft';
+		$offer->context['trigger_reason'] = 'public_submission';
 		if (EmergencyHouseOfferPhotoService::hasUploadedFiles($uploadedPhotos)) {
 			$offer->context['changed_fields'] = array('photos');
 		}
@@ -144,13 +143,13 @@ class EmergencyHouseListingService
 		if ($result <= 0
 			|| !$this->replaceOfferFeatures($offer, $features)
 			|| !$photoService->addUploadedPhotos($offer, $uploadedPhotos, (int) $triggerUser->id)
-			|| ($submit && $verificationService->enqueueTarget(
+			|| $verificationService->enqueueTarget(
 				(int) $offer->entity,
 				'offer',
 				(int) $offer->id,
 				dol_now(),
 				false
-			) <= 0)) {
+			) <= 0) {
 			$this->error = !empty($offer->error)
 				? $offer->error
 				: ($photoService->error !== ''
@@ -172,16 +171,15 @@ class EmergencyHouseListingService
 	 * @param array<int, string> $housingTypes Housing type IDs and preference levels
 	 * @param array<int, string> $criteria Feature IDs and criterion levels
 	 * @param User $triggerUser Dolibarr trigger user, anonymous on public pages
-	 * @param bool $submit Activate the request
 	 * @return EmergencyHouseRequest|false
 	 */
-	public function createRequest($account, array $data, array $housingTypes, array $criteria, $triggerUser, $submit)
+	public function createRequest($account, array $data, array $housingTypes, array $criteria, $triggerUser)
 	{
 		$campaign = $this->fetchPublishedCampaign((int) $account->entity, (int) ($data['fk_campaign'] ?? 0));
 		if (!$campaign instanceof EmergencyHouseCampaign) {
 			return false;
 		}
-		if ($submit && empty($account->email_verified)) {
+		if (empty($account->email_verified)) {
 			$this->error = 'ErrorEmailVerificationRequired';
 			return false;
 		}
@@ -215,10 +213,10 @@ class EmergencyHouseListingService
 			array('private', 'public'),
 			'private'
 		);
-		$request->status = $submit ? EmergencyHouseRequest::STATUS_ACTIVE : EmergencyHouseRequest::STATUS_DRAFT;
+		$request->status = EmergencyHouseRequest::STATUS_PENDING;
 		$request->date_expiration = $this->listingExpiration($campaign, $request->date_start);
 		$request->context['public_account_id'] = (int) $account->id;
-		$request->context['trigger_reason'] = $submit ? 'public_submission' : 'public_draft';
+		$request->context['trigger_reason'] = 'public_submission';
 
 		$context = $this->requestContext($request);
 		if (!$this->geocodeRequest($request)) {
@@ -256,13 +254,13 @@ class EmergencyHouseListingService
 		if ($result <= 0
 			|| !$this->replaceRequestHousingTypes($request, $housingTypes)
 			|| !$this->replaceRequestCriteria($request, $criteria)
-			|| ($submit && $verificationService->enqueueTarget(
+			|| $verificationService->enqueueTarget(
 				(int) $request->entity,
 				'request',
 				(int) $request->id,
 				dol_now(),
 				false
-			) <= 0)) {
+			) <= 0) {
 			$this->error = !empty($request->error)
 				? $request->error
 				: ($verificationService->error !== '' ? $verificationService->error : $this->error);
@@ -543,6 +541,9 @@ class EmergencyHouseListingService
 			$this->error = 'ErrorObjectNotEditable';
 			return false;
 		}
+		if ((int) $offer->status === EmergencyHouseOffer::STATUS_PENDING) {
+			$submit = true;
+		}
 		$campaign = $this->fetchPublishedCampaign((int) $account->entity, (int) ($data['fk_campaign'] ?? 0));
 		if (!$campaign instanceof EmergencyHouseCampaign) {
 			return false;
@@ -665,6 +666,7 @@ class EmergencyHouseListingService
 			$this->error = 'ErrorObjectNotEditable';
 			return false;
 		}
+		$keepPending = (int) $offer->status === EmergencyHouseOffer::STATUS_PENDING;
 
 		$photoService = new EmergencyHouseOfferPhotoService($this->db);
 		$this->db->begin();
@@ -683,17 +685,25 @@ class EmergencyHouseListingService
 		}
 
 		$offer->verification_status = 0;
-		$offer->status = EmergencyHouseOffer::STATUS_DRAFT;
+		$offer->status = $keepPending ? EmergencyHouseOffer::STATUS_PENDING : EmergencyHouseOffer::STATUS_DRAFT;
 		$offer->context['public_account_id'] = (int) $account->id;
 		$offer->context['trigger_reason'] = 'photo_change';
 		$offer->context['changed_fields'] = array('photos', 'verification_status', 'status');
 		if ($offer->updateInsideServiceTransaction($triggerUser) <= 0
-			|| $verificationService->cancelTarget(
-				(int) $offer->entity,
-				'offer',
-				(int) $offer->id,
-				false
-			) <= 0) {
+			|| ($keepPending
+				? $verificationService->enqueueTarget(
+					(int) $offer->entity,
+					'offer',
+					(int) $offer->id,
+					dol_now(),
+					false
+				) <= 0
+				: $verificationService->cancelTarget(
+					(int) $offer->entity,
+					'offer',
+					(int) $offer->id,
+					false
+				) <= 0)) {
 			$this->error = !empty($offer->error) ? $offer->error : $verificationService->error;
 			$this->errors = $offer->errors;
 			$this->db->rollback();
@@ -724,6 +734,10 @@ class EmergencyHouseListingService
 			$this->error = 'ErrorObjectNotEditable';
 			return false;
 		}
+		$keepPending = (int) $request->status === EmergencyHouseRequest::STATUS_PENDING;
+		if ($keepPending) {
+			$submit = true;
+		}
 		$request->adults_count = max(0, (int) ($data['adults_count'] ?? 0));
 		$request->children_infant_count = max(0, (int) ($data['children_infant_count'] ?? 0));
 		$request->children_young_count = max(0, (int) ($data['children_young_count'] ?? 0));
@@ -748,7 +762,9 @@ class EmergencyHouseListingService
 			'private'
 		);
 		$request->verification_status = 0;
-		$request->status = $submit ? EmergencyHouseRequest::STATUS_ACTIVE : EmergencyHouseRequest::STATUS_DRAFT;
+		$request->status = $keepPending
+			? EmergencyHouseRequest::STATUS_PENDING
+			: ($submit ? EmergencyHouseRequest::STATUS_ACTIVE : EmergencyHouseRequest::STATUS_DRAFT);
 		$request->context['public_account_id'] = (int) $account->id;
 		$request->context['trigger_reason'] = $submit ? 'public_resubmission' : 'public_edit';
 		$request->context['changed_fields'] = array('content', 'group', 'criteria');

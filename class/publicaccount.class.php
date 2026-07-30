@@ -317,35 +317,18 @@ class EmergencyHousePublicAccount
 	{
 		dol_include_once('/emergencyhouse/class/verificationservice.class.php');
 
-		$this->db->begin();
 		$verificationService = new EmergencyHouseVerificationService($this->db);
-		if (!$verificationService->lockSubmissionTarget((int) $this->entity, 'account', (int) $this->id)) {
-			$this->error = $verificationService->error;
-			$this->db->rollback();
-			return -1;
-		}
-		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
-		$sql .= ' SET email_verified = 1, verification_status = 0, status = '.self::STATUS_ACTIVE;
-		$sql .= ' WHERE rowid = '.((int) $this->id).' AND entity = '.((int) $this->entity);
-		if (!$this->db->query($sql)) {
-			$this->error = $this->db->lasterror();
-			$this->db->rollback();
-			return -1;
-		}
-		if ($verificationService->enqueueTarget(
+		$verificationId = $verificationService->recordEmailConfirmation(
 			(int) $this->entity,
-			'account',
 			(int) $this->id,
-			dol_now(),
-			false
-		) <= 0) {
+			dol_now()
+		);
+		if ($verificationId <= 0) {
 			$this->error = $verificationService->error;
-			$this->db->rollback();
 			return -1;
 		}
-		$this->db->commit();
 		$this->email_verified = 1;
-		$this->verification_status = 0;
+		$this->verification_status = EmergencyHouseVerificationService::STATUS_VERIFIED;
 		$this->status = self::STATUS_ACTIVE;
 		return 1;
 	}

@@ -15,6 +15,7 @@ class EmergencyHouseCampaign extends EmergencyHouseCommonObject
 	public const STATUS_SUSPENDED = 2;
 	public const STATUS_CLOSED = 3;
 	public const STATUS_ARCHIVED = 4;
+	public const STATUS_PENDING = 5;
 
 	/** @var string */
 	public $element = 'campaign';
@@ -163,6 +164,7 @@ class EmergencyHouseCampaign extends EmergencyHouseCommonObject
 			self::STATUS_SUSPENDED => array(self::STATUS_PUBLISHED, self::STATUS_CLOSED),
 			self::STATUS_CLOSED => array(self::STATUS_ARCHIVED),
 			self::STATUS_ARCHIVED => array(),
+			self::STATUS_PENDING => array(self::STATUS_PUBLISHED, self::STATUS_CLOSED),
 		);
 		if (!isset($allowed[$this->status]) || !in_array($newStatus, $allowed[$this->status], true)) {
 			$this->error = 'ErrorInvalidStatusTransition';
@@ -219,6 +221,7 @@ class EmergencyHouseCampaign extends EmergencyHouseCommonObject
 			self::STATUS_SUSPENDED => array('StatusSuspended', 'status5'),
 			self::STATUS_CLOSED => array('StatusClosed', 'status6'),
 			self::STATUS_ARCHIVED => array('StatusArchived', 'status9'),
+			self::STATUS_PENDING => array('StatusPendingValidation', 'status1'),
 		);
 		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);

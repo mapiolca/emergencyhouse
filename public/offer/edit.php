@@ -125,7 +125,9 @@ if (
 			$selectedFeatures[$featureId] = $featureId;
 			$featureValues[$featureId] = array('code' => 'yes', 'number' => null);
 		}
-		$submit = $mode === 'submit';
+		$submit = !($offer instanceof EmergencyHouseOffer)
+			|| (int) $offer->status === EmergencyHouseOffer::STATUS_PENDING
+			|| $mode === 'submit';
 		$triggerUser = emergencyhousePublicTriggerUser($db);
 		$uploadedPhotos = isset($_FILES['offer_photos']) && is_array($_FILES['offer_photos'])
 			? $_FILES['offer_photos']
@@ -145,7 +147,6 @@ if (
 				$submittedData,
 				$featureValues,
 				$triggerUser,
-				$submit,
 				$uploadedPhotos
 			);
 		if ($saved instanceof EmergencyHouseOffer) {
@@ -321,7 +322,9 @@ if (empty($campaignOptions)) {
 	}
 
 	print '<div class="eh-form-actions">';
-	print '<button class="eh-button eh-button-secondary" type="submit" name="mode" value="draft">'.$langs->trans('SaveDraft').'</button>';
+	if ($offer instanceof EmergencyHouseOffer && (int) $offer->status !== EmergencyHouseOffer::STATUS_PENDING) {
+		print '<button class="eh-button eh-button-secondary" type="submit" name="mode" value="draft">'.$langs->trans('SaveDraft').'</button>';
+	}
 	print '<button class="eh-button" type="submit" name="mode" value="submit">'.$langs->trans('SubmitForValidation').'</button>';
 	print '</div></form>';
 }

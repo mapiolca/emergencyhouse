@@ -15,6 +15,7 @@ class EmergencyHouseRequest extends EmergencyHouseCommonObject
 	public const STATUS_SUSPENDED = 4;
 	public const STATUS_EXPIRED = 5;
 	public const STATUS_CLOSED = 6;
+	public const STATUS_PENDING = 7;
 
 	/** @var string */
 	public $element = 'request';
@@ -217,9 +218,16 @@ class EmergencyHouseRequest extends EmergencyHouseCommonObject
 			self::STATUS_SUSPENDED => array(self::STATUS_ACTIVE, self::STATUS_CLOSED),
 			self::STATUS_EXPIRED => array(self::STATUS_ACTIVE, self::STATUS_CLOSED),
 			self::STATUS_CLOSED => array(),
+			self::STATUS_PENDING => array(self::STATUS_ACTIVE, self::STATUS_CLOSED),
 		);
 		if (!isset($allowed[$this->status]) || !in_array($newStatus, $allowed[$this->status], true)) {
 			$this->error = 'ErrorInvalidStatusTransition';
+			return -1;
+		}
+		if ((int) $this->status === self::STATUS_PENDING
+			&& $newStatus === self::STATUS_ACTIVE
+			&& (int) $this->verification_status !== 1) {
+			$this->error = 'ErrorRequestCannotBePublished';
 			return -1;
 		}
 		if ($newStatus === self::STATUS_ACTIVE && !$this->validateBusinessRules()) {
@@ -331,6 +339,7 @@ class EmergencyHouseRequest extends EmergencyHouseCommonObject
 			self::STATUS_SUSPENDED => array('StatusSuspended', 'status5'),
 			self::STATUS_EXPIRED => array('StatusExpired', 'status6'),
 			self::STATUS_CLOSED => array('StatusClosed', 'status6'),
+			self::STATUS_PENDING => array('StatusPendingValidation', 'status1'),
 		);
 		$definition = isset($labels[$status]) ? $labels[$status] : array('StatusUnknown', 'status0');
 		return dolGetStatus($langs->trans($definition[0]), $langs->trans($definition[0]), '', $definition[1], $mode);

@@ -18,6 +18,7 @@ class EmergencyHouseVerificationService
 	public const QUEUE_PENDING = 0;
 	public const QUEUE_COMPLETED = 1;
 	public const QUEUE_CANCELLED = 2;
+	public const METHOD_EMAIL_CONFIRMATION = 'email_confirmation';
 
 	/** @var array<int, string> */
 	private const VERIFICATION_TYPES = array('identity', 'email', 'phone', 'address', 'housing');
@@ -408,6 +409,94 @@ class EmergencyHouseVerificationService
 	}
 
 	/**
+	 * Record an email confirmation as an automatic, operator-free proof.
+	 *
+	 * @param int      $entity            Entity
+	 * @param int      $accountId         Public account ID
+	 * @param int|null $confirmedAt       Confirmation timestamp
+	 * @param bool     $manageTransaction Whether this method owns the transaction
+	 * @return int Verification ID, -1 on error
+	 */
+	public function recordEmailConfirmation($entity, $accountId, $confirmedAt = null, $manageTransaction = true)
+	{
+		$this->error = '';
+		if ($entity <= 0 || $accountId <= 0) {
+			$this->error = 'ErrorInvalidVerificationTarget';
+			return -1;
+		}
+		$confirmationAt = $confirmedAt !== null && (int) $confirmedAt > 0
+			? (int) $confirmedAt
+			: dol_now();
+		if ($manageTransaction) {
+			$this->db->begin();
+		}
+		if (!$this->lockSubmissionTarget($entity, 'account', $accountId)) {
+			return $this->rollbackWithError($manageTransaction);
+		}
+
+		$sql = 'SELECT rowid, status FROM '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql .= ' WHERE rowid = '.((int) $accountId).' AND entity = '.((int) $entity).' FOR UPDATE';
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			return $this->rollbackWithError($manageTransaction);
+		}
+		$account = $this->db->fetch_object($resql);
+		if (!is_object($account) || !in_array((int) $account->status, array(0, 1), true)) {
+			$this->error = 'ErrorInvalidVerificationTarget';
+			return $this->rollbackWithError($manageTransaction);
+		}
+
+		$levelId = $this->findVerificationLevelIdByCode($entity, 'email');
+		if ($levelId <= 0) {
+			return $this->rollbackWithError($manageTransaction);
+		}
+		$verificationId = $this->findEmailConfirmationVerificationId($entity, $accountId);
+		if ($verificationId <= 0 && $this->error !== '') {
+			return $this->rollbackWithError($manageTransaction);
+		}
+		if ($verificationId <= 0) {
+			$verificationId = $this->insertVerification(
+				$entity,
+				'account',
+				$accountId,
+				'email',
+				$levelId,
+				self::STATUS_VERIFIED,
+				self::METHOD_EMAIL_CONFIRMATION,
+				null,
+				null,
+				null,
+				$confirmationAt
+			);
+		}
+		if ($verificationId <= 0) {
+			return $this->rollbackWithError($manageTransaction);
+		}
+
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_public_account';
+		$sql .= ' SET email_verified = 1, verification_status = '.self::STATUS_VERIFIED.', status = 1';
+		$sql .= ' WHERE rowid = '.((int) $accountId).' AND entity = '.((int) $entity);
+		if (!$this->db->query($sql)) {
+			return $this->rollbackWithError($manageTransaction);
+		}
+
+		$sql = 'UPDATE '.MAIN_DB_PREFIX.'emergencyhouse_verification_queue';
+		$sql .= ' SET queue_status = '.self::QUEUE_COMPLETED.', fk_assigned_user = NULL,';
+		$sql .= " date_assigned = NULL, date_completed = '".$this->db->idate($confirmationAt)."',";
+		$sql .= ' fk_verification = '.((int) $verificationId);
+		$sql .= ' WHERE entity = '.((int) $entity)." AND object_type = 'account'";
+		$sql .= ' AND fk_object = '.((int) $accountId).' AND queue_status = '.self::QUEUE_PENDING;
+		if (!$this->db->query($sql)) {
+			return $this->rollbackWithError($manageTransaction);
+		}
+		if ($manageTransaction) {
+			$this->db->commit();
+		}
+
+		return $verificationId;
+	}
+
+	/**
 	 * Fetch a queue item.
 	 *
 	 * @param int  $queueId Queue ID
@@ -647,14 +736,14 @@ class EmergencyHouseVerificationService
 		$table = '';
 		$condition = '';
 		if ($objectType === 'account') {
-			$table = 'emergencyhouse_public_account';
-			$condition = 'status = 1 AND email_verified = 1 AND verification_status < 1';
+			return false;
 		} elseif ($objectType === 'offer') {
 			$table = 'emergencyhouse_offer';
 			$condition = 'status = 1 AND verification_status < 1';
 		} elseif ($objectType === 'request') {
 			$table = 'emergencyhouse_request';
-			$condition = 'status = 1 AND verification_status < 1';
+			$condition = 'status IN ('.EmergencyHouseRequest::STATUS_ACTIVE.','.EmergencyHouseRequest::STATUS_PENDING.')';
+			$condition .= ' AND verification_status < 1';
 		} else {
 			return false;
 		}
@@ -725,6 +814,57 @@ class EmergencyHouseVerificationService
 	}
 
 	/**
+	 * Resolve a verification level by stable code.
+	 *
+	 * @param int    $entity Entity
+	 * @param string $code   Level code
+	 * @return int Level ID or 0
+	 */
+	private function findVerificationLevelIdByCode($entity, $code)
+	{
+		$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'c_emergencyhouse_verification_level';
+		$sql .= ' WHERE entity = '.((int) $entity);
+		$sql .= " AND code = '".$this->db->escape($code)."'";
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return 0;
+		}
+		$level = $this->db->fetch_object($resql);
+		if (!is_object($level)) {
+			$this->error = 'ErrorInvalidVerificationLevel';
+			return 0;
+		}
+
+		return (int) $level->rowid;
+	}
+
+	/**
+	 * Find an existing automatic email-confirmation proof.
+	 *
+	 * @param int $entity    Entity
+	 * @param int $accountId Public account ID
+	 * @return int Verification ID or 0
+	 */
+	private function findEmailConfirmationVerificationId($entity, $accountId)
+	{
+		$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'emergencyhouse_verification';
+		$sql .= ' WHERE entity = '.((int) $entity)." AND object_type = 'account'";
+		$sql .= ' AND fk_object = '.((int) $accountId)." AND verification_type = 'email'";
+		$sql .= ' AND status = '.self::STATUS_VERIFIED;
+		$sql .= " AND method_code = '".self::METHOD_EMAIL_CONFIRMATION."'";
+		$sql .= ' ORDER BY rowid DESC LIMIT 1';
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			return 0;
+		}
+		$verification = $this->db->fetch_object($resql);
+
+		return is_object($verification) ? (int) $verification->rowid : 0;
+	}
+
+	/**
 	 * Insert the immutable verification ledger row.
 	 *
 	 * @param int         $entity Entity
@@ -734,13 +874,15 @@ class EmergencyHouseVerificationService
 	 * @param int         $levelId Level ID
 	 * @param int         $status Final status
 	 * @param string      $methodCode Method
-	 * @param int         $operatorId Operator ID
+	 * @param int|null    $operatorId Operator ID
 	 * @param string|null $encryptedNote Encrypted note
 	 * @param int|null    $expiration Expiration
+	 * @param int|null    $verifiedAt Verification timestamp
 	 * @return int
 	 */
-	private function insertVerification($entity, $objectType, $objectId, $verificationType, $levelId, $status, $methodCode, $operatorId, $encryptedNote, $expiration)
+	private function insertVerification($entity, $objectType, $objectId, $verificationType, $levelId, $status, $methodCode, $operatorId, $encryptedNote, $expiration, $verifiedAt = null)
 	{
+		$verificationDate = $verifiedAt === null ? dol_now() : (int) $verifiedAt;
 		$sql = 'INSERT INTO '.MAIN_DB_PREFIX.'emergencyhouse_verification';
 		$sql .= ' (entity, object_type, fk_object, verification_type, fk_verification_level, status,';
 		$sql .= ' method_code, private_note_encrypted, fk_operator, date_creation, date_verified, date_expiration)';
@@ -748,8 +890,9 @@ class EmergencyHouseVerificationService
 		$sql .= " '".$this->db->escape($verificationType)."', ".((int) $levelId).', '.((int) $status).',';
 		$sql .= " '".$this->db->escape($methodCode)."',";
 		$sql .= $encryptedNote === null ? ' NULL,' : " '".$this->db->escape($encryptedNote)."',";
-		$sql .= ' '.((int) $operatorId).", '".$this->db->idate(dol_now())."',";
-		$sql .= " '".$this->db->idate(dol_now())."',";
+		$sql .= $operatorId === null ? ' NULL,' : ' '.((int) $operatorId).',';
+		$sql .= " '".$this->db->idate($verificationDate)."',";
+		$sql .= " '".$this->db->idate($verificationDate)."',";
 		$sql .= $expiration === null ? ' NULL)' : " '".$this->db->idate($expiration)."')";
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();

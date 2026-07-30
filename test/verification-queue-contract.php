@@ -76,6 +76,11 @@ emergencyhouseVerificationContract(
 	strpos($descriptor, 'ensureVerificationQueueSchema((int) $conf->entity)') !== false
 		&& strpos($descriptor, 'manual_verification_level > 0') !== false
 		&& strpos($descriptor, "WHERE object_type = 'account' AND status IN (1, 2)") !== false
+		&& strpos($descriptor, "method_code = 'email_confirmation'") !== false
+		&& strpos($descriptor, "token.token_type = 'email_verification'") !== false
+		&& strpos($descriptor, 'account.email_verified = 1 AND account.status IN (0, 1)') !== false
+		&& strpos($descriptor, "'type' => 'account'") === false
+		&& strpos($descriptor, "'condition' => 'source.status IN (1, 7)") !== false
 		&& strpos($descriptor, 'foreach ($backfills as $backfill)') !== false
 		&& strpos($descriptor, "\$sql .= ' AND NOT EXISTS (SELECT 1 FROM '.\$queueTable.' AS queue';") !== false
 		&& strpos($descriptor, "'EMERGENCYHOUSE_VERIFICATION_WARNING_MINUTES' => array('10', 'chaine')") !== false
@@ -107,19 +112,29 @@ emergencyhouseVerificationContract(
 		&& substr_count($listing, 'cancelTarget(') >= 3
 		&& substr_count($listing, 'lockSubmissionTarget(') >= 3
 		&& strpos($listing, '$request->verification_status = 0;') !== false
-		&& strpos($account, "enqueueTarget(\n\t\t\t(int) \$this->entity,\n\t\t\t'account'") !== false,
-	'Soumissions et retours en brouillon raccordés atomiquement à la file.'
+		&& strpos($listing, '$request->status = EmergencyHouseRequest::STATUS_PENDING;') !== false
+		&& strpos($listing, '$offer->status = EmergencyHouseOffer::STATUS_PENDING;') !== false,
+	'Soumissions publiques directes et retours en brouillon historiques raccordés atomiquement à la file.'
 );
 emergencyhouseVerificationContract(
 	strpos($service, 'recordQueueDecision(') !== false
+		&& strpos($service, 'recordEmailConfirmation(') !== false
+		&& strpos($service, "METHOD_EMAIL_CONFIRMATION = 'email_confirmation'") !== false
+		&& strpos($service, '$operatorId === null') !== false
+		&& strpos($service, 'EmergencyHouseRequest::STATUS_PENDING') !== false
+		&& strpos($account, 'recordEmailConfirmation(') !== false
+		&& strpos($account, "enqueueTarget(\n\t\t\t(int) \$this->entity,\n\t\t\t'account'") === false
 		&& strpos($service, 'STATUS_VERIFIED, self::STATUS_REFUSED') !== false
 		&& strpos($service, 'verification_status < 1') !== false
 		&& strpos($service, 'affected_rows($resql) !== 1') !== false,
-	'Décision finale verrouillée et refus des objets déjà traités.'
+	'Décisions opérateur et confirmation email automatique verrouillées sans file de comptes.'
 );
 emergencyhouseVerificationContract(
 	strpos($list, "GETPOST('scope', 'aZ09') === 'all'") !== false
 		&& strpos($list, 'reconcileAssignments($entities)') !== false
+		&& strpos($list, "\$objectTypeOptions = \$view === 'queue'") !== false
+		&& strpos($list, 'EmergencyHouseRequest::STATUS_PENDING') !== false
+		&& strpos($list, "q.object_type = 'account' AND account.status") === false
 		&& strpos($list, 'q.date_queued') !== false
 		&& strpos($list, 'Form::multiSelectArrayWithCheckbox') !== false
 		&& strpos($list, 'NoRecordFound') !== false

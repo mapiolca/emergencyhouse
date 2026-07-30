@@ -308,16 +308,16 @@ function emergencyhouseVerificationCardTargetIsEligible($queue)
 	if ((int) $queue->queue_status !== EmergencyHouseVerificationService::QUEUE_PENDING) {
 		return false;
 	}
-	if ((string) $queue->object_type === 'account') {
-		return (int) $queue->account_status === 1
-			&& (int) $queue->account_email_verified === 1
-			&& (int) $queue->account_verification_status < 1;
-	}
 	if ((string) $queue->object_type === 'offer') {
 		return (int) $queue->offer_status === 1 && (int) $queue->offer_verification_status < 1;
 	}
 	if ((string) $queue->object_type === 'request') {
-		return (int) $queue->request_status === 1 && (int) $queue->request_verification_status < 1;
+		return in_array(
+			(int) $queue->request_status,
+			array(EmergencyHouseRequest::STATUS_ACTIVE, EmergencyHouseRequest::STATUS_PENDING),
+			true
+		)
+			&& (int) $queue->request_verification_status < 1;
 	}
 
 	return false;

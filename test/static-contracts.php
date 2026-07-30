@@ -410,19 +410,52 @@ $languageController = emergencyhouseReadRequired(
 $publicCampaignRequest = emergencyhouseReadRequired(
 	$root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'campaign-request.php'
 );
+$campaignClass = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'campaign.class.php'
+);
+$requestClass = emergencyhouseReadRequired(
+	$root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'request.class.php'
+);
 emergencyhouseContract(
 	strpos($publicCampaignRequest, "require __DIR__.'/_init.php';") !== false
 		&& strpos($publicCampaignRequest, "emergencyhousePublicVerifyAuthenticatedPost(\$emergencyhousePublicAuth, 'request_campaign')") !== false
 		&& strpos($publicCampaignRequest, 'emergencyhousePublicCsrfFields(') !== false
 		&& strpos($publicCampaignRequest, 'emergencyhousePublicConsumeRateLimit(') !== false
 		&& strpos($publicCampaignRequest, "unset(\$_SESSION['dol_antispam_value']);") !== false
-		&& strpos($publicCampaignRequest, 'EmergencyHouseCampaign::STATUS_DRAFT') !== false
+		&& strpos($publicCampaignRequest, 'EmergencyHouseCampaign::STATUS_PENDING') !== false
 		&& strpos($publicCampaignRequest, "\$campaign->public_visibility_mode = 'private';") !== false
 		&& strpos($publicCampaignRequest, "\$campaign->context['trigger_reason'] = 'public_creation_request';") !== false
 		&& strpos($publicCampaignRequest, '$campaign->create($triggerUser)') !== false
 		&& strpos($publicCampaignRequest, '->setStatus(') === false
 		&& strpos($publicCampaignRequest, 'emergencyhousePublicNativeDateSelector(') !== false,
-	'Demande publique de campagne sécurisée, créée en brouillon et soumise à validation opérateur'
+	'Demande publique de campagne sécurisée, créée en attente de validation opérateur'
+);
+emergencyhouseContract(
+	strpos($campaignClass, 'public const STATUS_PENDING = 5;') !== false
+		&& strpos($campaignClass, 'self::STATUS_PENDING => array(self::STATUS_PUBLISHED, self::STATUS_CLOSED)') !== false
+		&& strpos($campaignClass, "self::STATUS_PENDING => array('StatusPendingValidation', 'status1')") !== false
+		&& strpos($requestClass, 'public const STATUS_PENDING = 7;') !== false
+		&& strpos($requestClass, 'self::STATUS_PENDING => array(self::STATUS_ACTIVE, self::STATUS_CLOSED)') !== false
+		&& strpos($requestClass, '(int) $this->status === self::STATUS_PENDING') !== false
+		&& strpos($requestClass, '(int) $this->verification_status !== 1') !== false,
+	'Statuts d’attente additifs et publication de demande protégée par la vérification'
+);
+emergencyhouseContract(
+	strpos(
+		$listingService,
+		'public function createOffer($account, array $data, array $features, $triggerUser, array $uploadedPhotos = array())'
+	) !== false
+		&& strpos(
+			$listingService,
+			'public function createRequest($account, array $data, array $housingTypes, array $criteria, $triggerUser)'
+		) !== false
+		&& strpos($listingService, '$offer->status = EmergencyHouseOffer::STATUS_PENDING;') !== false
+		&& strpos($listingService, '$request->status = EmergencyHouseRequest::STATUS_PENDING;') !== false
+		&& strpos($listingService, '$keepPending = (int) $request->status === EmergencyHouseRequest::STATUS_PENDING;') !== false
+		&& strpos($listingService, '$keepPending = (int) $offer->status === EmergencyHouseOffer::STATUS_PENDING;') !== false
+		&& strpos($publicOfferEditor, '!($offer instanceof EmergencyHouseOffer)') !== false
+		&& strpos($publicRequestEditor, '!($request instanceof EmergencyHouseRequest)') !== false,
+	'Créations publiques soumises directement et corrections en attente sans retour au brouillon'
 );
 emergencyhouseContract(
 	strpos($publicLibrary, "emergencyhousePublicUrl('campaign-request.php')") !== false

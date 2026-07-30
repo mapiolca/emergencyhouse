@@ -155,7 +155,7 @@ if ($action === 'request_campaign' && isset($_SERVER['REQUEST_METHOD']) && $_SER
 				'EMERGENCYHOUSE_PUBLIC_TERMS_HTML'
 			) ? emergencyhousePublicUrl('terms.php') : '';
 			$campaign->robots_index = 0;
-			$campaign->status = EmergencyHouseCampaign::STATUS_DRAFT;
+			$campaign->status = EmergencyHouseCampaign::STATUS_PENDING;
 			$noteLines = array(
 				$langs->trans('CampaignRequestOriginNote'),
 				$langs->trans('CampaignRequestAffectedArea').': '.$affectedArea,

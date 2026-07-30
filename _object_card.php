@@ -623,7 +623,11 @@ if ($tab === 'card' && $permissionToWrite) {
 		&& (int) $object->verification_status <= 0) {
 		$queueObjectType = 'offer';
 	} elseif ($object instanceof EmergencyHouseRequest
-		&& (int) $object->status === EmergencyHouseRequest::STATUS_ACTIVE
+		&& in_array(
+			(int) $object->status,
+			array(EmergencyHouseRequest::STATUS_ACTIVE, EmergencyHouseRequest::STATUS_PENDING),
+			true
+		)
 		&& (int) $object->verification_status <= 0) {
 		$queueObjectType = 'request';
 	}
@@ -690,6 +694,7 @@ function emergencyhouseCardAllowedStatuses($object)
 			1 => array(2 => 'Suspend', 3 => 'Close'),
 			2 => array(1 => 'Reopen', 3 => 'Close'),
 			3 => array(4 => 'Archive'),
+			5 => array(1 => 'Publish', 3 => 'Close'),
 		);
 	} elseif ($object instanceof EmergencyHouseOffer) {
 		$map = array(
@@ -708,6 +713,7 @@ function emergencyhouseCardAllowedStatuses($object)
 			3 => array(1 => 'Reopen', 6 => 'Close'),
 			4 => array(1 => 'Reopen', 6 => 'Close'),
 			5 => array(1 => 'Reopen', 6 => 'Close'),
+			7 => array(1 => 'ValidateAndPublish', 6 => 'Close'),
 		);
 	} elseif ($object instanceof EmergencyHouseSolicitation) {
 		$map = array(

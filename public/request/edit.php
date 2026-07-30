@@ -104,11 +104,13 @@ if ($action === 'save' && emergencyhousePublicVerifyAuthenticatedPost($emergency
 		$storedCriteria = array_filter($criteriaPreferences, static function ($level) {
 			return $level !== 'indifferent';
 		});
-		$submit = $mode === 'submit';
+		$submit = !($request instanceof EmergencyHouseRequest)
+			|| (int) $request->status === EmergencyHouseRequest::STATUS_PENDING
+			|| $mode === 'submit';
 		$triggerUser = emergencyhousePublicTriggerUser($db);
 		$saved = $request instanceof EmergencyHouseRequest
 			? $listingService->updateOwnedRequest($account, (int) $request->id, $submittedData, $storedHousing, $storedCriteria, $triggerUser, $submit)
-			: $listingService->createRequest($account, $submittedData, $storedHousing, $storedCriteria, $triggerUser, $submit);
+			: $listingService->createRequest($account, $submittedData, $storedHousing, $storedCriteria, $triggerUser);
 		if ($saved instanceof EmergencyHouseRequest) {
 			emergencyhousePublicAnalyticsEvent(
 				$submit ? 'request_submitted' : 'request_draft_saved',
@@ -254,8 +256,14 @@ if (empty($campaignOptions)) {
 	print '</div></section>';
 
 	print '<div class="eh-form-actions">';
-	print '<button class="eh-button eh-button-secondary" type="submit" name="mode" value="draft">'.$langs->trans('SaveDraft').'</button>';
-	print '<button class="eh-button" type="submit" name="mode" value="submit">'.$langs->trans('PublishRequest').'</button>';
+	if ($request instanceof EmergencyHouseRequest && (int) $request->status !== EmergencyHouseRequest::STATUS_PENDING) {
+		print '<button class="eh-button eh-button-secondary" type="submit" name="mode" value="draft">'.$langs->trans('SaveDraft').'</button>';
+	}
+	$requestSubmitLabel = !($request instanceof EmergencyHouseRequest)
+		|| (int) $request->status === EmergencyHouseRequest::STATUS_PENDING
+		? 'SubmitForValidation'
+		: 'PublishRequest';
+	print '<button class="eh-button" type="submit" name="mode" value="submit">'.$langs->trans($requestSubmitLabel).'</button>';
 	print '</div></form>';
 }
 print '</section>';

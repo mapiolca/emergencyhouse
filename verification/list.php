@@ -29,11 +29,17 @@ $isAdmin = emergencyhouseUserIsFullAdmin($user);
 $view = GETPOST('view', 'aZ09') === 'history' ? 'history' : 'queue';
 $scope = $isAdmin && GETPOST('scope', 'aZ09') === 'all' ? 'all' : 'mine';
 
-$objectTypeOptions = array(
+$historyObjectTypeOptions = array(
 	'account' => $langs->trans('PublicAccount'),
 	'offer' => $langs->trans('Offer'),
 	'request' => $langs->trans('Request'),
 );
+$objectTypeOptions = $view === 'queue'
+	? array(
+		'offer' => $langs->trans('Offer'),
+		'request' => $langs->trans('Request'),
+	)
+	: $historyObjectTypeOptions;
 $verificationStatusOptions = array(
 	0 => $langs->trans('StatusPending'),
 	1 => $langs->trans('StatusVerified'),
@@ -129,10 +135,10 @@ if ($view === 'queue') {
 
 	$where = empty($typeEntityClauses) ? ' WHERE 1 = 0' : ' WHERE ('.implode(' OR ', $typeEntityClauses).')';
 	$where .= ' AND q.queue_status = '.EmergencyHouseVerificationService::QUEUE_PENDING;
-	$where .= " AND ((q.object_type = 'account' AND account.status = 1";
-	$where .= ' AND account.email_verified = 1 AND account.verification_status < 1)';
-	$where .= " OR (q.object_type = 'offer' AND offer.status = 1 AND offer.verification_status < 1)";
-	$where .= " OR (q.object_type = 'request' AND request.status = 1 AND request.verification_status < 1))";
+	$where .= " AND ((q.object_type = 'offer' AND offer.status = 1 AND offer.verification_status < 1)";
+	$where .= " OR (q.object_type = 'request' AND request.status IN (";
+	$where .= EmergencyHouseRequest::STATUS_ACTIVE.','.EmergencyHouseRequest::STATUS_PENDING.')';
+	$where .= ' AND request.verification_status < 1))';
 	if ($scope === 'mine') {
 		$where .= ' AND q.fk_assigned_user = '.((int) $user->id);
 	}
@@ -505,7 +511,7 @@ foreach ($rows as $row) {
 		} elseif ($field === 'v.fk_operator') {
 			print (int) $row->fk_operator > 0
 				? dol_escape_htmltag(emergencyhouseVerificationUserLabel($row, 'operator_'))
-				: '<span class="opacitymedium">#'.((int) $row->fk_operator).'</span>';
+				: '<span class="opacitymedium">'.$langs->trans('Automatic').'</span>';
 		} elseif ($field === 'v.date_creation') {
 			print dol_print_date($db->jdate($row->date_creation), 'dayhour');
 		} elseif ($field === 'v.date_expiration') {

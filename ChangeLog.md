@@ -2,12 +2,19 @@
 
 ## Non publié
 
+- Soumission directe des nouvelles campagnes, offres et demandes d’hébergement
+  créées depuis le portail public au statut **En attente de validation**, sans
+  migration des brouillons historiques.
+- Vérification automatique des comptes publics lors de la confirmation de leur
+  adresse électronique, avec preuve d’audit idempotente sans opérateur,
+  migration des comptes déjà confirmés et retrait des comptes de la file
+  opérateur active.
 - Différenciation visuelle des deux actions principales de l’accueil public :
   orange accessible pour la demande d’hébergement et vert pour la proposition,
   avec un rendu identique dans l’aperçu privé du portail.
 - Ajout au portail public d’un formulaire multilingue de demande de nouvelle
   campagne, accessible sans compte, protégé par CSRF, captcha et limitation de
-  débit ; chaque demande crée une campagne privée en brouillon, numérotée et
+  débit ; chaque demande crée une campagne privée en attente de validation, numérotée et
   transmise aux triggers natifs pour validation par un opérateur.
 - Ajout de quinze langues communes au module et au portail public : français,
   anglais, espagnol, allemand, italien, portugais, néerlandais, polonais,

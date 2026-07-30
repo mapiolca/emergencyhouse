@@ -328,14 +328,14 @@ class modEmergencyHouse extends DolibarrModules
 		if (!$this->ensureMemberLinkSchema()) {
 			return -1;
 		}
-		if (!$this->ensureVerificationQueueSchema((int) $conf->entity)) {
-			return -1;
-		}
 		$this->ensureDefaultConstants((int) $conf->entity);
 		if (!$this->migrateLegacyNumberingModels((int) $conf->entity)) {
 			return -1;
 		}
 		if (!$this->ensureEntityDefaults((int) $conf->entity)) {
+			return -1;
+		}
+		if (!$this->ensureVerificationQueueSchema((int) $conf->entity)) {
 			return -1;
 		}
 		$this->mergeMulticompanyDefinition((int) $conf->entity);
@@ -607,9 +607,9 @@ class modEmergencyHouse extends DolibarrModules
 	/**
 	 * Upgrade existing installations and seed the unified verification queue.
 	 *
-	 * Existing final decisions are copied to the public-account status before
-	 * pending objects are inserted. The unique queue key makes this migration
-	 * idempotent and prevents a completed queue row from being reactivated.
+	 * Existing final decisions and automatic email confirmations are copied to
+	 * public-account status before pending listings are inserted. Unique target
+	 * keys and proof lookups keep this migration idempotent.
 	 *
 	 * @param int $entity Entity being activated
 	 * @return bool
@@ -654,7 +654,8 @@ class modEmergencyHouse extends DolibarrModules
 
 		$sql = 'UPDATE '.$accountTable.' AS account';
 		$sql .= ' INNER JOIN (';
-		$sql .= ' SELECT decision.entity, decision.fk_object, decision.status, decision.fk_verification_level';
+		$sql .= ' SELECT decision.entity, decision.fk_object, decision.status,';
+		$sql .= ' decision.fk_verification_level, decision.method_code, decision.fk_operator';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_verification AS decision';
 		$sql .= ' INNER JOIN (SELECT entity, fk_object, MAX(rowid) AS rowid';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_verification';
@@ -662,8 +663,11 @@ class modEmergencyHouse extends DolibarrModules
 		$sql .= ' GROUP BY entity, fk_object) AS latest ON latest.rowid = decision.rowid';
 		$sql .= ') AS verification ON verification.entity = account.entity AND verification.fk_object = account.rowid';
 		$sql .= ' SET account.verification_status = verification.status,';
-		$sql .= ' account.manual_verification_level = CASE WHEN verification.status = 1';
-		$sql .= ' THEN verification.fk_verification_level ELSE 0 END';
+		$sql .= ' account.manual_verification_level = CASE';
+		$sql .= ' WHEN verification.status = 1 AND verification.fk_operator IS NOT NULL';
+		$sql .= " AND COALESCE(verification.method_code, '') <> 'email_confirmation'";
+		$sql .= ' THEN verification.fk_verification_level';
+		$sql .= ' WHEN verification.status = 2 THEN 0 ELSE account.manual_verification_level END';
 		$sql .= ' WHERE account.entity = '.((int) $entity).' AND account.verification_status = 0';
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
@@ -679,13 +683,63 @@ class modEmergencyHouse extends DolibarrModules
 			return false;
 		}
 
+		$verificationTable = MAIN_DB_PREFIX.'emergencyhouse_verification';
+		$verificationLevelTable = MAIN_DB_PREFIX.'c_emergencyhouse_verification_level';
+		$confirmationDateSql = 'COALESCE((SELECT MAX(token.used_at)';
+		$confirmationDateSql .= ' FROM '.MAIN_DB_PREFIX.'emergencyhouse_token AS token';
+		$confirmationDateSql .= ' WHERE token.entity = account.entity AND token.fk_account = account.rowid';
+		$confirmationDateSql .= " AND token.token_type = 'email_verification' AND token.used_at IS NOT NULL),";
+		$confirmationDateSql .= ' account.tms, account.date_creation, NOW())';
+		$sql = 'INSERT INTO '.$verificationTable;
+		$sql .= ' (entity, object_type, fk_object, verification_type, fk_verification_level, status,';
+		$sql .= ' method_code, private_note_encrypted, fk_operator, date_creation, date_verified, date_expiration)';
+		$sql .= " SELECT account.entity, 'account', account.rowid, 'email', level.rowid, 1,";
+		$sql .= " 'email_confirmation', NULL, NULL,";
+		$sql .= ' '.$confirmationDateSql.', '.$confirmationDateSql.', NULL';
+		$sql .= ' FROM '.$accountTable.' AS account';
+		$sql .= ' INNER JOIN '.$verificationLevelTable.' AS level';
+		$sql .= " ON level.entity = account.entity AND level.code = 'email'";
+		$sql .= ' WHERE account.entity = '.((int) $entity);
+		$sql .= ' AND account.email_verified = 1 AND account.status IN (0, 1)';
+		$sql .= ' AND NOT EXISTS (SELECT 1 FROM '.$verificationTable.' AS proof';
+		$sql .= ' WHERE proof.entity = account.entity AND proof.object_type = \'account\'';
+		$sql .= ' AND proof.fk_object = account.rowid AND proof.verification_type = \'email\'';
+		$sql .= " AND proof.status = 1 AND proof.method_code = 'email_confirmation')";
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+
+		$sql = 'UPDATE '.$accountTable;
+		$sql .= ' SET status = 1, verification_status = 1';
+		$sql .= ' WHERE entity = '.((int) $entity);
+		$sql .= ' AND email_verified = 1 AND status IN (0, 1)';
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+
 		$queueTable = MAIN_DB_PREFIX.'emergencyhouse_verification_queue';
+		$sql = 'UPDATE '.$queueTable.' AS queue';
+		$sql .= ' INNER JOIN '.$accountTable.' AS account';
+		$sql .= ' ON account.entity = queue.entity AND account.rowid = queue.fk_object';
+		$sql .= ' INNER JOIN (SELECT entity, fk_object, MAX(rowid) AS rowid';
+		$sql .= ' FROM '.$verificationTable;
+		$sql .= " WHERE object_type = 'account' AND verification_type = 'email'";
+		$sql .= " AND status = 1 AND method_code = 'email_confirmation'";
+		$sql .= ' GROUP BY entity, fk_object) AS proof';
+		$sql .= ' ON proof.entity = queue.entity AND proof.fk_object = queue.fk_object';
+		$sql .= ' SET queue.queue_status = 1, queue.fk_assigned_user = NULL,';
+		$sql .= ' queue.date_assigned = NULL, queue.date_completed = COALESCE(queue.date_completed, NOW()),';
+		$sql .= ' queue.fk_verification = proof.rowid';
+		$sql .= " WHERE queue.entity = ".((int) $entity)." AND queue.object_type = 'account'";
+		$sql .= ' AND queue.queue_status = 0 AND account.email_verified = 1 AND account.status = 1';
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return false;
+		}
+
 		$backfills = array(
-			array(
-				'table' => 'emergencyhouse_public_account',
-				'type' => 'account',
-				'condition' => 'source.status = 1 AND source.email_verified = 1 AND source.verification_status = 0',
-			),
 			array(
 				'table' => 'emergencyhouse_offer',
 				'type' => 'offer',
@@ -694,7 +748,7 @@ class modEmergencyHouse extends DolibarrModules
 			array(
 				'table' => 'emergencyhouse_request',
 				'type' => 'request',
-				'condition' => 'source.status = 1 AND source.verification_status = 0',
+				'condition' => 'source.status IN (1, 7) AND source.verification_status = 0',
 			),
 		);
 		foreach ($backfills as $backfill) {

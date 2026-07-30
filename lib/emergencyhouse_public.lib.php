@@ -1359,6 +1359,7 @@ function emergencyhousePublicListingStatus($objectType, $status)
 			4 => 'StatusSuspended',
 			5 => 'StatusExpired',
 			6 => 'StatusClosed',
+			7 => 'StatusPendingValidation',
 		);
 	$key = isset($labels[$status]) ? $labels[$status] : 'StatusUnknown';
 	return '<span class="eh-badge">'.dol_escape_htmltag($langs->trans($key)).'</span>';
