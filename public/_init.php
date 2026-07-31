@@ -29,6 +29,7 @@ if (!$res) {
 dol_include_once('/emergencyhouse/class/publicauthservice.class.php');
 dol_include_once('/emergencyhouse/class/publicanalyticsservice.class.php');
 dol_include_once('/emergencyhouse/class/languageservice.class.php');
+dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_public.lib.php');
 
 $emergencyhouseApplicationLocale = (string) $langs->defaultlang;

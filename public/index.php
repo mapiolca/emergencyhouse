@@ -71,8 +71,9 @@ if (empty($campaigns)) {
 		print '<article class="eh-card">';
 		print '<p class="eh-eyebrow">'.dol_escape_htmltag((string) $campaign->coordinator_name).'</p>';
 		print '<h3><a class="eh-card-link" href="'.dol_escape_htmltag($url).'">'.dol_escape_htmltag((string) $campaign->label).'</a></h3>';
-		if (!empty($campaign->description_public)) {
-			print '<p>'.dol_escape_htmltag(dol_trunc((string) $campaign->description_public, 240)).'</p>';
+		$campaignDescription = emergencyhousePublicPlainText((string) $campaign->description_public);
+		if ($campaignDescription !== '') {
+			print '<p>'.dol_escape_htmltag(dol_trunc($campaignDescription, 240)).'</p>';
 		}
 		print '<div class="eh-card-meta"><span>'.$langs->trans(
 			'CampaignFromDate',

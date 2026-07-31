@@ -120,11 +120,12 @@ body.eh-public { margin: 0; min-width: 320px; background: var(--eh-canvas); colo
 .eh-photo-card figcaption { padding: 10px 12px; color: var(--eh-muted); font-size: 14px; font-weight: 700; }
 .eh-photo-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; }
 .eh-photo-card-footer form { margin: 0; }
-.eh-legal-content { overflow-wrap: anywhere; }
-.eh-legal-content > :first-child { margin-top: 0; }
-.eh-legal-content > :last-child { margin-bottom: 0; }
-.eh-legal-content table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
-.eh-legal-content th, .eh-legal-content td { padding: 8px; border: 1px solid var(--eh-border); text-align: start; vertical-align: top; }
+.eh-rich-content, .eh-legal-content { overflow-wrap: anywhere; }
+.eh-rich-content > :first-child, .eh-legal-content > :first-child { margin-top: 0; }
+.eh-rich-content > :last-child, .eh-legal-content > :last-child { margin-bottom: 0; }
+.eh-rich-content table, .eh-legal-content table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; }
+.eh-rich-content th, .eh-rich-content td, .eh-legal-content th, .eh-legal-content td { padding: 8px; border: 1px solid var(--eh-border); text-align: start; vertical-align: top; }
+.eh-rich-content img { max-width: 100%; height: auto; }
 .eh-badge { display: inline-flex; min-height: 28px; align-items: center; padding: 4px 10px; border-radius: 999px; background: #e7efed; color: #28473f; font-size: 13px; font-weight: 750; }
 .eh-badge-urgent { background: #f8dfdb; color: #81271f; }
 .eh-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }

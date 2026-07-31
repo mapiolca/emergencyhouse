@@ -863,6 +863,7 @@ emergencyhouseContract(
 );
 $campaignEditor = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'campaign'.DIRECTORY_SEPARATOR.'edit.php');
 $campaignClass = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'class'.DIRECTORY_SEPARATOR.'campaign.class.php');
+$publicCampaign = emergencyhouseReadRequired($root.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'campaign.php');
 emergencyhouseContract(
 	strpos($campaignEditor, 'name="privacy_url" required') === false
 		&& strpos($campaignEditor, 'name="terms_url" required') === false
@@ -875,6 +876,26 @@ emergencyhouseContract(
 	strpos($campaignClass, "&& !empty(\$this->privacy_url)") === false
 		&& strpos($campaignClass, "&& !empty(\$this->terms_url)") === false,
 	'Publication de campagne indépendante des URL juridiques spécifiques'
+);
+emergencyhouseContract(
+	strpos($campaignEditor, "require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';") !== false
+		&& substr_count($campaignEditor, 'new DolEditor(') === 4
+		&& strpos($campaignEditor, "new DolEditor('description_public'") !== false
+		&& strpos($campaignEditor, "new DolEditor('official_instructions'") !== false
+		&& strpos($campaignEditor, "new DolEditor('banner_text'") !== false
+		&& strpos($campaignEditor, "new DolEditor('eligibility_text'") !== false
+		&& substr_count($campaignEditor, "isModEnabled('fckeditor')") === 4
+		&& substr_count($campaignEditor, "emergencyhouseNormalizeRichTextLineBreaks(GETPOST(") === 4,
+	'Quatre contenus de campagne édités avec le WYSIWYG natif et repli textarea'
+);
+emergencyhouseContract(
+	substr_count($publicCampaign, 'dolPrintHTML(emergencyhouseNormalizeRichTextLineBreaks(') === 4
+		&& strpos($publicCampaign, 'class="eh-lead eh-rich-content"') !== false
+		&& strpos($publicHomeSeo, 'emergencyhousePublicPlainText((string) $campaign->description_public)') !== false
+		&& strpos($publicLlmIndex, 'emergencyhousePublicPlainText((string) $obj->description_public)') !== false
+		&& strpos($publicLibrary, '$description = emergencyhousePublicPlainText((string) $campaign->description_public);') !== false
+		&& strpos($publicStyles, '.eh-rich-content, .eh-legal-content') !== false,
+	'Rendu riche sécurisé et extraits textuels des contenus de campagne'
 );
 
 $statusObjects = array('campaign', 'offer', 'request', 'solicitation', 'allocation', 'report');

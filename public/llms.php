@@ -37,11 +37,10 @@ if ($resql && $db->num_rows($resql) > 0) {
 	print "\n## ".$langs->trans('ActiveCampaigns')."\n\n";
 	while (is_object($obj = $db->fetch_object($resql))) {
 		$label = str_replace(array('[', ']'), '', (string) $obj->label);
-		$description = trim(dol_string_nohtmltag((string) $obj->description_public));
-		$description = preg_replace('/\s+/u', ' ', $description);
+		$description = emergencyhousePublicPlainText((string) $obj->description_public);
 		$url = emergencyhousePublicAbsoluteUrl('campaign.php', array('slug' => (string) $obj->slug));
 		print '- ['.$label.']('.$url.')';
-		if (is_string($description) && $description !== '') {
+		if ($description !== '') {
 			print ' — '.dol_trunc($description, 240);
 		}
 		print "\n";

@@ -847,6 +847,9 @@ function emergencyhouseCardRenderField($db, $object, $field)
 	if ($field === 'urgency_level') {
 		return $langs->trans('UrgencyLevelValue'.((int) $value));
 	}
+	if ($object instanceof EmergencyHouseCampaign && in_array($field, array('description_public', 'official_instructions', 'banner_text', 'eligibility_text'), true)) {
+		return dolPrintHTML(emergencyhouseNormalizeRichTextLineBreaks((string) $value));
+	}
 	return nl2br(dol_escape_htmltag((string) $value));
 }
 

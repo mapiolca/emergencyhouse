@@ -46,6 +46,7 @@ function dol_string_nohtmltag($value)
 }
 
 require dirname(__DIR__).'/class/languageservice.class.php';
+require dirname(__DIR__).'/lib/emergencyhouse.lib.php';
 require dirname(__DIR__).'/lib/emergencyhouse_public.lib.php';
 
 /**

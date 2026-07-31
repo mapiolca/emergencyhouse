@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Ajout de l’éditeur WYSIWYG natif aux descriptions, consignes, bannières et
+  conditions utiles des campagnes, avec repli textarea, normalisation des
+  retours à la ligne historiques et rendu HTML sécurisé sur le portail.
 - Soumission directe des nouvelles campagnes, offres et demandes d’hébergement
   créées depuis le portail public au statut **En attente de validation**, sans
   migration des brouillons historiques.

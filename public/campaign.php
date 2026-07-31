@@ -61,13 +61,15 @@ emergencyhousePublicRenderHeader(
 print '<section class="eh-hero"><div class="eh-shell eh-hero-grid"><div>';
 print '<p class="eh-eyebrow">'.dol_escape_htmltag($campaign->coordinator_name).'</p>';
 print '<h1>'.dol_escape_htmltag($campaign->label).'</h1>';
-if (!empty($campaign->banner_text)) print '<p class="eh-lead">'.dol_escape_htmltag($campaign->banner_text).'</p>';
+if (emergencyhousePublicHtmlHasContent((string) $campaign->banner_text)) {
+	print '<div class="eh-lead eh-rich-content">'.dolPrintHTML(emergencyhouseNormalizeRichTextLineBreaks((string) $campaign->banner_text)).'</div>';
+}
 print '<div class="eh-actions">';
 print '<a class="eh-button" href="'.dol_escape_htmltag(emergencyhousePublicUrl('request/edit.php', array('campaign' => (int) $campaign->id))).'">'.$langs->trans('NeedAccommodationCta').'</a>';
 print '<a class="eh-button eh-button-secondary" href="'.dol_escape_htmltag(emergencyhousePublicUrl('offer/edit.php', array('campaign' => (int) $campaign->id))).'">'.$langs->trans('OfferAccommodationCta').'</a>';
 print '</div></div>';
 print '<aside class="eh-card"><h2>'.$langs->trans('OfficialInformation').'</h2>';
-print '<p>'.dol_escape_htmltag((string) $campaign->description_public).'</p>';
+print '<div class="eh-rich-content">'.dolPrintHTML(emergencyhouseNormalizeRichTextLineBreaks((string) $campaign->description_public)).'</div>';
 print '<p><strong>'.$langs->trans('CampaignPeriod').'</strong><br>';
 print $langs->trans(
 	'CampaignFromDate',
@@ -94,8 +96,10 @@ if (is_object($stats)) {
 }
 
 print '<section class="eh-shell eh-section"><div class="eh-section-heading"><div><h2>'.$langs->trans('OfficialInstructions').'</h2></div></div>';
-print '<div class="eh-card"><p>'.nl2br(dol_escape_htmltag((string) $campaign->official_instructions)).'</p>';
-if (!empty($campaign->eligibility_text)) print '<h3>'.$langs->trans('EligibilityConditions').'</h3><p>'.nl2br(dol_escape_htmltag((string) $campaign->eligibility_text)).'</p>';
+print '<div class="eh-card"><div class="eh-rich-content">'.dolPrintHTML(emergencyhouseNormalizeRichTextLineBreaks((string) $campaign->official_instructions)).'</div>';
+if (emergencyhousePublicHtmlHasContent((string) $campaign->eligibility_text)) {
+	print '<h3>'.$langs->trans('EligibilityConditions').'</h3><div class="eh-rich-content">'.dolPrintHTML(emergencyhouseNormalizeRichTextLineBreaks((string) $campaign->eligibility_text)).'</div>';
+}
 print '</div></section>';
 
 print '<section class="eh-shell eh-section"><div class="eh-section-heading"><div><h2>'.$langs->trans('RecentlyAvailableOffers').'</h2><p>'.$langs->trans('ExactAddressesProtected').'</p></div>';

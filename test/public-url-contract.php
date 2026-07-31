@@ -100,6 +100,7 @@ function newToken()
 }
 
 require dirname(__DIR__).'/class/languageservice.class.php';
+require dirname(__DIR__).'/lib/emergencyhouse.lib.php';
 require dirname(__DIR__).'/lib/emergencyhouse_public.lib.php';
 
 /**
@@ -114,6 +115,17 @@ function emergencyhousePublicUrlAssert($condition, $message)
 		exit(1);
 	}
 }
+
+emergencyhousePublicUrlAssert(
+	emergencyhouseNormalizeRichTextLineBreaks("Première ligne\\r\\nDeuxième ligne\rTroisième ligne")
+		=== "Première ligne\nDeuxième ligne\nTroisième ligne",
+	'Les retours natifs et historiquement échappés doivent être normalisés.'
+);
+emergencyhousePublicUrlAssert(
+	emergencyhousePublicPlainText('<p>Première partie</p><ul><li>Deuxième partie</li></ul>')
+		=== 'Première partie Deuxième partie',
+	'Le contenu riche doit produire un extrait textuel sans concaténer les blocs.'
+);
 
 $languageAccount = new EmergencyHousePublicAccount();
 $languageAccount->lang = 'uk_UA';

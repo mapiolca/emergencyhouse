@@ -14,6 +14,9 @@ utilisateurs Dolibarr pour les particuliers.
 ## Fonctionnalités principales
 
 - campagnes territorialisées et consignes officielles ;
+- contenus de campagne enrichis avec l’éditeur WYSIWYG natif lorsque celui-ci
+  est actif, avec repli sur une zone de texte conservant les retours à la
+  ligne ;
 - comptes publics automatiquement considérés comme vérifiés après confirmation
   de leur adresse électronique, avec preuve d’audit sans intervention
   opérateur, sessions et réinitialisation de mot de passe, ainsi que création
@@ -150,6 +153,13 @@ d’utilisation publiées sont indexables. Une campagne est indexable uniquement
 si l’option **Autoriser l’indexation par les moteurs de recherche** est active,
 si la campagne est publiée et en cours, et si sa description publique et ses
 consignes officielles sont renseignées.
+
+La description publique, les consignes officielles, le texte de bannière et
+les conditions utiles d’une campagne utilisent l’éditeur WYSIWYG natif lorsque
+le module correspondant est actif. Sans cet éditeur, les mêmes champs restent
+disponibles sous forme de zones de texte et leurs retours à la ligne sont
+conservés. Les pages détaillées rendent le HTML filtré par Dolibarr, tandis que
+les cartes, métadonnées et index textuels n’exposent qu’une version sans balise.
 
 Les offres, demandes, formulaires, comptes, sollicitations et allocations
 restent exclus de l’index. Les moteurs peuvent suivre les liens des offres et

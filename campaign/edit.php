@@ -14,6 +14,7 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 dol_include_once('/emergencyhouse/class/campaign.class.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse.lib.php');
 dol_include_once('/emergencyhouse/lib/emergencyhouse_access.lib.php');
@@ -35,8 +36,8 @@ if ($id > 0) {
 if ($action === 'save') {
 	$object->label = trim(GETPOST('label', 'restricthtml'));
 	$object->fk_campaign_type = GETPOSTINT('fk_campaign_type') > 0 ? GETPOSTINT('fk_campaign_type') : null;
-	$object->description_public = GETPOST('description_public', 'restricthtml');
-	$object->official_instructions = GETPOST('official_instructions', 'restricthtml');
+	$object->description_public = emergencyhouseNormalizeRichTextLineBreaks(GETPOST('description_public', 'restricthtml'));
+	$object->official_instructions = emergencyhouseNormalizeRichTextLineBreaks(GETPOST('official_instructions', 'restricthtml'));
 	$object->coordinator_name = trim(GETPOST('coordinator_name', 'restricthtml'));
 	$object->official_phone = trim(GETPOST('official_phone', 'alphanohtml'));
 	$object->official_email = trim(GETPOST('official_email', 'alphanohtml'));
@@ -48,8 +49,8 @@ if ($action === 'save') {
 	$object->default_radius = GETPOSTINT('default_radius');
 	$object->retention_days = GETPOSTINT('retention_days');
 	$object->consent_version = trim(GETPOST('consent_version', 'alphanohtml'));
-	$object->banner_text = GETPOST('banner_text', 'restricthtml');
-	$object->eligibility_text = GETPOST('eligibility_text', 'restricthtml');
+	$object->banner_text = emergencyhouseNormalizeRichTextLineBreaks(GETPOST('banner_text', 'restricthtml'));
+	$object->eligibility_text = emergencyhouseNormalizeRichTextLineBreaks(GETPOST('eligibility_text', 'restricthtml'));
 	$object->privacy_url = trim(GETPOST('privacy_url', 'alphanohtml'));
 	$object->terms_url = trim(GETPOST('terms_url', 'alphanohtml'));
 	$object->robots_index = GETPOSTINT('robots_index') === 1 ? 1 : 0;
@@ -139,8 +140,14 @@ print '<input type="hidden" name="action" value="save">';
 print '<table class="border centpercent">';
 print '<tr><td class="titlefieldcreate fieldrequired">'.$langs->trans('CampaignLabel').'</td><td><input class="flat minwidth300" name="label" maxlength="255" required value="'.dol_escape_htmltag((string) $object->label).'"></td></tr>';
 print '<tr><td>'.$langs->trans('CampaignType').'</td><td>'.$form->selectarray('fk_campaign_type', $campaignTypes, $object->fk_campaign_type, 0, 0, 0, '', 0, 0, 0, '', 'minwidth300').'</td></tr>';
-print '<tr><td>'.$langs->trans('CampaignDescription').'</td><td><textarea class="flat centpercent" name="description_public" rows="5">'.dol_escape_htmltag((string) $object->description_public).'</textarea></td></tr>';
-print '<tr><td>'.$langs->trans('OfficialInstructions').'</td><td><textarea class="flat centpercent" name="official_instructions" rows="5">'.dol_escape_htmltag((string) $object->official_instructions).'</textarea></td></tr>';
+print '<tr><td>'.$langs->trans('CampaignDescription').'</td><td>';
+$descriptionEditor = new DolEditor('description_public', emergencyhouseNormalizeRichTextLineBreaks((string) $object->description_public), '', 220, 'dolibarr_notes', '', false, false, isModEnabled('fckeditor'), 10, '100%');
+$descriptionEditor->Create();
+print '</td></tr>';
+print '<tr><td>'.$langs->trans('OfficialInstructions').'</td><td>';
+$instructionsEditor = new DolEditor('official_instructions', emergencyhouseNormalizeRichTextLineBreaks((string) $object->official_instructions), '', 220, 'dolibarr_notes', '', false, false, isModEnabled('fckeditor'), 10, '100%');
+$instructionsEditor->Create();
+print '</td></tr>';
 print '<tr><td class="fieldrequired">'.$langs->trans('CoordinatorName').'</td><td><input class="flat minwidth300" name="coordinator_name" required value="'.dol_escape_htmltag((string) $object->coordinator_name).'"></td></tr>';
 print '<tr><td class="fieldrequired">'.$langs->trans('OfficialPhone').'</td><td><input class="flat minwidth200" name="official_phone" required value="'.dol_escape_htmltag((string) $object->official_phone).'"></td></tr>';
 print '<tr><td>'.$langs->trans('OfficialEmail').'</td><td><input class="flat minwidth300" type="email" name="official_email" value="'.dol_escape_htmltag((string) $object->official_email).'"></td></tr>';
@@ -152,8 +159,14 @@ print '<tr><td>'.$langs->trans('VerificationPolicy').'</td><td>'.$form->selectar
 print '<tr><td>'.$langs->trans('DefaultRadius').'</td><td><input class="flat maxwidth75" type="number" min="1" max="1000" name="default_radius" value="'.((int) $object->default_radius).'"> '.$langs->trans('Km').'</td></tr>';
 print '<tr><td>'.$langs->trans('RetentionDays').'</td><td><input class="flat maxwidth75" type="number" min="1" name="retention_days" value="'.((int) $object->retention_days).'"></td></tr>';
 print '<tr><td class="fieldrequired">'.$langs->trans('ConsentVersion').'</td><td><input class="flat maxwidth150" name="consent_version" required value="'.dol_escape_htmltag((string) $object->consent_version).'"></td></tr>';
-print '<tr><td>'.$langs->trans('BannerText').'</td><td><textarea class="flat centpercent" name="banner_text" rows="3">'.dol_escape_htmltag((string) $object->banner_text).'</textarea></td></tr>';
-print '<tr><td>'.$langs->trans('EligibilityText').'</td><td><textarea class="flat centpercent" name="eligibility_text" rows="3">'.dol_escape_htmltag((string) $object->eligibility_text).'</textarea></td></tr>';
+print '<tr><td>'.$langs->trans('BannerText').'</td><td>';
+$bannerEditor = new DolEditor('banner_text', emergencyhouseNormalizeRichTextLineBreaks((string) $object->banner_text), '', 150, 'dolibarr_notes', '', false, false, isModEnabled('fckeditor'), 6, '100%');
+$bannerEditor->Create();
+print '</td></tr>';
+print '<tr><td>'.$langs->trans('EligibilityText').'</td><td>';
+$eligibilityEditor = new DolEditor('eligibility_text', emergencyhouseNormalizeRichTextLineBreaks((string) $object->eligibility_text), '', 150, 'dolibarr_notes', '', false, false, isModEnabled('fckeditor'), 6, '100%');
+$eligibilityEditor->Create();
+print '</td></tr>';
 print '<tr><td>'.$langs->trans('PrivacyUrl').'</td><td><input class="flat centpercent" name="privacy_url" value="'.dol_escape_htmltag((string) $object->privacy_url).'">';
 print '<div class="opacitymedium">'.$langs->trans('CampaignPrivacyUrlFallbackHelp').'</div></td></tr>';
 print '<tr><td>'.$langs->trans('TermsUrl').'</td><td><input class="flat centpercent" name="terms_url" value="'.dol_escape_htmltag((string) $object->terms_url).'">';

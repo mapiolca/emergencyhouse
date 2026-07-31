@@ -362,7 +362,7 @@ function emergencyhousePublicCampaignStructuredData($campaign, $canonical)
 	global $langs;
 
 	$homeUrl = emergencyhousePublicAbsoluteUrl();
-	$description = trim((string) $campaign->description_public);
+	$description = emergencyhousePublicPlainText((string) $campaign->description_public);
 	$organization = emergencyhousePublicOrganizationStructuredData($homeUrl);
 	$service = array(
 		'@type' => 'Service',
@@ -527,9 +527,7 @@ function emergencyhousePublicRenderHeader($title, $account = null, $active = '',
 		: (isset($seo['robots']) && $seo['robots'] === 'noindex,follow' ? 'noindex,follow' : 'noindex,nofollow');
 	$description = '';
 	if (isset($seo['description']) && trim($seo['description']) !== '') {
-		$description = trim(dol_string_nohtmltag($seo['description']));
-		$normalizedDescription = preg_replace('/\s+/u', ' ', $description);
-		$description = is_string($normalizedDescription) ? dol_trunc($normalizedDescription, 320) : '';
+		$description = dol_trunc(emergencyhousePublicPlainText($seo['description']), 320);
 	}
 	$canonical = isset($seo['canonical']) && filter_var($seo['canonical'], FILTER_VALIDATE_URL) !== false
 		? $seo['canonical']
@@ -724,9 +722,24 @@ function emergencyhousePublicNavItem($code, $active, $url, $label, $class = '')
  */
 function emergencyhousePublicHtmlHasContent($html)
 {
-	$text = dol_string_nohtmltag($html);
-	$text = str_replace(array("\xC2\xA0", "\xE2\x80\x8B"), '', $text);
-	return trim($text) !== '';
+	return emergencyhousePublicPlainText($html) !== '';
+}
+
+/**
+ * Convert rich public content to normalized visible text.
+ *
+ * @param string $content Rich or plain content
+ * @return string
+ */
+function emergencyhousePublicPlainText($content)
+{
+	$content = emergencyhouseNormalizeRichTextLineBreaks($content);
+	$spacedContent = preg_replace('~</(?:blockquote|div|h[1-6]|li|p|tr)>~i', '$0 ', $content);
+	$text = dol_string_nohtmltag(is_string($spacedContent) ? $spacedContent : $content);
+	$text = str_replace(array("\xC2\xA0", "\xE2\x80\x8B"), ' ', $text);
+	$normalizedText = preg_replace('/\s+/u', ' ', trim($text));
+
+	return is_string($normalizedText) ? $normalizedText : '';
 }
 
 /**

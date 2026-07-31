@@ -129,6 +129,19 @@ function emergencyhouseGetUserErrorMessage($errorCode, $fallback = 'ErrorInterna
 }
 
 /**
+ * Normalize native and historically escaped line breaks in rich text fields.
+ *
+ * @param string $content Rich or plain text content
+ * @return string
+ */
+function emergencyhouseNormalizeRichTextLineBreaks($content)
+{
+	$content = str_replace(array("\r\n", "\r"), "\n", $content);
+
+	return str_replace(array('\\r\\n', '\\n', '\\r'), "\n", $content);
+}
+
+/**
  * Return tabs for a module object.
  *
  * @param CommonObject $object Object
